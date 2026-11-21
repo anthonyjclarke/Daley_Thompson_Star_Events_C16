@@ -55,6 +55,7 @@ Run from the project root.
 | `tools/render_graphics.py`   | The character sets, frames, objects and lettering in `docs/images/` |
 | `tools/decode_tunes.py`      | Every tune of both parts as notes and lengths            |
 | `tools/render_sounds.py`     | The sound clips in `docs/sounds/`                         |
+| `tools/readme_images.py`     | The README's badges and screenshot montage                |
 | `tools/trace6502.py`         | Code tracer that writes a `da65` info file; its opcode table serves `disasm.py` and `cpu6502.py` |
 
 `tools/cpu6502.py` (a 6502 emulator), `tools/media.py` (readers for the original files), `tools/hw_labels.py` (TED and KERNAL names for `da65`) and `tools/d64_image.py` (a D64 reader, used only by `prg_info.py` for disk images) are libraries the scripts import.

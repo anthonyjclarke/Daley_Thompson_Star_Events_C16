@@ -2,6 +2,19 @@
 
 ---
 
+## [0.10.1] 22-11-2026
+
+### Added
+
+- `tools/readme_images.py`: the README's badges and a six-screenshot montage.
+
+### Changed
+
+- README: a fuller front page in the style of my other C16 restorations: the game, highlights of what the
+  decomposition found, the verified build, build and run, a map of the repository, and the related repositories.
+
+---
+
 ## [0.10.0] 22-11-2026
 
 ### Added

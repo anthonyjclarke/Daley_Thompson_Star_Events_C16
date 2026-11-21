@@ -107,10 +107,12 @@ def ranges_for(data, base, code, overrides):
     return out
 
 
-def info_file(binpath, base, size, ranges, labels):
+def info_file(binpath, base, size, ranges, labels, sizes=None):
     lines = [f'GLOBAL {{ INPUTNAME "{binpath}"; STARTADDR ${base:04X}; INPUTSIZE {size}; CPU "6502"; COMMENTS 4; }};']
     lines += [f'RANGE {{ START ${a:04X}; END ${b:04X}; TYPE {t}; }};' for a, b, t in ranges]
-    lines += [f'LABEL {{ NAME "{name}"; ADDR ${a:04X}; }};' for a, name in sorted(labels.items())]
+    sizes = sizes or {}
+    lines += [f'LABEL {{ NAME "{name}"; ADDR ${a:04X};' + (f' SIZE {sizes[a]};' if a in sizes else '') + ' };'
+              for a, name in sorted(labels.items())]
     return "\n".join(lines) + "\n"
 
 
@@ -163,7 +165,7 @@ def build(block, sym, check_only):
     build_dir.mkdir(exist_ok=True)
     binpath = build_dir / f"{name}.bin"
     binpath.write_bytes(data)
-    (build_dir / f"{name}.info").write_text(info_file(binpath, base, len(data), ranges, labels))
+    (build_dir / f"{name}.info").write_text(info_file(binpath, base, len(data), ranges, labels, block.get("sizes")))
     raw = subprocess.run(["da65", "-i", str(build_dir / f"{name}.info")], capture_output=True, text=True, check=True).stdout
     title = f"{getattr(sym, 'TITLE', ROOT.name)} – block '{name}' ${base:04X}–${base + len(data) - 1:04X}"
     src = postprocess(raw, title, notes, inline)

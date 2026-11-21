@@ -25,6 +25,7 @@ What still needs testing or checking, and how. Items done in VICE are listed onc
 | Day One GAME OVER R marker     | Code read; screen redraw run in `cpu6502.py` | quirks                  |
 | Tunes decoded                  | `tools/decode_tunes.py`; title timed in VICE | analysis, The Tunes     |
 | Day Two on NTSC                | 189 forced attempts with `--ntsc`            | analysis, How Far       |
+| Names                          | Every data label named; branch targets left  | evidence; worklist      |
 
 ---
 
@@ -58,21 +59,12 @@ These can be done from the disassembly and VICE without a player.
 
 | Item       | Question                           |
 |:-----------|:-----------------------------------|
-| Data names | 244 `Lxxxx` data labels: see below |
 | Decruncher | Compare with a real Exomizer build |
 
 
 ### Names Still Neutral
 
-On 22-11-2026 the six unnamed subroutines, all 22 patched operands, the tune player and the effect voice blocks of both parts, and Day Two's board-scroll and run-up variables were named (932 `Lxxxx` labels down to 770). What is left:
-
-| Kind                                      | Day One | Day Two | Why it is open                               |
-|:------------------------------------------|:--------|:--------|:---------------------------------------------|
-| Branch targets inside named routines      | 250     | 276     | Local jump points; the routine is described  |
-| Screen and colour cells (`$08xx`–`$0Fxx`) | –       | 87      | Fixed screen positions written directly      |
-| Other data labels                         | 102     | 55      | Bytes inside tables and graphics; next slice |
-
-The branch targets stay neutral by choice: each sits inside a routine with a name and a block comment. The data labels are the next naming slice.
+Every routine, variable, table and patched operand in both parts now has a name (22-11-2026). What remains neutral is 526 branch targets, 250 in Day One and 276 in Day Two, each inside a routine that has a name and a block comment. They stay `Lxxxx` by choice: they are jump points within a routine, not things of their own.
 
 ---
 

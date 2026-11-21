@@ -77,6 +77,7 @@ Block `day_one`, from `original/day_one_unpacked_vice.prg`. Source `src/day_one.
 ### Names
 
 - `$1010` **Entry_day_one** – Entry point of part 1 (the decruncher's final JMP). Provisional name.
+- `$1013` **EntryPad** – 17 bytes after the entry JMP; the self-modified operands point into them in the image, but no code reads them.
 - `$1024` **FetchPackedByte** – Load the byte at the packed-screen pointer (the LDA operand at $1025/$1026 is the pointer).
 - `$1025` **PackedPtr** – Packed-screen read pointer: the LDA operand in FetchPackedByte.
 - `$1026` **PackedPtrHi**
@@ -85,19 +86,25 @@ Block `day_one`, from `original/day_one_unpacked_vice.prg`. Source `src/day_one.
 - `$1054` **RunColourPtr**
 - `$1055` **RunColourPtrHi**
 - `$106E` **AdvancePackedPtr** – Step the packed-screen pointer by one.
-- `$1077` **DrawPackedScreen** – Decode the packed screen at $3000 into screen $0C00 and colour $0800. Codes: $FB run, $FC set address, $FD next row (+40), $FE set colour, $FF end; others are characters.
+- `$1077` **DrawPackedScreen** – Decode the packed screen at $3000 into screen $0C00 and colour $0800. Codes: $FB run, $FC set address, $FD the row below the last $FC address, $FE set colour, $FF end; others are characters.
 - `$109F` **ScreenPtr** – Screen and colour write pointers of DrawPackedScreen: STA operands.
 - `$10A0` **ScreenPtrHi**
 - `$10A5` **ColourPtr**
 - `$10A6` **ColourPtrHi**
+- `$1116` **PackedRowLo** – Low byte of the last $FC address; $FD sets the screen pointers to the row below it.
+- `$1117` **PackedColour** – Colour for the next characters, set by the $FE code.
 - `$1121` **EventNumber** – 1-4: the event being run; picks its name, distance and set-up.
+- `$1122` **EventSpare** – Cleared by StartEvent_day_one; nothing reads it.
 - `$1123` **EventDistanceText** – Four 10-byte fields: ' 100', ' 400', ' 110', ' 200' (indexed 0, 10, 20, 30).
 - `$114B` **EventNameText** – Four 10-byte fields: SPRINT, RUN, HURDLES, HURDLES.
 - `$1173` **GameOverText** – 'GAME OVER', drawn by ShowGameOver.
 - `$117C` **Lives** – Set to 3; one glyph each at $0CF1. One is lost when an event ends unqualified; 0 ends the game.
+- `$117D` **ScoreCarryOut** – Where AddScore's carry out of the top digit lands (ScorePending - 1).
 - `$117E` **ScorePending** – Six decimal digits (0-9, most significant first) waiting to be added by AddScore.
 - `$1184` **Score** – Six decimal digits (0-9, most significant first), shown at $0C30 by AddScore.
+- `$118A` **ScoreSpare** – Six bytes after Score, cleared with ScorePending each event; nothing reads them.
 - `$1191` **ShowGameOver** – Print GAME OVER, play a tune, wait for fire.
+- `$11EC` **BonusCount** – AwardTimeBonus's count of 6-point additions.
 - `$11ED` **AwardTimeBonus** – Add 6 points to the score 255 - (sum of three of the time's ASCII digits) times.
 - `$1214` **AddScore** – Add ScorePending to Score digit by digit with carry, print Score at $0C30, clear ScorePending.
 - `$123C` **InitGame_day_one** – Clear the score tables and set Lives to 3, then fall into the event set-up.
@@ -107,8 +114,12 @@ Block `day_one`, from `original/day_one_unpacked_vice.prg`. Source `src/day_one.
 - `$14D9` **JoyLast** – Last value read from TED_KEYLATCH with $FD written to $FD30/$FF08; a change calls JoyWaggle.
 - `$14DA` **Jumping** – 1 from fire (hurdle events) until StepAthleteFrame returns to the running frames.
 - `$14DB` **JumpTimer** – Set to 10 on a jump; stepped down by StepAthleteFrame; a new jump waits for 0.
+- `$14DC` **EventActive** – 1 from before the start countdown until CheckEventEnd; with RaceRunning it gates the clock and the distance.
 - `$14DD` **StepAthleteFrame** – Every 4 calls, move the athlete to the next running frame (36 bytes on), or through the jump frames and back; called each time a track mark crosses a character.
 - `$1561` **ScrollStep** – ScrollScenery once and AdvanceDistance twice.
+- `$156B` **FootstepTimer** – Counts athlete frames down from 6; PlayFootstep at 0.
+- `$156C` **FrameStepped** – Set by StepAthleteFrame; the main loop clears it and counts FootstepTimer.
+- `$156D` **RunCycleBack** – 1 while the run cycle steps back through the frames (top frame - $24 each step).
 - `$156E` **InstallIrq_day_one** – Point the KERNAL IRQ vector ($0314) at IrqHandler_day_one; raster IRQ only.
 - `$1584` **IrqHandler_day_one** – Raster IRQ: acknowledge, call the next split handler from SplitTable_day_one, step the split counter ($0F) through 0-12. Exits through the KERNAL's register pull.
 - `$158A` **IrqSplitCall_day_one**
@@ -127,27 +138,38 @@ Block `day_one`, from `original/day_one_unpacked_vice.prg`. Source `src/day_one.
 - `$1675` **Split12_day_one** – Set the background colour(s) for the next band and the next raster line.
 - `$1680` **Split13_day_one** – Colours, then MoveRace while racing.
 - `$169D` **RaceRunning** – 1 from the end of the start countdown until the event ends; gates the race clock.
+- `$169E` **FrameStepSeen** – Set to 1 by StepAthleteFrame; nothing reads it.
 - `$169F` **ResetSpeedMeter** – Fill the meter template at $16C2 with character $21 and end mark $25, then ClearSpeedMeter.
 - `$16B4` **ClearSpeedMeter** – Copy the 8 characters at $16C2 to the speed meter at $0FC6.
+- `$16C2` **MeterTemplate** – The 8 speed-meter characters copied by ClearSpeedMeter.
 - `$16CB` **DrawSpeedMeter** – Draw RunSpeed / 4 steps at $0FC6 with characters $21-$24, four steps to a cell.
 - `$1727` **MoveTrackMarks** – Move the two marks on row 23 ($0F98) left one step: characters $3B-$3F give the sub-character positions; each whole character calls StepAthleteFrame; a mark leaving the left edge returns at column 39.
+- `$176F` **RaceMoved** – Set by MoveRace each frame; ScrollTrackObjects clears it.
 - `$1770` **TrackMarkColumn** – Column of each of the two track marks.
 - `$1772` **TrackMarkChar** – Character ($3B-$3F) of each of the two track marks.
 - `$1774` **ScrollScenery** – Rotate the scenery characters one pixel left: two passes over rows 0-7, two over rows $38-$3F.
 - `$179D` **RotateCharsLeft** – Rotate seven characters' bitmaps (from $39F8, 8 bytes apart) left one pixel as one strip, rows X to $17FC - 1.
 - `$17C6` **DrawSceneryRows** – Fill screen rows 12 and 13 with the repeating characters $3F-$45 and $46-$4C.
+- `$17FB` **RotateCount** – Decremented by RotateCharsLeft and reset to 8 each event; nothing tests it.
+- `$17FC` **RotateEnd** – RotateCharsLeft's end row (X stops here).
 - `$17FF` **AdvanceDistance** – While racing, every 4 calls add 1 to the four-digit distance at $0FD0 (ASCII on screen).
+- `$182D` **DistanceTimer** – Counts 4 calls of AdvanceDistance per metre.
 - `$1834` **RaceClock** – Five ASCII digits, least significant first ($1834 counts 0-5, the others 0-9). Shown most significant first at $0FDD-$0FE2 by TickRaceClock.
 - `$183F` **TickRaceClock** – Step RaceClock and print it; called from the split at $15C6 while RaceRunning is set.
 - `$18AC` **ColourSpeedMeter** – Colour the 8 meter cells at $0BC6 with $7C, $6C ... $0C (one luminance step each).
 - `$18BF` **DrawRecordPlaces** – Print 1, 2, 3 down the records box at $0CBD.
 - `$18D7` **RecordTimes** – Three ASCII times per event, 7 bytes each with a 0 end: the RECORDS box. Never written.
+- `$192B` **RecordEnd** – ShowRecords' end index in RecordTimes.
+- `$192C` **RecordStart** – ShowRecords' start index in RecordTimes.
 - `$192D` **ShowRecords** – Print the event's three RecordTimes in the RECORDS box at $0CBF.
 - `$1987` **RunSpeed** – Runner's speed, 0-$70. Raised by JoyWaggle, lowered by SpeedDecay, shown by DrawSpeedMeter.
 - `$1988` **SpeedUp** – RunSpeed + 1 up to $70, then redraw the meter.
 - `$1996` **SpeedDecay** – Every 6 calls (3 once RunSpeed >= $60), RunSpeed - 1 down to 0, then redraw the meter.
+- `$19BC` **DecayTimer** – Frames to the next SpeedDecay step (6, or 3 at RunSpeed $60 and above).
+- `$19BD` **ScratchA** – Scratch: the character code in DrawSpeedMeter and DrawSceneryRows (row 12).
 - `$19BE` **JoyWaggle** – Record left and right in WaggleSeen; once both are seen, RunSpeed + 5 (+2 from $40) and clear it.
 - `$1A0A` **WaggleSeen** – Bit 0: right seen, bit 1: left seen, since the last speed step.
+- `$1A0B` **ScratchB** – Scratch: the inverted joystick in JoyWaggle, the row 13 character in DrawSceneryRows.
 - `$1A0C` **StartCountdown** – Show ON YOUR MARKS, GET SET and GO at $0E8E, waiting between them, then set RaceRunning.
 - `$1A5B` **ClearMessage** – Blank the 13 characters at $0E8E.
 - `$1A68` **WaitTicks** – Set DelayTicks to 100 and wait for the IRQ to count it to 0.
@@ -155,16 +177,34 @@ Block `day_one`, from `original/day_one_unpacked_vice.prg`. Source `src/day_one.
 - `$1A80` **GetSetText** – Screen codes, 7 bytes.
 - `$1A87` **GoText** – Screen codes, 2 bytes.
 - `$1A89` **DelayTicks** – Counted down by the split at $15C6.
+- `$1A8A` **CountdownSpare** – Cleared by StartCountdown; nothing reads it.
 - `$1A8B` **CheckEventEnd** – End the event when the distance shown at $0FD1 reaches its length (with RunSpeed > 0), or when RaceClock's tens digit reaches 7; JudgeTime decides, then StartEvent_day_one.
 - `$1B05` **DrawAthlete** – Draw the athlete's two 6x3-character halves at $0E5E and $0ED6 from AthleteFrames, skipping spaces; colour 8.
+- `$1B6D` **FrameStepLock** – Set when StepAthleteFrame steps; EraseAthlete clears it, so one step per redraw.
 - `$1B6E` **EraseAthlete** – Blank the athlete's lower half where it still holds the frame's characters, and a few fixed cells.
 - `$1BCD` **ClearObjectChars** – Zero the 256 bytes of character bitmap at $3B08 used for hurdles and the finish line.
 - `$1BD8` **InitTrackObjects** – Set the first track object's position and timers, then fall into ScrollTrackObjects.
 - `$1BF1` **ScrollTrackObjects** – Move the hurdles (and the finish line once shown) along the track and redraw them into the object characters.
+- `$1C9C` **ObjectRowsLeft** – Rows left to draw of the object's 4x4 cells.
+- `$1C9D` **ObjectDrawn** – Non-zero once the object's cells are on screen, so ScrollTrackObjects writes them again.
 - `$1C9E` **ObjectX** – Pixel position of the track object (hurdle or line), from $F8 moving left 8 per step.
+- `$1CA6` **ObjectY** – Pixel row of the track object ($90); its character row picks the screen row.
+- `$1CAE` **ObjectIndex** – Index of the track object; always 0 (one object).
+- `$1CAF` **NextObjectChar** – Next object character code to place ($61 upwards).
+- `$1CB0` **ObjectEndCol** – Column after the object's last cell in the row.
+- `$1CB1` **BitmapIndex** – CopyCellBitmaps' write index in UnderBitmaps, counting down from $7F.
 - `$1CB2` **AnimTimer** – Counts down to the next athlete frame (4, or $18 at the start of a jump).
 - `$1CB5` **AthleteTopFrame** – Offset in AthleteFrames of the top half.
 - `$1CB6` **AthleteBottomFrame** – Offset in AthleteFrames of the bottom half.
+- `$1CB7` **AthleteHalf** – 0: DrawAthlete draws the top half next, 1: the bottom half.
+- `$1CB8` **UnderCells** – Screen codes of the 16 cells under the object, read by ReadObjectCells.
+- `$1CC8` **ObjectCells** – Codes WriteObjectCells puts in the 16 cells.
+- `$1CF8` **ObjectColours** – Colours WriteObjectCells puts in the 16 cells.
+- `$1D08` **PixelMasks** – $80 down to $01: the bit for each pixel column.
+- `$1D21` **UnderBitmaps** – Bitmaps of the 16 characters under the object (128 bytes).
+- `$1E21` **RowAddrHi** – High byte of the screen address of rows 0-25, column 2.
+- `$1E3B` **RowAddrLo** – Low byte of the same addresses.
+- `$1E55` **RowsLeft** – Rows left in DrawAthlete and EraseAthlete (3).
 - `$1E56` **AthleteFrames** – Character codes of the athlete's frames, 18 bytes (6x3) per half.
 - `$1F52` **RedrawObject** – Read the screen cells under the object, rebuild their character bitmaps with the object merged in (CheckHurdleHit, MergeObjectChars).
 - `$1F67` **CopyCellBitmaps** – Copy the bitmaps of the 16 characters under the object into the buffer at $1D21.
@@ -174,10 +214,19 @@ Block `day_one`, from `original/day_one_unpacked_vice.prg`. Source `src/day_one.
 - `$1FF1` **WriteObjectCells** – Write the object's character codes ($1CC8) and colours ($1CF8) to its 4x4 cells.
 - `$2032` **HurdleState** – 0: no hurdles (flat events); 2: set by StartEvent_day_one for the hurdle events; 1: the hurdle reached the athlete ($26-$43) while not Jumping. Picks the bitmap drawn.
 - `$2033` **CopyObjectCells** – Copy the 16 cell codes from $1CB8 to $1CC8.
+- `$203F` **HurdleSpare** – Set to 8 by both hurdle drawers; nothing reads it.
 - `$2043` **CheckHurdleHit** – Set HurdleState from ObjectX and Jumping, then draw the hurdle bitmap it selects.
 - `$2078` **DrawHurdleA** – ClearObjectChars, then copy the bitmap set from $3900-$394F into the object characters.
 - `$20A4` **DrawHurdleB** – ClearObjectChars, then copy the bitmap set from $3950-$396F into the object characters.
 - `$2111` **MoveRace** – Once a frame while racing (last split): from RunSpeed, move the track marks and objects (whole steps plus a fractional accumulator) and scroll the scenery and distance.
+- `$217B` **MarkSteps** – RunSpeed / 32: whole MoveTrackMarks steps this frame.
+- `$217C` **SpeedDiv64** – RunSpeed / 64; nothing reads it.
+- `$217D` **SceneSteps** – RunSpeed / 128: whole ScrollStep steps this frame.
+- `$217E` **SpeedFraction** – RunSpeed, added to the two fraction accumulators.
+- `$217F` **SpeedCopy** – RunSpeed; nothing reads it.
+- `$2180` **SpeedHalf** – RunSpeed / 2; nothing reads it.
+- `$2181` **MarkFraction** – Fraction accumulator: a carry moves the track marks one more step.
+- `$2183` **SceneFraction** – Fraction accumulator: a carry scrolls the scenery one more step.
 - `$2184` **ShowQualifyTime** – Pick QualifyIndex for EventNumber and print the time at $0C40.
 - `$21C0` **QualifyIndex** – Offset of this event's entry in QualifyTimes: 0, 12, 6, 18 for events 1-4.
 - `$21C1` **QualifyTimes** – Four 6-character ASCII times: 013:00, 060:00, 015:00, 038:00.
@@ -186,8 +235,14 @@ Block `day_one`, from `original/day_one_unpacked_vice.prg`. Source `src/day_one.
 - `$222E` **QualifiedText** – Screen codes, 9 bytes.
 - `$2237` **FailedText** – Screen codes, 6 bytes.
 - `$2259` **PlotObjectPixel** – Set pixel (PlotX, PlotY) in the object character bitmap at $3B08 (mask from $1D08).
+- `$2289` **PlotOffset** – PlotObjectPixel's byte offset in ObjectChars.
 - `$228A` **PlotY**
 - `$228B` **PlotX**
+- `$228C` **LineStepX** – DrawFinishLine's X and Y fraction steps ($FF), accumulators and pixel count.
+- `$228D` **LineStepY**
+- `$228E` **LineFracX**
+- `$228F` **LineFracY**
+- `$2290` **LineLength**
 - `$2291` **DrawFinishLine** – Plot the slanted finish line, 12 steps of two pixels, from row $0D.
 - `$22D8` **WrapEvents** – After the fourth event: EventNumber 0, so StartEvent_day_one starts the 100 m again.
 - `$22E0` **SoundVectors_day_one** – Jump table into the sound driver (same layout as part 2's at $1800). $22E3 has no caller in part 1; its target matches the part 2 routine at $1CA2. TODO(name)
@@ -197,6 +252,7 @@ Block `day_one`, from `original/day_one_unpacked_vice.prg`. Source `src/day_one.
 - `$2306` **PlayFailedSound** – StartSoundEffect with the record at $2339.
 - `$230E` **PlayFootstep** – StartSoundEffect with the record at $2350, its pitch byte taken from the next byte of the BASIC ROM (self-modified pointer from $A000).
 - `$230F` **FootstepRomPtr** – Low byte of PlayFootstep's LDA $A000 operand, stepped each call.
+- `$2350` **FootstepFx** – PlayFootstep's 23-byte effect record; byte 12, its pitch, comes from the BASIC ROM.
 - `$2657` **Fx1SweepLen_day_one** – Steps in each of the three pitch-sweep segments
 - `$2658` **Fx1SweepLenB_day_one**
 - `$2659` **Fx1SweepLenC_day_one**
@@ -276,6 +332,11 @@ Block `day_one`, from `original/day_one_unpacked_vice.prg`. Source `src/day_one.
 - `$2B71` **NoteFreqLo_day_one** – TED frequency of 35 notes, A2 to G5 a semitone apart, low bytes (note 0 = $007, 110 Hz).
 - `$2B94` **NoteFreqHi_day_one** – The same notes' high bits (0-3).
 - `$2BB7` **PlayTunePair_day_one** – Take two inline words after the JSR (copied to $12-$15), start both voices, return past them. TODO(name): the words look like voice 1 and voice 2 data pointers.
+- `$3900` **BlankChar** – Character $20 of the $3800 set: blank.
+- `$3930` **HurdleArt** – Characters $26-$2D of the $3800 set: the pieces the hurdle drawers copy.
+- `$39F8` **SceneryChars** – Characters $3F-$45 of the $3800 set: the scenery strip RotateCharsLeft scrolls.
+- `$3B08` **ObjectChars** – Characters $61-$70: the 16 cells under the object, rebuilt with it merged in.
+- `$3B88` **ObjectBitmap** – Characters $71-$80: the hurdles and finish line are drawn here, then merged into ObjectChars.
 
 ---
 
@@ -310,6 +371,7 @@ Block `day_two`, from `original/day_two_unpacked_vice.prg`. Source `src/day_two.
 - `$0040` **WaggleSeen_day_two** – Bit 0: left seen, bit 1: right seen, since the last speed step.
 - `$0041` **InputBits** – Bit 7 fire, bit 3 right, bit 2 left (1 = pressed), from the joystick or the keys.
 - `$0042` **EventIndex** – 0-2: the event being run; indexes EventTableOffset and EventJumpTable_day_two.
+- `$0049` **RunUpMetres** – Metres to the line in BCD (30, 20, 30 by event), printed on row 23 and lowered by 10 every 120 runway cells.
 - `$004A` **LineDue** – Set when the run-up has scrolled 120 cells; ApproachLine then brings the line in.
 - `$004B` **LineInView** – Set by ApproachLine; from then on fire counts and the athlete runs on to the line.
 - `$004C` **AthleteX** – Athlete's position along the runway; DrawRunway and AdvanceAthlete use it; below $50 at the line is a foul ($2CA1).
@@ -355,7 +417,14 @@ Block `day_two`, from `original/day_two_unpacked_vice.prg`. Source `src/day_two.
 - `$0085` **FlightBottomFrame** – Bottom-half frame while InFlight.
 - `$0086` **InFlight** – Set by LongJump: frames come from FlightTopFrame/FlightBottomFrame and each scrolled cell runs AdvanceAthlete.
 - `$0087` **Every7Count** – Countdown for Every7Rising and Every7Falling.
+- `$0800` **ColourRam** – Colour RAM, $0800-$0BFF. At load it holds ADDS, which Entry_day_two copies to $0400.
+- `$0C00` **ScreenRam** – Screen RAM, $0C00-$0FFF.
+- `$10D8` **MarkerCharA** – Character $1B of the $1000 set: the runway marker's left half, rebuilt by ShiftRunwayMarker.
+- `$10E0` **MarkerCharB** – Character $1C: the marker's right half.
 - `$1350` **ShotChar** – Character $6A of the $1000 set: DrawShotBall clears it and redraws ShotBitmap at the shot's pixel row within the cell.
+- `$1518` **AthleteTopChars** – Characters $A3-$B4: the athlete's top half, copied from the current frame.
+- `$15A8` **AthleteBottomChars** – Characters $B5-$C6: the athlete's bottom half.
+- `$17F8` **FillChar** – Character $FF, filled with FillCharPattern for the event.
 - `$1800` **SoundVectors_day_two** – Jump table into the sound driver. TODO(name)
 - `$1803` **SilenceSound** – Jump to SoundSilence_day_two (vector at $1803).
 - `$1806` **PlayEventTune** – PlayTunePair_day_two with the tune at $1A43/$1AAF; called as an event is drawn.
@@ -365,6 +434,7 @@ Block `day_two`, from `original/day_two_unpacked_vice.prg`. Source `src/day_two.
 - `$1826` **SoundEffectB_day_two** – StartSoundEffect_day_two; called when AttemptResult is $FF, with ShowFailMessage.
 - `$182E` **PlayFootstep_day_two** – StartSoundEffect_day_two with a pitch byte from the BASIC ROM (self-modified pointer from $A063).
 - `$182F` **FootstepRomPtr_day_two** – Low byte of PlayFootstep_day_two's LDA $A063 operand, stepped each call.
+- `$1870` **FootstepFx_day_two** – PlayFootstep_day_two's 23-byte effect record; byte 12, its pitch, comes from the BASIC ROM.
 - `$1B77` **Fx1SweepLen_day_two** – Steps in each of the three pitch-sweep segments
 - `$1B78` **Fx1SweepLenB_day_two**
 - `$1B79` **Fx1SweepLenC_day_two**
@@ -475,6 +545,7 @@ Block `day_two`, from `original/day_two_unpacked_vice.prg`. Source `src/day_two.
 - `$23E5` **KeyColumns** – Column mask of each of the three keys.
 - `$23E8` **KeyRows** – Row select of each of the three keys.
 - `$23EB` **KeyBits** – InputBits bit for each key: left, right, fire.
+- `$2415` **RowOffsets** – $00, $28, $50, $78, $A0: five row offsets 40 apart, for DrawEventScreen.
 - `$241A` **EventTableOffset** – Offset of each event's entry in the distance tables: 0, 5, 10. The bytes after them, from $241D, are a routine nothing calls (see docs/quirks.md).
 - `$2437` **InitGame_day_two** – Clear zero page, silence the sound, set up, install the IRQ, go to $2584.
 - `$244B` **StartEvent_day_two** – Mark all three attempts not taken, draw the event, then run the attempts.
@@ -492,16 +563,23 @@ Block `day_two`, from `original/day_two_unpacked_vice.prg`. Source `src/day_two.
 - `$2772` **AngleDigits** – Two ASCII digits of the take-off angle, then AttemptDistance and Score_day_two: 13 digits drawn by DrawScoreLine.
 - `$2774` **AttemptDistance** – Five ASCII digits, metres to hundredths (shown 000:00).
 - `$2779` **Score_day_two** – Six ASCII digits; AddDistanceToScore adds the distance to it.
+- `$277F` **ScoreLineColumns** – Screen column of each digit DrawScoreLine prints.
 - `$278C` **DrawSpeedMeterFrame** – Characters $6C/$6D and colours from $27DF for the 9 meter cells on rows 23-24.
 - `$27A6` **DrawSpeedMeter_day_two** – Eight meter cells from RunSpeed_day_two: full cells for each 4, then the remainder.
 - `$27D1` **SetSpeedCell** – Set meter cell X to fill level A (0-3).
+- `$27DF` **MeterColours** – Colour of each speed-meter cell, $0C to $7C.
 - `$27E8` **DrawScoreLabels** – Print SCORE and SPEED and the fixed marks, then DrawScoreLine and the meter.
+- `$282C` **ScoreLabelText** – 'SCORE'.
+- `$2831` **SpeedLabelText** – 'SPEED'.
 - `$2836` **DrawAthlete_day_two** – Draw the athlete's 36 characters ($C6 down) at AthleteCol/AthleteRow, colour 8, using the cell offsets at $289C.
 - `$2854` **EraseAthlete_day_two** – Blank the athlete's 36 cells.
 - `$2868` **UpdateFigures** – Move the athlete if $60 is set, then draw the shot (event 1) or the javelin (event 2).
 - `$2881` **MoveAthlete_day_two** – Erase, take the new column/row from $5C/$5D, redraw if changed.
 - `$289C` **AthleteCellOffsets** – Screen offsets of the athlete's 36 cells: four 3x3 blocks.
 - `$28C0` **DrawEventScreen** – Draw the information box, its labels, ShowEventTables and the event's scenery.
+- `$2935` **WorldRecordText** – Information-box row 1, 35 bytes: 'WORLD RECORD - 000:00 METRES'.
+- `$2958` **QualifyingText** – Row 2: 'QUALIFYING LENGTH - 000:00 METRES'.
+- `$297B` **FoulsText** – Row 3: 'FOULS % % % BEST - 000:00 METRES'; the % are the attempt marks.
 - `$29BF` **PollInput_day_two** – ReadInput, then JoyWaggle_day_two while RunUpActive.
 - `$29C7` **JoyWaggle_day_two** – Record left and right in WaggleSeen_day_two; once both are seen, RunSpeed_day_two + 5 (+2 from $0C) and clear it.
 - `$2A0A` **SpeedUp_day_two** – RunSpeed_day_two + 1 up to $1F; also steps the athlete's animation.
@@ -511,13 +589,19 @@ Block `day_two`, from `original/day_two_unpacked_vice.prg`. Source `src/day_two.
 - `$2A6A` **BestTable** – Three 5-digit ASCII lengths shown as BEST; a better attempt is copied in by JudgeAttempt.
 - `$2A78` **HighScore** – Six ASCII digits; replaced by Score_day_two when that is higher.
 - `$2A7E` **ShowEventTables** – Print this event's world record, qualifying length and best at $0C68, $0C90, $0CB8.
+- `$2AF3` **HighText** – 'HIGH', shown with the high score.
 - `$2AF7` **TitleGlyphs** – Big-font titles as glyph numbers: a start column, then glyphs, $00 a space, $FF the end. LONG JUMP, SHOT PUT, JAVELIN, FIRE TO START.
 - `$2B24` **TitleOffsets** – Offset in TitleGlyphs of each title: 0, 11, 21, 30 (EventIndex + TitleMode).
 - `$2B28` **CycleTitleColours** – On the FIRE TO START screen, rotate the colours of the title rows.
 - `$2B96` **PulseTitleColour** – Step the luminance of row 1's colours through the table at $2BEB.
 - `$2BB4` **ColourTitleRows** – On the FIRE TO START screen, set the title rows' colours from $2BCB.
+- `$2BCB` **TitleColourRamp** – $02-$72: one colour at eight luminances, for the title rows.
+- `$2BEB` **TitleLumaSteps** – $00-$70: the eight luminance bits PulseTitleColour cycles.
 - `$2BFB` **DrawPieceList** – Draw a list of (screen address, character, ...) entries from Y:X until $FF.
 - `$2C2D` **InitAthlete_day_two** – Set the athlete's frames and position for EventIndex from the tables at $2C77.
+- `$2C74` **FillCharPattern** – Per event: the byte FillChar is filled with ($FF long jump, 0 others).
+- `$2C77` **RunUpLengths** – Per event: RunUpMetres at the start (BCD 30, 20, 30).
+- `$2C7A` **AthleteSetup** – Per event, 4 bytes: JavelinShown, ShotShown, the implement's column and its Y.
 - `$2C86` **ApproachLine** – When LineDue is set, set LineInView and AthleteX $9B; then, while the run-up scrolls, draw the runway at AthleteX, or set AttemptResult $FF once AthleteX is below $50.
 - `$2CAC` **DrawRunway** – Draw the athlete's position marker / runway cells on rows 22-23 for X (= $4C).
 - `$2D14` **ShiftRunwayMarker** – Copy characters $1B/$1C ($10D8, $10E0) from MarkerShapes for MarkerSubCell; the long jump uses the second set (+$40).
@@ -559,10 +643,14 @@ Block `day_two`, from `original/day_two_unpacked_vice.prg`. Source `src/day_two.
 - `$326E` **DistanceMasks** – DistanceRates + 1: each event's random mask.
 - `$326F` **DistanceBases** – DistanceRates + 2: each event's hundredths base.
 - `$3277` **AddDigit** – Add A to digit Y of AngleDigits' block with decimal carry to the left.
+- `$3294` **DigitTemp** – AddDigit's value being added.
 - `$3295` **JudgeAttempt** – AttemptResult 1 if the distance beats QualifyLengthTable, else $FF; copy it to BestTable if better; if qualified, compare it with WorldRecordTable.
 - `$32FF` **ShowFailMessage** – Print the 8-character message at $3310 at $0E42 (custom characters).
+- `$3310` **FailMessageChars** – Character codes of the failure message, drawn by ShowFailMessage.
 - `$3318` **FlashAttemptMessage** – Show the 10-character message at $334A at $0E3F, flash its colour 100 times, then erase it.
+- `$334A` **AttemptMessageChars** – Character codes FlashAttemptMessage draws.
 - `$3354` **AddDistanceToScore** – Add the distance's first four digits to Score_day_two (metres x 10 points), then copy the score to HighScore if higher.
 - `$3390` **AddScoreDigit** – Add the low nibble of A to digit Y (AddDigit).
 - `$3395` **SelectInputMode** – One key sets InputMode to joystick, another to keys; print KEY or JOY at $0F99.
 - `$33D5` **KeyJoyText** – 'KEY' and 'JOY', 3 bytes each, indexed by InputMode * 3.
+- `$34A0` **AthleteFrames_day_two** – The athlete's frames, 144 bytes each ($34A0-$3FDF), listed in TopFrameTable and BottomFrameTable.

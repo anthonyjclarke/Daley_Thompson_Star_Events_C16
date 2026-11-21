@@ -2,6 +2,22 @@
 
 ---
 
+## [0.9.1] 22-11-2026
+
+### Added
+
+- Names for every remaining data label: 60 in Day One, 27 in Day Two. Only branch targets inside named routines
+  stay `Lxxxx` (526).
+- `tools/disasm.py`: a block's `sizes` makes references inside a labelled area read `Name+offset`
+  (`RaceClock+2`, `ScreenRam+...`, `AthleteFrames_day_two+864`).
+- Quirk: nine Day One variables are written but never read.
+
+### Fixed
+
+- `DrawPackedScreen`'s comment: `$FD` moves to the row below the last `$FC` address, not to the next row.
+
+---
+
 ## [0.9.0] 22-11-2026
 
 ### Added

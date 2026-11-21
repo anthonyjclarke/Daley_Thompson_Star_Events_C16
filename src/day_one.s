@@ -33,10 +33,14 @@ TED_VLINE_LO    := $FF1D
 Entry_day_one:
         jmp     InitGame_day_one        ; 1010
 
-L1013:  .byte   $00,$00,$00             ; 1013
-L1016:  .byte   $00,$0C,$00             ; 1016
-L1019:  .byte   $00,$08,$00,$00,$00,$00,$00,$00; 1019
-        .byte   $00,$00,$00             ; 1021
+
+; --------------------------------------------------------------------------
+; 17 bytes after the entry JMP; the self-modified operands point into them in the image, but no code reads them.
+; --------------------------------------------------------------------------
+EntryPad:
+        .byte   $00,$00,$00,$00,$0C,$00,$00,$08; 1013
+        .byte   $00,$00,$00,$00,$00,$00,$00,$00; 101B
+        .byte   $00                     ; 1023
 
 ; --------------------------------------------------------------------------
 ; Load the byte at the packed-screen pointer (the LDA operand at $1025/$1026 is the pointer).
@@ -44,7 +48,7 @@ L1019:  .byte   $00,$08,$00,$00,$00,$00,$00,$00; 1019
 FetchPackedByte:
 PackedPtr       := * + 1
 PackedPtrHi     := * + 2
-        lda     L1013                   ; 1024
+        lda     EntryPad                ; 1024
         rts                             ; 1027
 
 L1028:  jsr     AdvancePackedPtr        ; 1028
@@ -62,11 +66,11 @@ L1028:  jsr     AdvancePackedPtr        ; 1028
 L104A:  jsr     FetchPackedByte         ; 104A
 RunScreenPtr    := * + 1
 RunScreenPtrHi  := * + 2
-        sta     L1016,y                 ; 104D
-        lda     L1117                   ; 1050
+        sta     EntryPad+3,y            ; 104D
+        lda     PackedColour            ; 1050
 RunColourPtr    := * + 1
 RunColourPtrHi  := * + 2
-        sta     L1019,y                 ; 1053
+        sta     EntryPad+6,y            ; 1053
         iny                             ; 1056
         bne     L1065                   ; 1057
         inc     RunScreenPtrHi          ; 1059
@@ -91,7 +95,8 @@ L1076:  rts                             ; 1076
 
 ; --------------------------------------------------------------------------
 ; Decode the packed screen at $3000 into screen $0C00 and colour $0800.
-; Codes: $FB run, $FC set address, $FD next row (+40), $FE set colour, $FF end; others are characters.
+; Codes: $FB run, $FC set address, $FD the row below the last $FC address, $FE set colour, $FF end;
+; others are characters.
 ; --------------------------------------------------------------------------
 DrawPackedScreen:
         ldy     #$00                    ; 1077
@@ -115,11 +120,11 @@ L1085:  jsr     FetchPackedByte         ; 1085
 L109E:
 ScreenPtr       := * + 1
 ScreenPtrHi     := * + 2
-        sta     L1016,y                 ; 109E
-        lda     L1117                   ; 10A1
+        sta     EntryPad+3,y            ; 109E
+        lda     PackedColour            ; 10A1
 ColourPtr       := * + 1
 ColourPtrHi     := * + 2
-        sta     L1019,y                 ; 10A4
+        sta     EntryPad+6,y            ; 10A4
         iny                             ; 10A7
         bne     L10F4                   ; 10A8
         inc     ScreenPtrHi             ; 10AA
@@ -131,7 +136,7 @@ L10B3:  inc     PackedPtr               ; 10B3
         inc     PackedPtrHi             ; 10B8
 L10BB:  jsr     FetchPackedByte         ; 10BB
         sta     ScreenPtr               ; 10BE
-        sta     L1116                   ; 10C1
+        sta     PackedRowLo             ; 10C1
         sta     ColourPtr               ; 10C4
         inc     PackedPtr               ; 10C7
         bne     L10CF                   ; 10CA
@@ -151,13 +156,13 @@ L10E6:  inc     PackedPtr               ; 10E6
         bne     L10EE                   ; 10E9
         inc     PackedPtrHi             ; 10EB
 L10EE:  jsr     FetchPackedByte         ; 10EE
-        sta     L1117                   ; 10F1
+        sta     PackedColour            ; 10F1
 L10F4:  inc     PackedPtr               ; 10F4
         bne     L10FC                   ; 10F7
         inc     PackedPtrHi             ; 10F9
 L10FC:  jmp     L1085                   ; 10FC
 
-L10FF:  lda     L1116                   ; 10FF
+L10FF:  lda     PackedRowLo             ; 10FF
         clc                             ; 1102
         adc     #$28                    ; 1103
         sta     ScreenPtr               ; 1105
@@ -167,8 +172,18 @@ L10FF:  lda     L1116                   ; 10FF
         inc     ColourPtrHi             ; 1110
 L1113:  jmp     L10F4                   ; 1113
 
-L1116:  .byte   $00                     ; 1116
-L1117:  .byte   $00,$00,$7C,$6C,$5C,$4C,$3C,$2C; 1117
+
+; --------------------------------------------------------------------------
+; Low byte of the last $FC address; $FD sets the screen pointers to the row below it.
+; --------------------------------------------------------------------------
+PackedRowLo:
+        .byte   $00                     ; 1116
+
+; --------------------------------------------------------------------------
+; Colour for the next characters, set by the $FE code.
+; --------------------------------------------------------------------------
+PackedColour:
+        .byte   $00,$00,$7C,$6C,$5C,$4C,$3C,$2C; 1117
         .byte   $1C,$0C                 ; 111F
 
 ; --------------------------------------------------------------------------
@@ -176,7 +191,12 @@ L1117:  .byte   $00,$00,$7C,$6C,$5C,$4C,$3C,$2C; 1117
 ; --------------------------------------------------------------------------
 EventNumber:
         .byte   $00                     ; 1121
-L1122:  .byte   $00                     ; 1122
+
+; --------------------------------------------------------------------------
+; Cleared by StartEvent_day_one; nothing reads it.
+; --------------------------------------------------------------------------
+EventSpare:
+        .byte   $00                     ; 1122
 
 ; --------------------------------------------------------------------------
 ; Four 10-byte fields: ' 100', ' 400', ' 110', ' 200' (indexed 0, 10, 20, 30).
@@ -209,20 +229,29 @@ GameOverText:
 ; Set to 3; one glyph each at $0CF1. One is lost when an event ends unqualified; 0 ends the game.
 ; --------------------------------------------------------------------------
 Lives:  .byte   $00                     ; 117C
-L117D:  .byte   $00                     ; 117D
+
+; --------------------------------------------------------------------------
+; Where AddScore's carry out of the top digit lands (ScorePending - 1).
+; --------------------------------------------------------------------------
+ScoreCarryOut:
+        .byte   $00                     ; 117D
 
 ; --------------------------------------------------------------------------
 ; Six decimal digits (0-9, most significant first) waiting to be added by AddScore.
 ; --------------------------------------------------------------------------
 ScorePending:
-        .byte   $00,$00,$00,$00,$00     ; 117E
-L1183:  .byte   $00                     ; 1183
+        .byte   $00,$00,$00,$00,$00,$00 ; 117E
 
 ; --------------------------------------------------------------------------
 ; Six decimal digits (0-9, most significant first), shown at $0C30 by AddScore.
 ; --------------------------------------------------------------------------
 Score:  .byte   $00,$00,$00,$00,$00,$00 ; 1184
-L118A:  .byte   $00,$00,$00,$00,$00,$00,$EA; 118A
+
+; --------------------------------------------------------------------------
+; Six bytes after Score, cleared with ScorePending each event; nothing reads them.
+; --------------------------------------------------------------------------
+ScoreSpare:
+        .byte   $00,$00,$00,$00,$00,$00,$EA; 118A
 
 ; --------------------------------------------------------------------------
 ; Print GAME OVER, play a tune, wait for fire.
@@ -256,7 +285,7 @@ L11B3:  lda     TED_VLINE_LO            ; 11B3
         lda     #$40                    ; 11CB
         sta     RunSpeed                ; 11CD
         lda     #$00                    ; 11D0
-        sta     L1CB7                   ; 11D2
+        sta     AthleteHalf             ; 11D2
         sta     FinishLineShown         ; 11D5
         jsr     EraseAthlete            ; 11D8
         jsr     DrawAthlete             ; 11DB
@@ -267,27 +296,32 @@ L11B3:  lda     TED_VLINE_LO            ; 11B3
 
 L11E9:  jmp     InitGame_day_one        ; 11E9
 
-L11EC:  .byte   $00                     ; 11EC
+
+; --------------------------------------------------------------------------
+; AwardTimeBonus's count of 6-point additions.
+; --------------------------------------------------------------------------
+BonusCount:
+        .byte   $00                     ; 11EC
 
 ; --------------------------------------------------------------------------
 ; Add 6 points to the score 255 - (sum of three of the time's ASCII digits) times.
 ; --------------------------------------------------------------------------
 AwardTimeBonus:
-        lda     L21DA                   ; 11ED
+        lda     TimeToJudge+1           ; 11ED
         clc                             ; 11F0
-        adc     L21DB                   ; 11F1
+        adc     TimeToJudge+2           ; 11F1
         clc                             ; 11F4
-        adc     L21DD                   ; 11F5
-        sta     L11EC                   ; 11F8
+        adc     TimeToJudge+4           ; 11F5
+        sta     BonusCount              ; 11F8
         lda     #$FF                    ; 11FB
         sec                             ; 11FD
-        sbc     L11EC                   ; 11FE
+        sbc     BonusCount              ; 11FE
         bcc     L1213                   ; 1201
-        sta     L11EC                   ; 1203
+        sta     BonusCount              ; 1203
 L1206:  lda     #$06                    ; 1206
-        sta     L1183                   ; 1208
+        sta     ScorePending+5          ; 1208
         jsr     AddScore                ; 120B
-        dec     L11EC                   ; 120E
+        dec     BonusCount              ; 120E
         bne     L1206                   ; 1211
 L1213:  rts                             ; 1213
 
@@ -304,7 +338,7 @@ L1216:  lda     ScorePending,x          ; 1216
         bcc     L1227                   ; 121F
         sec                             ; 1221
         sbc     #$0A                    ; 1222
-        inc     L117D,x                 ; 1224
+        inc     ScoreCarryOut,x         ; 1224
 L1227:  sta     Score,x                 ; 1227
         clc                             ; 122A
         adc     #$30                    ; 122B
@@ -327,7 +361,7 @@ InitGame_day_one:
         ldy     #$05                    ; 1241
 L1243:  sta     ScorePending,y          ; 1243
         sta     Score,y                 ; 1246
-        sta     L118A,y                 ; 1249
+        sta     ScoreSpare,y            ; 1249
         dey                             ; 124C
         bpl     L1243                   ; 124D
         sta     RunSpeed                ; 124F
@@ -348,15 +382,15 @@ StartEvent_day_one:
         lda     #$00                    ; 1269
         sta     TED_BORDER              ; 126B
         lda     #$06                    ; 126E
-        sta     L156B                   ; 1270
+        sta     FootstepTimer           ; 1270
         lda     #$40                    ; 1273
         sta     RunSpeed                ; 1275
         lda     #$00                    ; 1278
-        sta     L1122                   ; 127A
-        sta     L156D                   ; 127D
+        sta     EventSpare              ; 127A
+        sta     RunCycleBack            ; 127D
         sta     HurdleState             ; 1280
         sta     FinishLineShown         ; 1283
-        sta     L176F                   ; 1286
+        sta     RaceMoved               ; 1286
         lda     #$90                    ; 1289
         sta     AthleteTopFrame         ; 128B
         lda     #$A2                    ; 128E
@@ -369,7 +403,7 @@ L1296:  lda     #$12                    ; 1296
         lda     #$00                    ; 129E
         ldy     #$05                    ; 12A0
 L12A2:  sta     ScorePending,y          ; 12A2
-        sta     L118A,y                 ; 12A5
+        sta     ScoreSpare,y            ; 12A5
         dey                             ; 12A8
         bpl     L12A2                   ; 12A9
         jsr     MoveTrackMarks          ; 12AB
@@ -438,9 +472,9 @@ L1306:  sta     $0CF6,y                 ; 1306
         lda     #$19                    ; 1339
         sta     TED_BG2                 ; 133B
         lda     #$08                    ; 133E
-        sta     L17FB                   ; 1340
+        sta     RotateCount             ; 1340
         lda     #$88                    ; 1343
-        sta     L17FC                   ; 1345
+        sta     RotateEnd               ; 1345
         lda     #$30                    ; 1348
         sta     $0FD0                   ; 134A
         sta     $0FD1                   ; 134D
@@ -450,17 +484,17 @@ L1306:  sta     $0CF6,y                 ; 1306
         lda     #$30                    ; 1358
 L135A:  sta     $0C2F,x                 ; 135A
         sta     RaceClock,x             ; 135D
-        sta     L1836,x                 ; 1360
+        sta     RaceClock+2,x           ; 1360
         inx                             ; 1363
         cpx     #$06                    ; 1364
         bne     L135A                   ; 1366
         lda     #$27                    ; 1368
         sta     TrackMarkColumn         ; 136A
         lda     #$13                    ; 136D
-        sta     L1771                   ; 136F
+        sta     TrackMarkColumn+1       ; 136F
         lda     #$3B                    ; 1372
         sta     TrackMarkChar           ; 1374
-        sta     L1773                   ; 1377
+        sta     TrackMarkChar+1         ; 1377
         jsr     InstallIrq_day_one      ; 137A
         cli                             ; 137D
         jsr     ShowQualifyTime         ; 137E
@@ -471,7 +505,7 @@ L135A:  sta     $0C2F,x                 ; 135A
         jsr     ShowRecords             ; 138D
         jsr     AddScore                ; 1390
         lda     #$01                    ; 1393
-        sta     L14DC                   ; 1395
+        sta     EventActive             ; 1395
         jsr     StartCountdown          ; 1398
 
 ; --------------------------------------------------------------------------
@@ -495,22 +529,22 @@ L13BE:  lda     TED_VLINE_LO            ; 13BE
         cmp     #$A8                    ; 13C1
         bne     L13BE                   ; 13C3
         lda     #$00                    ; 13C5
-        sta     L1CB7                   ; 13C7
+        sta     AthleteHalf             ; 13C7
         jsr     EraseAthlete            ; 13CA
         jsr     DrawAthlete             ; 13CD
         lda     Lives                   ; 13D0
         bne     L13D8                   ; 13D3
         jmp     ShowGameOver            ; 13D5
 
-L13D8:  lda     L156C                   ; 13D8
+L13D8:  lda     FrameStepped            ; 13D8
         beq     L13F2                   ; 13DB
         lda     #$00                    ; 13DD
-        sta     L156C                   ; 13DF
-        dec     L156B                   ; 13E2
-        lda     L156B                   ; 13E5
+        sta     FrameStepped            ; 13DF
+        dec     FootstepTimer           ; 13E2
+        lda     FootstepTimer           ; 13E5
         bne     L13F2                   ; 13E8
         lda     #$06                    ; 13EA
-        sta     L156B                   ; 13EC
+        sta     FootstepTimer           ; 13EC
         jsr     PlayFootstep            ; 13EF
 L13F2:  lda     EventNumber             ; 13F2
         cmp     #$01                    ; 13F5
@@ -635,7 +669,12 @@ Jumping:.byte   $00                     ; 14DA
 ; --------------------------------------------------------------------------
 JumpTimer:
         .byte   $00                     ; 14DB
-L14DC:  .byte   $00                     ; 14DC
+
+; --------------------------------------------------------------------------
+; 1 from before the start countdown until CheckEventEnd; with RaceRunning it gates the clock and the distance.
+; --------------------------------------------------------------------------
+EventActive:
+        .byte   $00                     ; 14DC
 
 ; --------------------------------------------------------------------------
 ; Every 4 calls, move the athlete to the next running frame (36 bytes on), or through the
@@ -648,13 +687,13 @@ StepAthleteFrame:
         lda     JumpTimer               ; 14E5
         beq     L14ED                   ; 14E8
         dec     JumpTimer               ; 14EA
-L14ED:  lda     L1B6D                   ; 14ED
+L14ED:  lda     FrameStepLock           ; 14ED
         bne     L1538                   ; 14F0
         lda     #$01                    ; 14F2
-        sta     L1B6D                   ; 14F4
+        sta     FrameStepLock           ; 14F4
         lda     Jumping                 ; 14F7
         bne     L1517                   ; 14FA
-        lda     L156D                   ; 14FC
+        lda     RunCycleBack            ; 14FC
         bne     L1539                   ; 14FF
         lda     AthleteBottomFrame      ; 1501
         clc                             ; 1504
@@ -671,12 +710,12 @@ L1517:  lda     #$B4                    ; 1517
         lda     #$12                    ; 151C
         sta     AthleteBottomFrame      ; 151E
         lda     #$01                    ; 1521
-        sta     L156D                   ; 1523
+        sta     RunCycleBack            ; 1523
 L1526:  lda     #$00                    ; 1526
         sta     Jumping                 ; 1528
         lda     #$01                    ; 152B
-        sta     L169E                   ; 152D
-        sta     L156C                   ; 1530
+        sta     FrameStepSeen           ; 152D
+        sta     FrameStepped            ; 1530
         lda     #$04                    ; 1533
         sta     AnimTimer               ; 1535
 L1538:  rts                             ; 1538
@@ -695,7 +734,7 @@ L1539:  lda     AthleteBottomFrame      ; 1539
         lda     #$12                    ; 1552
         sta     AthleteBottomFrame      ; 1554
         lda     #$00                    ; 1557
-        sta     L156D                   ; 1559
+        sta     RunCycleBack            ; 1559
         jmp     L1526                   ; 155C
 
         .byte   $00,$38                 ; 155F
@@ -709,9 +748,24 @@ ScrollStep:
         jsr     AdvanceDistance         ; 1567
         rts                             ; 156A
 
-L156B:  .byte   $00                     ; 156B
-L156C:  .byte   $00                     ; 156C
-L156D:  .byte   $00                     ; 156D
+
+; --------------------------------------------------------------------------
+; Counts athlete frames down from 6; PlayFootstep at 0.
+; --------------------------------------------------------------------------
+FootstepTimer:
+        .byte   $00                     ; 156B
+
+; --------------------------------------------------------------------------
+; Set by StepAthleteFrame; the main loop clears it and counts FootstepTimer.
+; --------------------------------------------------------------------------
+FrameStepped:
+        .byte   $00                     ; 156C
+
+; --------------------------------------------------------------------------
+; 1 while the run cycle steps back through the frames (top frame - $24 each step).
+; --------------------------------------------------------------------------
+RunCycleBack:
+        .byte   $00                     ; 156D
 
 ; --------------------------------------------------------------------------
 ; Point the KERNAL IRQ vector ($0314) at IrqHandler_day_one; raster IRQ only.
@@ -793,7 +847,7 @@ Split01_day_one:
         sta     TED_BG2                 ; 15DA
         lda     RaceRunning             ; 15DD
         beq     L15EA                   ; 15E0
-        lda     L14DC                   ; 15E2
+        lda     EventActive             ; 15E2
         beq     L15EA                   ; 15E5
         jsr     TickRaceClock           ; 15E7
 L15EA:  rts                             ; 15EA
@@ -954,7 +1008,12 @@ L169C:  rts                             ; 169C
 ; --------------------------------------------------------------------------
 RaceRunning:
         .byte   $00                     ; 169D
-L169E:  .byte   $00                     ; 169E
+
+; --------------------------------------------------------------------------
+; Set to 1 by StepAthleteFrame; nothing reads it.
+; --------------------------------------------------------------------------
+FrameStepSeen:
+        .byte   $00                     ; 169E
 
 ; --------------------------------------------------------------------------
 ; Fill the meter template at $16C2 with character $21 and end mark $25, then ClearSpeedMeter.
@@ -962,12 +1021,12 @@ L169E:  .byte   $00                     ; 169E
 ResetSpeedMeter:
         ldx     #$00                    ; 169F
         lda     #$21                    ; 16A1
-L16A3:  sta     L16C2,x                 ; 16A3
+L16A3:  sta     MeterTemplate,x         ; 16A3
         inx                             ; 16A6
         cpx     #$08                    ; 16A7
         bne     L16A3                   ; 16A9
         lda     #$25                    ; 16AB
-        sta     L16C2,x                 ; 16AD
+        sta     MeterTemplate,x         ; 16AD
         jsr     ClearSpeedMeter         ; 16B0
         rts                             ; 16B3
 
@@ -977,14 +1036,19 @@ L16A3:  sta     L16C2,x                 ; 16A3
 ; --------------------------------------------------------------------------
 ClearSpeedMeter:
         ldx     #$00                    ; 16B4
-L16B6:  lda     L16C2,x                 ; 16B6
+L16B6:  lda     MeterTemplate,x         ; 16B6
         sta     $0FC6,x                 ; 16B9
         inx                             ; 16BC
         cpx     #$08                    ; 16BD
         bne     L16B6                   ; 16BF
         rts                             ; 16C1
 
-L16C2:  .byte   $21,$21,$21,$21,$21,$21,$21,$21; 16C2
+
+; --------------------------------------------------------------------------
+; The 8 speed-meter characters copied by ClearSpeedMeter.
+; --------------------------------------------------------------------------
+MeterTemplate:
+        .byte   $21,$21,$21,$21,$21,$21,$21,$21; 16C2
         .byte   $25                     ; 16CA
 
 ; --------------------------------------------------------------------------
@@ -999,7 +1063,7 @@ DrawSpeedMeter:
         cpx     #$00                    ; 16D3
         beq     L16F8                   ; 16D5
 L16D7:  lda     #$21                    ; 16D7
-        sta     L19BD                   ; 16D9
+        sta     ScratchA                ; 16D9
 L16DC:  cpx     #$03                    ; 16DC
         bcc     L16E2                   ; 16DE
         lda     #$24                    ; 16E0
@@ -1007,8 +1071,8 @@ L16E2:  sta     $0FC6,y                 ; 16E2
         dex                             ; 16E5
         cpx     #$00                    ; 16E6
         beq     L16F8                   ; 16E8
-        inc     L19BD                   ; 16EA
-        lda     L19BD                   ; 16ED
+        inc     ScratchA                ; 16EA
+        lda     ScratchA                ; 16ED
         cmp     #$25                    ; 16F0
         bne     L16DC                   ; 16F2
         iny                             ; 16F4
@@ -1068,21 +1132,24 @@ L1769:  inx                             ; 1769
         bne     L172B                   ; 176C
         rts                             ; 176E
 
-L176F:  .byte   $00                     ; 176F
+
+; --------------------------------------------------------------------------
+; Set by MoveRace each frame; ScrollTrackObjects clears it.
+; --------------------------------------------------------------------------
+RaceMoved:
+        .byte   $00                     ; 176F
 
 ; --------------------------------------------------------------------------
 ; Column of each of the two track marks.
 ; --------------------------------------------------------------------------
 TrackMarkColumn:
-        .byte   $27                     ; 1770
-L1771:  .byte   $13                     ; 1771
+        .byte   $27,$13                 ; 1770
 
 ; --------------------------------------------------------------------------
 ; Character ($3B-$3F) of each of the two track marks.
 ; --------------------------------------------------------------------------
 TrackMarkChar:
-        .byte   $3B                     ; 1772
-L1773:  .byte   $3B                     ; 1773
+        .byte   $3B,$3B                 ; 1772
 
 ; --------------------------------------------------------------------------
 ; Rotate the scenery characters one pixel left: two passes over rows 0-7, two over rows $38-$3F.
@@ -1090,19 +1157,19 @@ L1773:  .byte   $3B                     ; 1773
 ScrollScenery:
         ldx     #$00                    ; 1774
         lda     #$08                    ; 1776
-        sta     L17FC                   ; 1778
+        sta     RotateEnd               ; 1778
         jsr     RotateCharsLeft         ; 177B
         ldx     #$00                    ; 177E
         lda     #$08                    ; 1780
-        sta     L17FC                   ; 1782
+        sta     RotateEnd               ; 1782
         jsr     RotateCharsLeft         ; 1785
         ldx     #$38                    ; 1788
         lda     #$40                    ; 178A
-        sta     L17FC                   ; 178C
+        sta     RotateEnd               ; 178C
         jsr     RotateCharsLeft         ; 178F
         ldx     #$38                    ; 1792
         lda     #$40                    ; 1794
-        sta     L17FC                   ; 1796
+        sta     RotateEnd               ; 1796
         jsr     RotateCharsLeft         ; 1799
         rts                             ; 179C
 
@@ -1112,21 +1179,21 @@ ScrollScenery:
 ; rows X to $17FC - 1.
 ; --------------------------------------------------------------------------
 RotateCharsLeft:
-        asl     L3A28,x                 ; 179D
-        rol     L3A20,x                 ; 17A0
-        rol     L3A18,x                 ; 17A3
-        rol     L3A10,x                 ; 17A6
-        rol     L3A08,x                 ; 17A9
-        rol     L3A00,x                 ; 17AC
-        rol     L39F8,x                 ; 17AF
+        asl     SceneryChars+48,x       ; 179D
+        rol     SceneryChars+40,x       ; 17A0
+        rol     SceneryChars+32,x       ; 17A3
+        rol     SceneryChars+24,x       ; 17A6
+        rol     SceneryChars+16,x       ; 17A9
+        rol     SceneryChars+8,x        ; 17AC
+        rol     SceneryChars,x          ; 17AF
         bcc     L17BC                   ; 17B2
-        lda     L3A28,x                 ; 17B4
+        lda     SceneryChars+48,x       ; 17B4
         ora     #$01                    ; 17B7
-        sta     L3A28,x                 ; 17B9
+        sta     SceneryChars+48,x       ; 17B9
 L17BC:  inx                             ; 17BC
-        cpx     L17FC                   ; 17BD
+        cpx     RotateEnd               ; 17BD
         bne     RotateCharsLeft         ; 17C0
-        dec     L17FB                   ; 17C2
+        dec     RotateCount             ; 17C2
         rts                             ; 17C5
 
 
@@ -1135,30 +1202,40 @@ L17BC:  inx                             ; 17BC
 ; --------------------------------------------------------------------------
 DrawSceneryRows:
         lda     #$3F                    ; 17C6
-        sta     L19BD                   ; 17C8
+        sta     ScratchA                ; 17C8
         lda     #$46                    ; 17CB
-        sta     L1A0B                   ; 17CD
+        sta     ScratchB                ; 17CD
         ldx     #$00                    ; 17D0
-L17D2:  lda     L19BD                   ; 17D2
+L17D2:  lda     ScratchA                ; 17D2
         sta     $0DE0,x                 ; 17D5
-        lda     L1A0B                   ; 17D8
+        lda     ScratchB                ; 17D8
         sta     $0E08,x                 ; 17DB
-        inc     L19BD                   ; 17DE
-        inc     L1A0B                   ; 17E1
-        lda     L19BD                   ; 17E4
+        inc     ScratchA                ; 17DE
+        inc     ScratchB                ; 17E1
+        lda     ScratchA                ; 17E4
         cmp     #$46                    ; 17E7
         bne     L17F5                   ; 17E9
         lda     #$3F                    ; 17EB
-        sta     L19BD                   ; 17ED
+        sta     ScratchA                ; 17ED
         lda     #$46                    ; 17F0
-        sta     L1A0B                   ; 17F2
+        sta     ScratchB                ; 17F2
 L17F5:  inx                             ; 17F5
         cpx     #$28                    ; 17F6
         bne     L17D2                   ; 17F8
         rts                             ; 17FA
 
-L17FB:  .byte   $08                     ; 17FB
-L17FC:  .byte   $88,$07,$0E             ; 17FC
+
+; --------------------------------------------------------------------------
+; Decremented by RotateCharsLeft and reset to 8 each event; nothing tests it.
+; --------------------------------------------------------------------------
+RotateCount:
+        .byte   $08                     ; 17FB
+
+; --------------------------------------------------------------------------
+; RotateCharsLeft's end row (X stops here).
+; --------------------------------------------------------------------------
+RotateEnd:
+        .byte   $88,$07,$0E             ; 17FC
 
 ; --------------------------------------------------------------------------
 ; While racing, every 4 calls add 1 to the four-digit distance at $0FD0 (ASCII on screen).
@@ -1166,12 +1243,12 @@ L17FC:  .byte   $88,$07,$0E             ; 17FC
 AdvanceDistance:
         lda     RaceRunning             ; 17FF
         beq     L181F                   ; 1802
-        lda     L14DC                   ; 1804
+        lda     EventActive             ; 1804
         beq     L181F                   ; 1807
-        dec     L182D                   ; 1809
+        dec     DistanceTimer           ; 1809
         bne     L181F                   ; 180C
         lda     #$04                    ; 180E
-        sta     L182D                   ; 1810
+        sta     DistanceTimer           ; 1810
         ldx     #$03                    ; 1813
 L1815:  lda     $0FD0,x                 ; 1815
         cmp     #$39                    ; 1818
@@ -1186,18 +1263,20 @@ L1820:  lda     #$30                    ; 1820
         beq     L181F                   ; 1828
         jmp     L1815                   ; 182A
 
-L182D:  .byte   $04,$00,$00,$00,$00,$00,$00; 182D
+
+; --------------------------------------------------------------------------
+; Counts 4 calls of AdvanceDistance per metre.
+; --------------------------------------------------------------------------
+DistanceTimer:
+        .byte   $04,$00,$00,$00,$00,$00,$00; 182D
 
 ; --------------------------------------------------------------------------
 ; Five ASCII digits, least significant first ($1834 counts 0-5, the others 0-9).
 ; Shown most significant first at $0FDD-$0FE2 by TickRaceClock.
 ; --------------------------------------------------------------------------
 RaceClock:
-        .byte   $30                     ; 1834
-L1835:  .byte   $30                     ; 1835
-L1836:  .byte   $30                     ; 1836
-L1837:  .byte   $30                     ; 1837
-L1838:  .byte   $30,$00,$00,$00,$00,$A2,$00; 1838
+        .byte   $30,$30,$30,$30,$30,$00,$00,$00; 1834
+        .byte   $00,$A2,$00             ; 183C
 
 ; --------------------------------------------------------------------------
 ; Step RaceClock and print it; called from the split at $15C6 while RaceRunning is set.
@@ -1211,40 +1290,40 @@ TickRaceClock:
 
 L184C:  lda     #$30                    ; 184C
         sta     RaceClock               ; 184E
-        lda     L1835                   ; 1851
+        lda     RaceClock+1             ; 1851
         cmp     #$39                    ; 1854
         bcs     L185E                   ; 1856
-        inc     L1835                   ; 1858
+        inc     RaceClock+1             ; 1858
         jmp     L187F                   ; 185B
 
 L185E:  lda     #$30                    ; 185E
-        sta     L1835                   ; 1860
+        sta     RaceClock+1             ; 1860
         ldx     #$00                    ; 1863
-L1865:  lda     L1836,x                 ; 1865
+L1865:  lda     RaceClock+2,x           ; 1865
         cmp     #$39                    ; 1868
         bcs     L1872                   ; 186A
-        inc     L1836,x                 ; 186C
+        inc     RaceClock+2,x           ; 186C
         jmp     L187F                   ; 186F
 
 L1872:  lda     #$30                    ; 1872
-        sta     L1836,x                 ; 1874
+        sta     RaceClock+2,x           ; 1874
         cpx     #$02                    ; 1877
         bcs     L187F                   ; 1879
         inx                             ; 187B
         jmp     L1865                   ; 187C
 
-L187F:  lda     L1838                   ; 187F
+L187F:  lda     RaceClock+4             ; 187F
         cmp     #$39                    ; 1882
         bcs     L18A5                   ; 1884
         lda     RaceClock               ; 1886
         sta     $0FE2                   ; 1889
-        lda     L1835                   ; 188C
+        lda     RaceClock+1             ; 188C
         sta     $0FE1                   ; 188F
-        lda     L1836                   ; 1892
+        lda     RaceClock+2             ; 1892
         sta     $0FDF                   ; 1895
-        lda     L1837                   ; 1898
+        lda     RaceClock+3             ; 1898
         sta     $0FDE                   ; 189B
-        lda     L1838                   ; 189E
+        lda     RaceClock+4             ; 189E
         sta     $0FDD                   ; 18A1
         rts                             ; 18A4
 
@@ -1305,8 +1384,18 @@ RecordTimes:
         .byte   $32,$30,$3A,$30,$38,$00,$30,$33; 1917
         .byte   $35,$3A,$35,$30,$00,$30,$33,$37; 191F
         .byte   $3A,$30,$30,$00         ; 1927
-L192B:  .byte   $00                     ; 192B
-L192C:  .byte   $00                     ; 192C
+
+; --------------------------------------------------------------------------
+; ShowRecords' end index in RecordTimes.
+; --------------------------------------------------------------------------
+RecordEnd:
+        .byte   $00                     ; 192B
+
+; --------------------------------------------------------------------------
+; ShowRecords' start index in RecordTimes.
+; --------------------------------------------------------------------------
+RecordStart:
+        .byte   $00                     ; 192C
 
 ; --------------------------------------------------------------------------
 ; Print the event's three RecordTimes in the RECORDS box at $0CBF.
@@ -1336,10 +1425,10 @@ L1952:  lda     #$3F                    ; 1952
         jmp     L1957                   ; 1954
 
 L1957:  tay                             ; 1957
-        sta     L192C                   ; 1958
+        sta     RecordStart             ; 1958
         clc                             ; 195B
         adc     #$15                    ; 195C
-        sta     L192B                   ; 195E
+        sta     RecordEnd               ; 195E
         ldx     #$00                    ; 1961
 L1963:  lda     RecordTimes,y           ; 1963
         bne     L1976                   ; 1966
@@ -1348,7 +1437,7 @@ L1963:  lda     RecordTimes,y           ; 1963
         adc     #$22                    ; 196A
         tax                             ; 196C
         iny                             ; 196D
-        cpy     L192B                   ; 196E
+        cpy     RecordEnd               ; 196E
         beq     L1985                   ; 1971
         lda     RecordTimes,y           ; 1973
 L1976:  sta     $0CBF,x                 ; 1976
@@ -1356,7 +1445,7 @@ L1976:  sta     $0CBF,x                 ; 1976
         sta     $08BF,x                 ; 197B
         inx                             ; 197E
         iny                             ; 197F
-        cpy     L192B                   ; 1980
+        cpy     RecordEnd               ; 1980
         bcc     L1963                   ; 1983
 L1985:  rts                             ; 1985
 
@@ -1383,37 +1472,47 @@ L1995:  rts                             ; 1995
 ; Every 6 calls (3 once RunSpeed >= $60), RunSpeed - 1 down to 0, then redraw the meter.
 ; --------------------------------------------------------------------------
 SpeedDecay:
-        lda     L19BC                   ; 1996
+        lda     DecayTimer              ; 1996
         bne     L19B8                   ; 1999
         lda     #$06                    ; 199B
-        sta     L19BC                   ; 199D
+        sta     DecayTimer              ; 199D
         lda     RunSpeed                ; 19A0
         cmp     #$60                    ; 19A3
         bcc     L19AC                   ; 19A5
         lda     #$03                    ; 19A7
-        sta     L19BC                   ; 19A9
+        sta     DecayTimer              ; 19A9
 L19AC:  lda     RunSpeed                ; 19AC
         beq     L19B7                   ; 19AF
         dec     RunSpeed                ; 19B1
         jsr     DrawSpeedMeter          ; 19B4
 L19B7:  rts                             ; 19B7
 
-L19B8:  dec     L19BC                   ; 19B8
+L19B8:  dec     DecayTimer              ; 19B8
         rts                             ; 19BB
 
-L19BC:  .byte   $02                     ; 19BC
-L19BD:  .byte   $00                     ; 19BD
+
+; --------------------------------------------------------------------------
+; Frames to the next SpeedDecay step (6, or 3 at RunSpeed $60 and above).
+; --------------------------------------------------------------------------
+DecayTimer:
+        .byte   $02                     ; 19BC
+
+; --------------------------------------------------------------------------
+; Scratch: the character code in DrawSpeedMeter and DrawSceneryRows (row 12).
+; --------------------------------------------------------------------------
+ScratchA:
+        .byte   $00                     ; 19BD
 
 ; --------------------------------------------------------------------------
 ; Record left and right in WaggleSeen; once both are seen, RunSpeed + 5 (+2 from $40) and clear it.
 ; --------------------------------------------------------------------------
 JoyWaggle:
         eor     #$FF                    ; 19BE
-        sta     L1A0B                   ; 19C0
+        sta     ScratchB                ; 19C0
         and     #$0C                    ; 19C3
         cmp     #$0C                    ; 19C5
         beq     L1A09                   ; 19C7
-        lda     L1A0B                   ; 19C9
+        lda     ScratchB                ; 19C9
         lsr     a                       ; 19CC
         lsr     a                       ; 19CD
         lsr     a                       ; 19CE
@@ -1449,7 +1548,12 @@ L1A09:  rts                             ; 1A09
 ; --------------------------------------------------------------------------
 WaggleSeen:
         .byte   $00                     ; 1A0A
-L1A0B:  .byte   $00                     ; 1A0B
+
+; --------------------------------------------------------------------------
+; Scratch: the inverted joystick in JoyWaggle, the row 13 character in DrawSceneryRows.
+; --------------------------------------------------------------------------
+ScratchB:
+        .byte   $00                     ; 1A0B
 
 ; --------------------------------------------------------------------------
 ; Show ON YOUR MARKS, GET SET and GO at $0E8E, waiting between them, then set RaceRunning.
@@ -1457,7 +1561,7 @@ L1A0B:  .byte   $00                     ; 1A0B
 StartCountdown:
         ldy     #$00                    ; 1A0C
         sty     RaceRunning             ; 1A0E
-        sty     L1A8A                   ; 1A11
+        sty     CountdownSpare          ; 1A11
 L1A14:  lda     OnYourMarksText,y       ; 1A14
         sta     $0E8E,y                 ; 1A17
         lda     #$71                    ; 1A1A
@@ -1537,7 +1641,12 @@ GoText: .byte   $07,$0F                 ; 1A87
 ; --------------------------------------------------------------------------
 DelayTicks:
         .byte   $00                     ; 1A89
-L1A8A:  .byte   $00                     ; 1A8A
+
+; --------------------------------------------------------------------------
+; Cleared by StartCountdown; nothing reads it.
+; --------------------------------------------------------------------------
+CountdownSpare:
+        .byte   $00                     ; 1A8A
 
 ; --------------------------------------------------------------------------
 ; End the event when the distance shown at $0FD1 reaches its length (with RunSpeed > 0),
@@ -1594,12 +1703,12 @@ L1AEA:  lda     DelayTicks              ; 1AEA
         bne     L1AEA                   ; 1AED
         jmp     StartEvent_day_one      ; 1AEF
 
-L1AF2:  lda     L1837                   ; 1AF2
+L1AF2:  lda     RaceClock+3             ; 1AF2
         cmp     #$37                    ; 1AF5
         bcc     L1B04                   ; 1AF7
         lda     #$00                    ; 1AF9
         sta     RaceRunning             ; 1AFB
-        sta     L14DC                   ; 1AFE
+        sta     EventActive             ; 1AFE
         jmp     L1AE0                   ; 1B01
 
 L1B04:  rts                             ; 1B04
@@ -1611,24 +1720,24 @@ L1B04:  rts                             ; 1B04
 ; --------------------------------------------------------------------------
 DrawAthlete:
         lda     #$03                    ; 1B05
-        sta     L1E55                   ; 1B07
+        sta     RowsLeft                ; 1B07
         ldy     #$00                    ; 1B0A
         lda     #$0E                    ; 1B0C
         sta     $07                     ; 1B0E
         lda     #$0A                    ; 1B10
         sta     $09                     ; 1B12
-        lda     L1CB7                   ; 1B14
+        lda     AthleteHalf             ; 1B14
         bne     L1B2A                   ; 1B17
         lda     #$5E                    ; 1B19
         sta     $06                     ; 1B1B
         sta     $08                     ; 1B1D
         lda     #$01                    ; 1B1F
-        sta     L1CB7                   ; 1B21
+        sta     AthleteHalf             ; 1B21
         ldx     AthleteTopFrame         ; 1B24
         jmp     L1B38                   ; 1B27
 
 L1B2A:  lda     #$00                    ; 1B2A
-        sta     L1CB7                   ; 1B2C
+        sta     AthleteHalf             ; 1B2C
         ldx     AthleteBottomFrame      ; 1B2F
         lda     #$D6                    ; 1B32
         sta     $06                     ; 1B34
@@ -1654,21 +1763,26 @@ L1B4E:  ldy     #$00                    ; 1B4E
         bcc     L1B5F                   ; 1B59
         inc     $07                     ; 1B5B
         inc     $09                     ; 1B5D
-L1B5F:  dec     L1E55                   ; 1B5F
-        lda     L1E55                   ; 1B62
+L1B5F:  dec     RowsLeft                ; 1B5F
+        lda     RowsLeft                ; 1B62
         bne     L1B38                   ; 1B65
-        lda     L1CB7                   ; 1B67
+        lda     AthleteHalf             ; 1B67
         bne     DrawAthlete             ; 1B6A
         rts                             ; 1B6C
 
-L1B6D:  .byte   $00                     ; 1B6D
+
+; --------------------------------------------------------------------------
+; Set when StepAthleteFrame steps; EraseAthlete clears it, so one step per redraw.
+; --------------------------------------------------------------------------
+FrameStepLock:
+        .byte   $00                     ; 1B6D
 
 ; --------------------------------------------------------------------------
 ; Blank the athlete's lower half where it still holds the frame's characters, and a few fixed cells.
 ; --------------------------------------------------------------------------
 EraseAthlete:
         lda     #$03                    ; 1B6E
-        sta     L1E55                   ; 1B70
+        sta     RowsLeft                ; 1B70
         ldy     #$00                    ; 1B73
         lda     #$0E                    ; 1B75
         sta     $07                     ; 1B77
@@ -1695,11 +1809,11 @@ L1B98:  ldy     #$00                    ; 1B98
         sta     $06                     ; 1B9F
         bcc     L1BA5                   ; 1BA1
         inc     $07                     ; 1BA3
-L1BA5:  dec     L1E55                   ; 1BA5
-        lda     L1E55                   ; 1BA8
+L1BA5:  dec     RowsLeft                ; 1BA5
+        lda     RowsLeft                ; 1BA8
         bne     L1B80                   ; 1BAB
         lda     #$00                    ; 1BAD
-        sta     L1B6D                   ; 1BAF
+        sta     FrameStepLock           ; 1BAF
         lda     #$20                    ; 1BB2
         sta     $0E62                   ; 1BB4
         sta     $0E86                   ; 1BB7
@@ -1718,7 +1832,7 @@ L1BA5:  dec     L1E55                   ; 1BA5
 ClearObjectChars:
         ldx     #$00                    ; 1BCD
         lda     #$00                    ; 1BCF
-L1BD1:  sta     L3B08,x                 ; 1BD1
+L1BD1:  sta     ObjectChars,x           ; 1BD1
         dex                             ; 1BD4
         bne     L1BD1                   ; 1BD5
         rts                             ; 1BD7
@@ -1731,11 +1845,11 @@ InitTrackObjects:
         lda     #$04                    ; 1BD8
         sta     AnimTimer               ; 1BDA
         lda     #$00                    ; 1BDD
-        sta     L1C9D                   ; 1BDF
+        sta     ObjectDrawn             ; 1BDF
         lda     #$03                    ; 1BE2
-        sta     L1C9C                   ; 1BE4
+        sta     ObjectRowsLeft          ; 1BE4
         lda     #$90                    ; 1BE7
-        sta     L1CA6                   ; 1BE9
+        sta     ObjectY                 ; 1BE9
         lda     #$F8                    ; 1BEC
         sta     ObjectX                 ; 1BEE
 
@@ -1744,13 +1858,13 @@ InitTrackObjects:
 ; into the object characters.
 ; --------------------------------------------------------------------------
 ScrollTrackObjects:
-        lda     L1C9D                   ; 1BF1
+        lda     ObjectDrawn             ; 1BF1
         beq     L1BF9                   ; 1BF4
         jsr     WriteObjectCells        ; 1BF6
-L1BF9:  lda     L176F                   ; 1BF9
+L1BF9:  lda     RaceMoved               ; 1BF9
         beq     L1C21                   ; 1BFC
         lda     #$00                    ; 1BFE
-        sta     L176F                   ; 1C00
+        sta     RaceMoved               ; 1C00
         lda     FinishLineShown         ; 1C03
         beq     L1C21                   ; 1C06
         lda     PlotX                   ; 1C08
@@ -1765,21 +1879,21 @@ L1BF9:  lda     L176F                   ; 1BF9
         lda     #$07                    ; 1C1C
         sta     PlotX                   ; 1C1E
 L1C21:  lda     #$03                    ; 1C21
-        sta     L1C9C                   ; 1C23
-        ldx     L1CAE                   ; 1C26
+        sta     ObjectRowsLeft          ; 1C23
+        ldx     ObjectIndex             ; 1C26
         lda     #$03                    ; 1C29
-        sta     L1C9C                   ; 1C2B
-        sta     L1C9D                   ; 1C2E
+        sta     ObjectRowsLeft          ; 1C2B
+        sta     ObjectDrawn             ; 1C2E
         clc                             ; 1C31
-        lda     L1CA6,x                 ; 1C32
+        lda     ObjectY,x               ; 1C32
         lsr     a                       ; 1C35
         lsr     a                       ; 1C36
         lsr     a                       ; 1C37
         tay                             ; 1C38
-        lda     L1E3B,y                 ; 1C39
+        lda     RowAddrLo,y             ; 1C39
         sta     $02                     ; 1C3C
         sta     $04                     ; 1C3E
-        lda     L1E21,y                 ; 1C40
+        lda     RowAddrHi,y             ; 1C40
         sta     $03                     ; 1C43
         clc                             ; 1C45
         eor     #$04                    ; 1C46
@@ -1791,7 +1905,7 @@ L1C21:  lda     #$03                    ; 1C21
         tay                             ; 1C50
         clc                             ; 1C51
         adc     #$04                    ; 1C52
-        sta     L1CB0                   ; 1C54
+        sta     ObjectEndCol            ; 1C54
         tya                             ; 1C57
         pha                             ; 1C58
         txa                             ; 1C59
@@ -1803,19 +1917,19 @@ L1C21:  lda     #$03                    ; 1C21
         tay                             ; 1C61
         ldx     #$00                    ; 1C62
         lda     #$61                    ; 1C64
-        sta     L1CAF                   ; 1C66
-L1C69:  lda     L1CAF                   ; 1C69
-        inc     L1CAF                   ; 1C6C
+        sta     NextObjectChar          ; 1C66
+L1C69:  lda     NextObjectChar          ; 1C69
+        inc     NextObjectChar          ; 1C6C
         sta     ($02),y                 ; 1C6F
-        lda     L1CF8,x                 ; 1C71
+        lda     ObjectColours,x         ; 1C71
         sta     ($04),y                 ; 1C74
         inx                             ; 1C76
         iny                             ; 1C77
-        cpy     L1CB0                   ; 1C78
+        cpy     ObjectEndCol            ; 1C78
         bne     L1C69                   ; 1C7B
-        lda     L1C9C                   ; 1C7D
+        lda     ObjectRowsLeft          ; 1C7D
         beq     L1C9B                   ; 1C80
-        dec     L1C9C                   ; 1C82
+        dec     ObjectRowsLeft          ; 1C82
         dey                             ; 1C85
         dey                             ; 1C86
         dey                             ; 1C87
@@ -1832,18 +1946,52 @@ L1C98:  jmp     L1C69                   ; 1C98
 
 L1C9B:  rts                             ; 1C9B
 
-L1C9C:  .byte   $00                     ; 1C9C
-L1C9D:  .byte   $00                     ; 1C9D
+
+; --------------------------------------------------------------------------
+; Rows left to draw of the object's 4x4 cells.
+; --------------------------------------------------------------------------
+ObjectRowsLeft:
+        .byte   $00                     ; 1C9C
+
+; --------------------------------------------------------------------------
+; Non-zero once the object's cells are on screen, so ScrollTrackObjects writes them again.
+; --------------------------------------------------------------------------
+ObjectDrawn:
+        .byte   $00                     ; 1C9D
 
 ; --------------------------------------------------------------------------
 ; Pixel position of the track object (hurdle or line), from $F8 moving left 8 per step.
 ; --------------------------------------------------------------------------
 ObjectX:.byte   $00,$00,$00,$00,$00,$00,$00,$00; 1C9E
-L1CA6:  .byte   $08,$08,$08,$08,$08,$08,$08,$08; 1CA6
-L1CAE:  .byte   $00                     ; 1CAE
-L1CAF:  .byte   $61                     ; 1CAF
-L1CB0:  .byte   $00                     ; 1CB0
-L1CB1:  .byte   $00                     ; 1CB1
+
+; --------------------------------------------------------------------------
+; Pixel row of the track object ($90); its character row picks the screen row.
+; --------------------------------------------------------------------------
+ObjectY:.byte   $08,$08,$08,$08,$08,$08,$08,$08; 1CA6
+
+; --------------------------------------------------------------------------
+; Index of the track object; always 0 (one object).
+; --------------------------------------------------------------------------
+ObjectIndex:
+        .byte   $00                     ; 1CAE
+
+; --------------------------------------------------------------------------
+; Next object character code to place ($61 upwards).
+; --------------------------------------------------------------------------
+NextObjectChar:
+        .byte   $61                     ; 1CAF
+
+; --------------------------------------------------------------------------
+; Column after the object's last cell in the row.
+; --------------------------------------------------------------------------
+ObjectEndCol:
+        .byte   $00                     ; 1CB0
+
+; --------------------------------------------------------------------------
+; CopyCellBitmaps' write index in UnderBitmaps, counting down from $7F.
+; --------------------------------------------------------------------------
+BitmapIndex:
+        .byte   $00                     ; 1CB1
 
 ; --------------------------------------------------------------------------
 ; Counts down to the next athlete frame (4, or $18 at the start of a jump).
@@ -1862,22 +2010,52 @@ AthleteTopFrame:
 ; --------------------------------------------------------------------------
 AthleteBottomFrame:
         .byte   $00                     ; 1CB6
-L1CB7:  .byte   $00                     ; 1CB7
-L1CB8:  .byte   $20,$20,$20,$20,$20,$20,$20,$20; 1CB8
+
+; --------------------------------------------------------------------------
+; 0: DrawAthlete draws the top half next, 1: the bottom half.
+; --------------------------------------------------------------------------
+AthleteHalf:
+        .byte   $00                     ; 1CB7
+
+; --------------------------------------------------------------------------
+; Screen codes of the 16 cells under the object, read by ReadObjectCells.
+; --------------------------------------------------------------------------
+UnderCells:
+        .byte   $20,$20,$20,$20,$20,$20,$20,$20; 1CB8
         .byte   $20,$20,$20,$20,$20,$20,$20,$20; 1CC0
-L1CC8:  .byte   $20,$20,$20,$20,$20,$20,$20,$20; 1CC8
+
+; --------------------------------------------------------------------------
+; Codes WriteObjectCells puts in the 16 cells.
+; --------------------------------------------------------------------------
+ObjectCells:
+        .byte   $20,$20,$20,$20,$20,$20,$20,$20; 1CC8
         .byte   $20,$20,$20,$20,$20,$20,$20,$20; 1CD0
         .byte   $2D,$20,$20,$20,$2C,$2B,$20,$20; 1CD8
         .byte   $20,$2A,$20,$20,$20,$20,$20,$20; 1CE0
         .byte   $20,$20,$20,$20,$29,$28,$20,$20; 1CE8
         .byte   $20,$27,$26,$20,$20,$20,$20,$20; 1CF0
-L1CF8:  .byte   $00,$00,$00,$00,$00,$00,$00,$00; 1CF8
+
+; --------------------------------------------------------------------------
+; Colours WriteObjectCells puts in the 16 cells.
+; --------------------------------------------------------------------------
+ObjectColours:
+        .byte   $00,$00,$00,$00,$00,$00,$00,$00; 1CF8
         .byte   $00,$00,$00,$00,$00,$00,$00,$00; 1D00
-L1D08:  .byte   $80,$40,$20,$10,$08,$04,$02,$01; 1D08
+
+; --------------------------------------------------------------------------
+; $80 down to $01: the bit for each pixel column.
+; --------------------------------------------------------------------------
+PixelMasks:
+        .byte   $80,$40,$20,$10,$08,$04,$02,$01; 1D08
         .byte   $F1,$F2,$F3,$F4,$F5,$F6,$F7,$F8; 1D10
         .byte   $F1,$F2,$F3,$F4,$F5,$F6,$F7,$F8; 1D18
         .byte   $F1                     ; 1D20
-L1D21:  .byte   $00,$00,$00,$00,$00,$00,$00,$00; 1D21
+
+; --------------------------------------------------------------------------
+; Bitmaps of the 16 characters under the object (128 bytes).
+; --------------------------------------------------------------------------
+UnderBitmaps:
+        .byte   $00,$00,$00,$00,$00,$00,$00,$00; 1D21
         .byte   $00,$00,$00,$00,$00,$00,$00,$00; 1D29
         .byte   $00,$00,$00,$00,$00,$00,$00,$00; 1D31
         .byte   $00,$00,$00,$00,$00,$00,$00,$00; 1D39
@@ -1909,15 +2087,30 @@ L1D21:  .byte   $00,$00,$00,$00,$00,$00,$00,$00; 1D21
         .byte   $00,$00,$00,$00,$00,$00,$00,$00; 1E09
         .byte   $00,$00,$00,$00,$00,$00,$00,$00; 1E11
         .byte   $00,$00,$00,$00,$00,$00,$00,$00; 1E19
-L1E21:  .byte   $0C,$0C,$0C,$0C,$0C,$0C,$0C,$0D; 1E21
+
+; --------------------------------------------------------------------------
+; High byte of the screen address of rows 0-25, column 2.
+; --------------------------------------------------------------------------
+RowAddrHi:
+        .byte   $0C,$0C,$0C,$0C,$0C,$0C,$0C,$0D; 1E21
         .byte   $0D,$0D,$0D,$0D,$0D,$0E,$0E,$0E; 1E29
         .byte   $0E,$0E,$0E,$0E,$0F,$0F,$0F,$0F; 1E31
         .byte   $0F,$0F                 ; 1E39
-L1E3B:  .byte   $02,$2A,$52,$7A,$A2,$CA,$F2,$1A; 1E3B
+
+; --------------------------------------------------------------------------
+; Low byte of the same addresses.
+; --------------------------------------------------------------------------
+RowAddrLo:
+        .byte   $02,$2A,$52,$7A,$A2,$CA,$F2,$1A; 1E3B
         .byte   $42,$6A,$92,$BA,$E2,$0A,$32,$5A; 1E43
         .byte   $82,$AA,$D2,$FA,$22,$4A,$72,$9A; 1E4B
         .byte   $C2,$EA                 ; 1E53
-L1E55:  .byte   $00                     ; 1E55
+
+; --------------------------------------------------------------------------
+; Rows left in DrawAthlete and EraseAthlete (3).
+; --------------------------------------------------------------------------
+RowsLeft:
+        .byte   $00                     ; 1E55
 
 ; --------------------------------------------------------------------------
 ; Character codes of the athlete's frames, 18 bytes (6x3) per half.
@@ -1963,7 +2156,7 @@ AthleteFrames:
 RedrawObject:
         jsr     ReadObjectCells         ; 1F52
         lda     #$03                    ; 1F55
-        sta     L1C9C                   ; 1F57
+        sta     ObjectRowsLeft          ; 1F57
         jsr     CopyObjectCells         ; 1F5A
         jsr     CopyCellBitmaps         ; 1F5D
         jsr     CheckHurdleHit          ; 1F60
@@ -1977,10 +2170,10 @@ RedrawObject:
 CopyCellBitmaps:
         ldx     #$0F                    ; 1F67
         lda     #$7F                    ; 1F69
-        sta     L1CB1                   ; 1F6B
+        sta     BitmapIndex             ; 1F6B
 L1F6E:  lda     #$00                    ; 1F6E
         sta     $42                     ; 1F70
-        lda     L1CB8,x                 ; 1F72
+        lda     UnderCells,x            ; 1F72
         ldy     #$02                    ; 1F75
 L1F77:  asl     a                       ; 1F77
         rol     $42                     ; 1F78
@@ -1990,17 +2183,17 @@ L1F77:  asl     a                       ; 1F77
         txa                             ; 1F7F
         pha                             ; 1F80
         ldy     #$07                    ; 1F81
-        ldx     L1CB1                   ; 1F83
+        ldx     BitmapIndex             ; 1F83
         lda     $42                     ; 1F86
         clc                             ; 1F88
         adc     #$38                    ; 1F89
         sta     $42                     ; 1F8B
 L1F8D:  lda     ($41),y                 ; 1F8D
-        sta     L1D21,x                 ; 1F8F
+        sta     UnderBitmaps,x          ; 1F8F
         dex                             ; 1F92
         dey                             ; 1F93
         bpl     L1F8D                   ; 1F94
-        stx     L1CB1                   ; 1F96
+        stx     BitmapIndex             ; 1F96
         pla                             ; 1F99
         tax                             ; 1F9A
         dex                             ; 1F9B
@@ -2014,17 +2207,17 @@ L1F8D:  lda     ($41),y                 ; 1F8D
 ReadObjectCells:
         ldx     #$00                    ; 1F9F
 L1FA1:  lda     ($02),y                 ; 1FA1
-        sta     L1CB8,x                 ; 1FA3
+        sta     UnderCells,x            ; 1FA3
         lda     ($04),y                 ; 1FA6
         lda     #$00                    ; 1FA8
-        sta     L1CF8,x                 ; 1FAA
+        sta     ObjectColours,x         ; 1FAA
         iny                             ; 1FAD
         inx                             ; 1FAE
-        cpy     L1CB0                   ; 1FAF
+        cpy     ObjectEndCol            ; 1FAF
         bne     L1FA1                   ; 1FB2
-        lda     L1C9C                   ; 1FB4
+        lda     ObjectRowsLeft          ; 1FB4
         beq     ObjectPtrUp3            ; 1FB7
-        dec     L1C9C                   ; 1FB9
+        dec     ObjectRowsLeft          ; 1FB9
         dey                             ; 1FBC
         dey                             ; 1FBD
         dey                             ; 1FBE
@@ -2060,9 +2253,9 @@ L1FE1:  rts                             ; 1FE1
 ; --------------------------------------------------------------------------
 MergeObjectChars:
         ldx     #$7F                    ; 1FE2
-L1FE4:  lda     L1D21,x                 ; 1FE4
-        ora     L3B88,x                 ; 1FE7
-        sta     L3B08,x                 ; 1FEA
+L1FE4:  lda     UnderBitmaps,x          ; 1FE4
+        ora     ObjectBitmap,x          ; 1FE7
+        sta     ObjectChars,x           ; 1FEA
         dex                             ; 1FED
         bpl     L1FE4                   ; 1FEE
         rts                             ; 1FF0
@@ -2080,18 +2273,18 @@ WriteObjectCells:
         lsr     a                       ; 1FFB
         tay                             ; 1FFC
         lda     #$03                    ; 1FFD
-        sta     L1C9C                   ; 1FFF
-L2002:  lda     L1CC8,x                 ; 2002
+        sta     ObjectRowsLeft          ; 1FFF
+L2002:  lda     ObjectCells,x           ; 2002
         sta     ($02),y                 ; 2005
-        lda     L1CF8,x                 ; 2007
+        lda     ObjectColours,x         ; 2007
         sta     ($04),y                 ; 200A
         iny                             ; 200C
         inx                             ; 200D
-        cpy     L1CB0                   ; 200E
+        cpy     ObjectEndCol            ; 200E
         bne     L2002                   ; 2011
-        lda     L1C9C                   ; 2013
+        lda     ObjectRowsLeft          ; 2013
         beq     L2031                   ; 2016
-        dec     L1C9C                   ; 2018
+        dec     ObjectRowsLeft          ; 2018
         dey                             ; 201B
         dey                             ; 201C
         dey                             ; 201D
@@ -2121,13 +2314,18 @@ HurdleState:
 ; --------------------------------------------------------------------------
 CopyObjectCells:
         ldx     #$0F                    ; 2033
-L2035:  lda     L1CB8,x                 ; 2035
-        sta     L1CC8,x                 ; 2038
+L2035:  lda     UnderCells,x            ; 2035
+        sta     ObjectCells,x           ; 2038
         dex                             ; 203B
         bpl     L2035                   ; 203C
         rts                             ; 203E
 
-L203F:  .byte   $00                     ; 203F
+
+; --------------------------------------------------------------------------
+; Set to 8 by both hurdle drawers; nothing reads it.
+; --------------------------------------------------------------------------
+HurdleSpare:
+        .byte   $00                     ; 203F
 L2040:  jmp     L20D6                   ; 2040
 
 
@@ -2167,17 +2365,17 @@ DrawHurdleA:
         jsr     ClearObjectChars        ; 2078
         ldx     #$07                    ; 207B
         lda     #$08                    ; 207D
-        sta     L203F                   ; 207F
-L2082:  lda     L3948,x                 ; 2082
-        sta     L3BB0,x                 ; 2085
-        lda     L3940,x                 ; 2088
-        sta     L3BB8,x                 ; 208B
-        lda     L3938,x                 ; 208E
-        sta     L3BD8,x                 ; 2091
-        lda     L3930,x                 ; 2094
-        sta     L3BE0,x                 ; 2097
-        lda     L3900,x                 ; 209A
-        sta     L3B90,x                 ; 209D
+        sta     HurdleSpare             ; 207F
+L2082:  lda     HurdleArt+24,x          ; 2082
+        sta     ObjectBitmap+40,x       ; 2085
+        lda     HurdleArt+16,x          ; 2088
+        sta     ObjectBitmap+48,x       ; 208B
+        lda     HurdleArt+8,x           ; 208E
+        sta     ObjectBitmap+80,x       ; 2091
+        lda     HurdleArt,x             ; 2094
+        sta     ObjectBitmap+88,x       ; 2097
+        lda     BlankChar,x             ; 209A
+        sta     ObjectBitmap+8,x        ; 209D
         dex                             ; 20A0
         bpl     L2082                   ; 20A1
 L20A3:  rts                             ; 20A3
@@ -2190,41 +2388,41 @@ DrawHurdleB:
         jsr     ClearObjectChars        ; 20A4
         ldx     #$07                    ; 20A7
         lda     #$08                    ; 20A9
-        sta     L203F                   ; 20AB
-L20AE:  lda     L3950,x                 ; 20AE
-        sta     L3BD8,x                 ; 20B1
-        lda     L3958,x                 ; 20B4
-        sta     L3BB8,x                 ; 20B7
-        lda     L3960,x                 ; 20BA
-        sta     L3BB0,x                 ; 20BD
-        lda     L3968,x                 ; 20C0
-        sta     L3B90,x                 ; 20C3
-        lda     L3968,x                 ; 20C6
-        sta     L3B90,x                 ; 20C9
-        lda     L3900,x                 ; 20CC
-        sta     L3BE0,x                 ; 20CF
+        sta     HurdleSpare             ; 20AB
+L20AE:  lda     HurdleArt+32,x          ; 20AE
+        sta     ObjectBitmap+80,x       ; 20B1
+        lda     HurdleArt+40,x          ; 20B4
+        sta     ObjectBitmap+48,x       ; 20B7
+        lda     HurdleArt+48,x          ; 20BA
+        sta     ObjectBitmap+40,x       ; 20BD
+        lda     HurdleArt+56,x          ; 20C0
+        sta     ObjectBitmap+8,x        ; 20C3
+        lda     HurdleArt+56,x          ; 20C6
+        sta     ObjectBitmap+8,x        ; 20C9
+        lda     BlankChar,x             ; 20CC
+        sta     ObjectBitmap+88,x       ; 20CF
         dex                             ; 20D2
         bpl     L20AE                   ; 20D3
         rts                             ; 20D5
 
 L20D6:  ldy     #$02                    ; 20D6
 L20D8:  ldx     #$07                    ; 20D8
-L20DA:  asl     L3BA0,x                 ; 20DA
-        rol     L3B98,x                 ; 20DD
-        rol     L3B90,x                 ; 20E0
-        rol     L3B88,x                 ; 20E3
-        asl     L3BC0,x                 ; 20E6
-        rol     L3BB8,x                 ; 20E9
-        rol     L3BB0,x                 ; 20EC
-        rol     L3BA8,x                 ; 20EF
-        asl     L3BE0,x                 ; 20F2
-        rol     L3BD8,x                 ; 20F5
-        rol     L3BD0,x                 ; 20F8
-        rol     L3BC8,x                 ; 20FB
-        asl     L3C00,x                 ; 20FE
-        rol     L3BF8,x                 ; 2101
-        rol     L3BF0,x                 ; 2104
-        rol     L3BE8,x                 ; 2107
+L20DA:  asl     ObjectBitmap+24,x       ; 20DA
+        rol     ObjectBitmap+16,x       ; 20DD
+        rol     ObjectBitmap+8,x        ; 20E0
+        rol     ObjectBitmap,x          ; 20E3
+        asl     ObjectBitmap+56,x       ; 20E6
+        rol     ObjectBitmap+48,x       ; 20E9
+        rol     ObjectBitmap+40,x       ; 20EC
+        rol     ObjectBitmap+32,x       ; 20EF
+        asl     ObjectBitmap+88,x       ; 20F2
+        rol     ObjectBitmap+80,x       ; 20F5
+        rol     ObjectBitmap+72,x       ; 20F8
+        rol     ObjectBitmap+64,x       ; 20FB
+        asl     ObjectBitmap+120,x      ; 20FE
+        rol     ObjectBitmap+112,x      ; 2101
+        rol     ObjectBitmap+104,x      ; 2104
+        rol     ObjectBitmap+96,x       ; 2107
         dex                             ; 210A
         bpl     L20DA                   ; 210B
         dey                             ; 210D
@@ -2238,22 +2436,22 @@ L20DA:  asl     L3BA0,x                 ; 20DA
 ; --------------------------------------------------------------------------
 MoveRace:
         lda     #$01                    ; 2111
-        sta     L176F                   ; 2113
+        sta     RaceMoved               ; 2113
         lda     RunSpeed                ; 2116
-        sta     L217F                   ; 2119
-        sta     L217E                   ; 211C
+        sta     SpeedCopy               ; 2119
+        sta     SpeedFraction           ; 211C
         lsr     a                       ; 211F
-        sta     L2180                   ; 2120
+        sta     SpeedHalf               ; 2120
         lsr     a                       ; 2123
         lsr     a                       ; 2124
         lsr     a                       ; 2125
         lsr     a                       ; 2126
-        sta     L217B                   ; 2127
+        sta     MarkSteps               ; 2127
         lsr     a                       ; 212A
-        sta     L217C                   ; 212B
+        sta     SpeedDiv64              ; 212B
         lsr     a                       ; 212E
-        sta     L217D                   ; 212F
-        lda     L217B                   ; 2132
+        sta     SceneSteps              ; 212F
+        lda     MarkSteps               ; 2132
         beq     L2144                   ; 2135
 L2137:  pha                             ; 2137
         jsr     MoveTrackMarks          ; 2138
@@ -2262,17 +2460,17 @@ L2137:  pha                             ; 2137
         sbc     #$01                    ; 213D
         bne     L2137                   ; 213F
         jsr     ScrollTrackObjects      ; 2141
-L2144:  lda     L2181                   ; 2144
+L2144:  lda     MarkFraction            ; 2144
         clc                             ; 2147
-        adc     L217E                   ; 2148
-        sta     L2181                   ; 214B
+        adc     SpeedFraction           ; 2148
+        sta     MarkFraction            ; 214B
         bcc     L215B                   ; 214E
         jsr     MoveTrackMarks          ; 2150
-        lda     L176F                   ; 2153
+        lda     RaceMoved               ; 2153
         beq     L215B                   ; 2156
         jsr     ScrollTrackObjects      ; 2158
 L215B:  nop                             ; 215B
-        lda     L217D                   ; 215C
+        lda     SceneSteps              ; 215C
         beq     L216B                   ; 215F
 L2161:  pha                             ; 2161
         jsr     ScrollStep              ; 2162
@@ -2280,22 +2478,62 @@ L2161:  pha                             ; 2161
         sec                             ; 2166
         sbc     #$01                    ; 2167
         bne     L2161                   ; 2169
-L216B:  lda     L2183                   ; 216B
+L216B:  lda     SceneFraction           ; 216B
         clc                             ; 216E
-        adc     L217E                   ; 216F
-        sta     L2183                   ; 2172
+        adc     SpeedFraction           ; 216F
+        sta     SceneFraction           ; 2172
         bcc     L217A                   ; 2175
         jsr     ScrollStep              ; 2177
 L217A:  rts                             ; 217A
 
-L217B:  .byte   $00                     ; 217B
-L217C:  .byte   $00                     ; 217C
-L217D:  .byte   $00                     ; 217D
-L217E:  .byte   $00                     ; 217E
-L217F:  .byte   $00                     ; 217F
-L2180:  .byte   $00                     ; 2180
-L2181:  .byte   $00,$00                 ; 2181
-L2183:  .byte   $00                     ; 2183
+
+; --------------------------------------------------------------------------
+; RunSpeed / 32: whole MoveTrackMarks steps this frame.
+; --------------------------------------------------------------------------
+MarkSteps:
+        .byte   $00                     ; 217B
+
+; --------------------------------------------------------------------------
+; RunSpeed / 64; nothing reads it.
+; --------------------------------------------------------------------------
+SpeedDiv64:
+        .byte   $00                     ; 217C
+
+; --------------------------------------------------------------------------
+; RunSpeed / 128: whole ScrollStep steps this frame.
+; --------------------------------------------------------------------------
+SceneSteps:
+        .byte   $00                     ; 217D
+
+; --------------------------------------------------------------------------
+; RunSpeed, added to the two fraction accumulators.
+; --------------------------------------------------------------------------
+SpeedFraction:
+        .byte   $00                     ; 217E
+
+; --------------------------------------------------------------------------
+; RunSpeed; nothing reads it.
+; --------------------------------------------------------------------------
+SpeedCopy:
+        .byte   $00                     ; 217F
+
+; --------------------------------------------------------------------------
+; RunSpeed / 2; nothing reads it.
+; --------------------------------------------------------------------------
+SpeedHalf:
+        .byte   $00                     ; 2180
+
+; --------------------------------------------------------------------------
+; Fraction accumulator: a carry moves the track marks one more step.
+; --------------------------------------------------------------------------
+MarkFraction:
+        .byte   $00,$00                 ; 2181
+
+; --------------------------------------------------------------------------
+; Fraction accumulator: a carry scrolls the scenery one more step.
+; --------------------------------------------------------------------------
+SceneFraction:
+        .byte   $00                     ; 2183
 
 ; --------------------------------------------------------------------------
 ; Pick QualifyIndex for EventNumber and print the time at $0C40.
@@ -2353,27 +2591,23 @@ QualifyTimes:
 ; RaceClock copied into QualifyTimes' layout.
 ; --------------------------------------------------------------------------
 TimeToJudge:
-        .byte   $00                     ; 21D9
-L21DA:  .byte   $00                     ; 21DA
-L21DB:  .byte   $00,$3A                 ; 21DB
-L21DD:  .byte   $00                     ; 21DD
-L21DE:  .byte   $00                     ; 21DE
+        .byte   $00,$00,$00,$3A,$00,$00 ; 21D9
 
 ; --------------------------------------------------------------------------
 ; Compare the time with QualifyTimes: under it, QUALIFIED and AwardTimeBonus;
 ; over it, FAILED and one of Lives lost.
 ; --------------------------------------------------------------------------
 JudgeTime:
-        lda     L1838                   ; 21DF
+        lda     RaceClock+4             ; 21DF
         sta     TimeToJudge             ; 21E2
-        lda     L1837                   ; 21E5
-        sta     L21DA                   ; 21E8
-        lda     L1836                   ; 21EB
-        sta     L21DB                   ; 21EE
-        lda     L1835                   ; 21F1
-        sta     L21DD                   ; 21F4
+        lda     RaceClock+3             ; 21E5
+        sta     TimeToJudge+1           ; 21E8
+        lda     RaceClock+2             ; 21EB
+        sta     TimeToJudge+2           ; 21EE
+        lda     RaceClock+1             ; 21F1
+        sta     TimeToJudge+4           ; 21F4
         lda     RaceClock               ; 21F7
-        sta     L21DE                   ; 21FA
+        sta     TimeToJudge+5           ; 21FA
         ldx     QualifyIndex            ; 21FD
         ldy     #$00                    ; 2200
 L2202:  lda     TimeToJudge,y           ; 2202
@@ -2434,33 +2668,47 @@ PlotObjectPixel:
         and     #$F8                    ; 225C
         asl     a                       ; 225E
         asl     a                       ; 225F
-        sta     L2289                   ; 2260
+        sta     PlotOffset              ; 2260
         lda     PlotY                   ; 2263
         and     #$07                    ; 2266
         clc                             ; 2268
-        adc     L2289                   ; 2269
-        sta     L2289                   ; 226C
+        adc     PlotOffset              ; 2269
+        sta     PlotOffset              ; 226C
         lda     PlotX                   ; 226F
         and     #$F8                    ; 2272
         clc                             ; 2274
-        adc     L2289                   ; 2275
+        adc     PlotOffset              ; 2275
         tay                             ; 2278
         lda     PlotX                   ; 2279
         and     #$07                    ; 227C
         tax                             ; 227E
-        lda     L3B08,y                 ; 227F
-        ora     L1D08,x                 ; 2282
-        sta     L3B08,y                 ; 2285
+        lda     ObjectChars,y           ; 227F
+        ora     PixelMasks,x            ; 2282
+        sta     ObjectChars,y           ; 2285
         rts                             ; 2288
 
-L2289:  .byte   $00                     ; 2289
+
+; --------------------------------------------------------------------------
+; PlotObjectPixel's byte offset in ObjectChars.
+; --------------------------------------------------------------------------
+PlotOffset:
+        .byte   $00                     ; 2289
 PlotY:  .byte   $00                     ; 228A
 PlotX:  .byte   $00                     ; 228B
-L228C:  .byte   $00                     ; 228C
-L228D:  .byte   $00                     ; 228D
-L228E:  .byte   $00                     ; 228E
-L228F:  .byte   $00                     ; 228F
-L2290:  .byte   $1E                     ; 2290
+
+; --------------------------------------------------------------------------
+; DrawFinishLine's X and Y fraction steps ($FF), accumulators and pixel count.
+; --------------------------------------------------------------------------
+LineStepX:
+        .byte   $00                     ; 228C
+LineStepY:
+        .byte   $00                     ; 228D
+LineFracX:
+        .byte   $00                     ; 228E
+LineFracY:
+        .byte   $00                     ; 228F
+LineLength:
+        .byte   $1E                     ; 2290
 
 ; --------------------------------------------------------------------------
 ; Plot the slanted finish line, 12 steps of two pixels, from row $0D.
@@ -2471,26 +2719,26 @@ DrawFinishLine:
         lda     #$0D                    ; 2295
         sta     PlotY                   ; 2297
         lda     #$FF                    ; 229A
-        sta     L228C                   ; 229C
-        sta     L228D                   ; 229F
+        sta     LineStepX               ; 229C
+        sta     LineStepY               ; 229F
         lda     #$0C                    ; 22A2
-        sta     L2290                   ; 22A4
-L22A7:  lda     L228E                   ; 22A7
+        sta     LineLength              ; 22A4
+L22A7:  lda     LineFracX               ; 22A7
         clc                             ; 22AA
-        adc     L228C                   ; 22AB
-        sta     L228E                   ; 22AE
+        adc     LineStepX               ; 22AB
+        sta     LineFracX               ; 22AE
         bcc     L22B6                   ; 22B1
         inc     PlotX                   ; 22B3
-L22B6:  lda     L228F                   ; 22B6
+L22B6:  lda     LineFracY               ; 22B6
         clc                             ; 22B9
-        adc     L228D                   ; 22BA
-        sta     L228F                   ; 22BD
+        adc     LineStepY               ; 22BA
+        sta     LineFracY               ; 22BD
         bcc     L22C5                   ; 22C0
         inc     PlotY                   ; 22C2
 L22C5:  jsr     PlotObjectPixel         ; 22C5
         inc     PlotX                   ; 22C8
         jsr     PlotObjectPixel         ; 22CB
-        dec     L2290                   ; 22CE
+        dec     LineLength              ; 22CE
         bne     L22A7                   ; 22D1
         pla                             ; 22D3
         sta     PlotX                   ; 22D4
@@ -2567,7 +2815,7 @@ FootstepRomPtr  := * + 1
         lda     $A000                   ; 230E
         and     #$0F                    ; 2311
         ora     #$F0                    ; 2313
-        sta     L235C                   ; 2315
+        sta     FootstepFx+12           ; 2315
         inc     FootstepRomPtr          ; 2318
         ldx     #$50                    ; 231B
         ldy     #$23                    ; 231D
@@ -2578,105 +2826,109 @@ FootstepRomPtr  := * + 1
         .byte   $02,$03,$01,$10,$05,$01,$14,$C8; 2332
         .byte   $00,$00,$00,$00,$00,$FE,$FF,$00; 233A
         .byte   $00,$00,$00,$00,$02,$04,$08,$01; 2342
-        .byte   $05,$01,$1E,$05,$00,$10,$50,$00; 234A
-        .byte   $00,$00,$01,$00,$F0,$FF,$00,$00; 2352
-        .byte   $00,$00                 ; 235A
-L235C:  .byte   $00,$03,$08,$08,$08,$00,$08,$03; 235C
-        .byte   $01,$01,$47,$06,$0C,$12,$18,$1E; 2364
-        .byte   $24,$2A,$30,$36,$3C,$42,$48,$4E; 236C
-        .byte   $54,$5A,$60,$02,$04,$02,$1E,$01; 2374
-        .byte   $81,$FF,$FF,$01,$00,$FF,$FF,$00; 237C
-        .byte   $00,$06,$08,$03,$03,$01,$14,$07; 2384
-        .byte   $04,$10,$06,$08,$03,$05,$01,$23; 238C
-        .byte   $07,$04,$10,$16,$04,$1B,$03,$1D; 2394
-        .byte   $03,$1F,$02,$1D,$08,$1A,$0C,$16; 239C
-        .byte   $04,$1B,$03,$1D,$03,$1F,$02,$1D; 23A4
-        .byte   $10,$30,$04,$16,$04,$1B,$03,$1D; 23AC
-        .byte   $03,$1F,$02,$1D,$08,$1A,$0C,$1A; 23B4
-        .byte   $04,$1B,$03,$1A,$03,$16,$02,$16; 23BC
-        .byte   $10,$30,$04,$FE,$22,$04,$21,$03; 23C4
-        .byte   $1F,$03,$1D,$02,$21,$06,$1D,$02; 23CC
-        .byte   $1F,$06,$1B,$02,$1D,$06,$22,$02; 23D4
-        .byte   $21,$03,$1F,$03,$1D,$02,$21,$10; 23DC
-        .byte   $30,$04,$22,$04,$21,$03,$1F,$03; 23E4
-        .byte   $1D,$02,$21,$06,$1D,$02,$1F,$06; 23EC
-        .byte   $1B,$02,$1D,$06,$1A,$02,$1B,$03; 23F4
-        .byte   $1A,$03,$16,$02,$16,$10,$30,$04; 23FC
-        .byte   $FE,$FA,$67,$23,$FD,$77,$23,$30; 2404
-        .byte   $0C,$30,$10,$30,$10,$30,$10,$F9; 240C
-        .byte   $97,$23,$F9,$97,$23,$F9,$C8,$23; 2414
-        .byte   $F9,$C8,$23,$F9,$97,$23,$16,$04; 241C
-        .byte   $1B,$03,$1D,$03,$1F,$02,$1D,$08; 2424
-        .byte   $1A,$0C,$16,$04,$22,$03,$21,$03; 242C
-        .byte   $1F,$02,$F9,$AB,$23,$F9,$C8,$23; 2434
-        .byte   $FB,$8E,$23,$F9,$C8,$23,$FF,$00; 243C
-        .byte   $00,$00,$00,$00,$00,$00,$00,$00; 2444
-        .byte   $00,$00,$00,$00,$00,$01,$08,$05; 244C
-        .byte   $02,$01,$14,$00,$07,$20,$04,$07; 2454
-        .byte   $03,$04,$01,$19,$05,$00,$20,$0E; 245C
-        .byte   $02,$0E,$02,$0E,$02,$0E,$02,$0F; 2464
-        .byte   $02,$0F,$02,$0F,$02,$0F,$02,$FE; 246C
-        .byte   $F9,$63,$24,$F9,$97,$24,$F9,$63; 2474
-        .byte   $24,$F9,$97,$24,$F9,$63,$24,$F9; 247C
-        .byte   $9A,$24,$05,$02,$05,$02,$05,$02; 2484
-        .byte   $05,$02,$F8,$94,$24,$F9,$94,$24; 248C
-        .byte   $F9,$97,$24,$F9,$9A,$24,$0A,$02; 2494
-        .byte   $0A,$02,$0A,$02,$0A,$02,$FE,$F9; 249C
-        .byte   $91,$24,$F9,$91,$24,$F9,$91,$24; 24A4
-        .byte   $F9,$91,$24,$F9,$74,$24,$F9,$74; 24AC
-        .byte   $24,$FE,$FA,$67,$23,$FD,$43,$24; 24B4
-        .byte   $0A,$08,$FB,$5A,$24,$F9,$91,$24; 24BC
-        .byte   $F9,$A3,$24,$F9,$A3,$24,$FF,$05; 24C4
-        .byte   $0A,$0F,$14,$19,$1E,$23,$28,$2D; 24CC
-        .byte   $32,$37,$3C,$41,$46,$4B,$50,$01; 24D4
-        .byte   $08,$05,$00,$01,$07,$01,$04,$12; 24DC
-        .byte   $06,$08,$01,$02,$01,$14,$07,$04; 24E4
-        .byte   $10,$02,$04,$02,$14,$00,$81,$FF; 24EC
-        .byte   $FF,$01,$00,$FF,$FF,$00,$00,$06; 24F4
-        .byte   $08,$03,$04,$01,$0A,$07,$03,$10; 24FC
-        .byte   $16,$02,$13,$02,$13,$02,$16,$02; 2504
-        .byte   $16,$02,$13,$02,$18,$01,$16,$01; 250C
-        .byte   $14,$02,$16,$02,$13,$02,$13,$02; 2514
-        .byte   $16,$02,$16,$02,$13,$04,$FE,$FA; 251C
-        .byte   $CB,$24,$FD,$ED,$24,$F9,$04,$25; 2524
-        .byte   $30,$02,$F9,$04,$25,$30,$02,$F9; 252C
-        .byte   $04,$25,$16,$02,$18,$01,$16,$01; 2534
-        .byte   $14,$02,$18,$01,$16,$01,$14,$02; 253C
-        .byte   $1B,$10,$1D,$08,$FB,$E4,$24,$1F; 2544
-        .byte   $05,$FB,$DB,$24,$1F,$10,$FF,$13; 254C
-        .byte   $02,$0F,$02,$0F,$02,$13,$02,$13; 2554
-        .byte   $02,$0F,$02,$14,$01,$13,$01,$11; 255C
-        .byte   $02,$13,$02,$0F,$02,$0F,$02,$13; 2564
-        .byte   $02,$13,$02,$0F,$02,$03,$02,$FE; 256C
-        .byte   $06,$08,$03,$04,$01,$0A,$07,$03; 2574
-        .byte   $20,$06,$08,$01,$02,$01,$14,$07; 257C
-        .byte   $04,$20,$01,$08,$05,$00,$01,$07; 2584
-        .byte   $01,$04,$22,$FA,$CB,$24,$FB,$74; 258C
-        .byte   $25,$FC,$ED,$24,$F9,$53,$25,$30; 2594
-        .byte   $02,$F9,$53,$25,$30,$02,$F9,$53; 259C
-        .byte   $25,$13,$02,$14,$01,$13,$01,$11; 25A4
-        .byte   $02,$14,$01,$13,$01,$11,$02,$14; 25AC
-        .byte   $10,$16,$08,$FB,$7D,$25,$1B,$05; 25B4
-        .byte   $FB,$86,$25,$1B,$10,$FF,$04,$08; 25BC
-        .byte   $0C,$10,$14,$18,$1C,$20,$24,$28; 25C4
-        .byte   $2C,$30,$02,$04,$02,$14,$00,$81; 25CC
-        .byte   $FF,$FF,$01,$00,$FF,$FF,$00,$00; 25D4
-        .byte   $01,$08,$01,$03,$01,$23,$07,$00; 25DC
-        .byte   $12,$FA,$C2,$25,$FD,$CE,$25,$1D; 25E4
-        .byte   $04,$1D,$01,$1D,$01,$1D,$08,$1D; 25EC
-        .byte   $01,$1D,$01,$1F,$02,$1D,$02,$1F; 25F4
-        .byte   $02,$1D,$04,$1D,$01,$1D,$01,$1D; 25FC
-        .byte   $02,$1A,$02,$1B,$02,$1D,$04,$1D; 2604
-        .byte   $01,$1D,$01,$1F,$02,$1D,$02,$1F; 260C
-        .byte   $02,$22,$0C,$FF,$01,$08,$01,$03; 2614
-        .byte   $01,$23,$07,$00,$22,$FA,$C2,$25; 261C
-        .byte   $FB,$18,$26,$FC,$CE,$25,$1A,$04; 2624
-        .byte   $1A,$01,$1A,$01,$1A,$08,$1A,$01; 262C
-        .byte   $1A,$01,$1B,$02,$1A,$02,$1B,$02; 2634
-        .byte   $1A,$04,$1A,$01,$1A,$01,$18,$02; 263C
-        .byte   $16,$02,$18,$02,$1A,$04,$1A,$01; 2644
-        .byte   $1A,$01,$18,$02,$1A,$02,$18,$02; 264C
-        .byte   $16,$0C,$FF             ; 2654
+        .byte   $05,$01,$1E,$05,$00,$10 ; 234A
+
+; --------------------------------------------------------------------------
+; PlayFootstep's 23-byte effect record; byte 12, its pitch, comes from the BASIC ROM.
+; --------------------------------------------------------------------------
+FootstepFx:
+        .byte   $50,$00,$00,$00,$01,$00,$F0,$FF; 2350
+        .byte   $00,$00,$00,$00,$00,$03,$08,$08; 2358
+        .byte   $08,$00,$08,$03,$01,$01,$47,$06; 2360
+        .byte   $0C,$12,$18,$1E,$24,$2A,$30,$36; 2368
+        .byte   $3C,$42,$48,$4E,$54,$5A,$60,$02; 2370
+        .byte   $04,$02,$1E,$01,$81,$FF,$FF,$01; 2378
+        .byte   $00,$FF,$FF,$00,$00,$06,$08,$03; 2380
+        .byte   $03,$01,$14,$07,$04,$10,$06,$08; 2388
+        .byte   $03,$05,$01,$23,$07,$04,$10,$16; 2390
+        .byte   $04,$1B,$03,$1D,$03,$1F,$02,$1D; 2398
+        .byte   $08,$1A,$0C,$16,$04,$1B,$03,$1D; 23A0
+        .byte   $03,$1F,$02,$1D,$10,$30,$04,$16; 23A8
+        .byte   $04,$1B,$03,$1D,$03,$1F,$02,$1D; 23B0
+        .byte   $08,$1A,$0C,$1A,$04,$1B,$03,$1A; 23B8
+        .byte   $03,$16,$02,$16,$10,$30,$04,$FE; 23C0
+        .byte   $22,$04,$21,$03,$1F,$03,$1D,$02; 23C8
+        .byte   $21,$06,$1D,$02,$1F,$06,$1B,$02; 23D0
+        .byte   $1D,$06,$22,$02,$21,$03,$1F,$03; 23D8
+        .byte   $1D,$02,$21,$10,$30,$04,$22,$04; 23E0
+        .byte   $21,$03,$1F,$03,$1D,$02,$21,$06; 23E8
+        .byte   $1D,$02,$1F,$06,$1B,$02,$1D,$06; 23F0
+        .byte   $1A,$02,$1B,$03,$1A,$03,$16,$02; 23F8
+        .byte   $16,$10,$30,$04,$FE,$FA,$67,$23; 2400
+        .byte   $FD,$77,$23,$30,$0C,$30,$10,$30; 2408
+        .byte   $10,$30,$10,$F9,$97,$23,$F9,$97; 2410
+        .byte   $23,$F9,$C8,$23,$F9,$C8,$23,$F9; 2418
+        .byte   $97,$23,$16,$04,$1B,$03,$1D,$03; 2420
+        .byte   $1F,$02,$1D,$08,$1A,$0C,$16,$04; 2428
+        .byte   $22,$03,$21,$03,$1F,$02,$F9,$AB; 2430
+        .byte   $23,$F9,$C8,$23,$FB,$8E,$23,$F9; 2438
+        .byte   $C8,$23,$FF,$00,$00,$00,$00,$00; 2440
+        .byte   $00,$00,$00,$00,$00,$00,$00,$00; 2448
+        .byte   $00,$01,$08,$05,$02,$01,$14,$00; 2450
+        .byte   $07,$20,$04,$07,$03,$04,$01,$19; 2458
+        .byte   $05,$00,$20,$0E,$02,$0E,$02,$0E; 2460
+        .byte   $02,$0E,$02,$0F,$02,$0F,$02,$0F; 2468
+        .byte   $02,$0F,$02,$FE,$F9,$63,$24,$F9; 2470
+        .byte   $97,$24,$F9,$63,$24,$F9,$97,$24; 2478
+        .byte   $F9,$63,$24,$F9,$9A,$24,$05,$02; 2480
+        .byte   $05,$02,$05,$02,$05,$02,$F8,$94; 2488
+        .byte   $24,$F9,$94,$24,$F9,$97,$24,$F9; 2490
+        .byte   $9A,$24,$0A,$02,$0A,$02,$0A,$02; 2498
+        .byte   $0A,$02,$FE,$F9,$91,$24,$F9,$91; 24A0
+        .byte   $24,$F9,$91,$24,$F9,$91,$24,$F9; 24A8
+        .byte   $74,$24,$F9,$74,$24,$FE,$FA,$67; 24B0
+        .byte   $23,$FD,$43,$24,$0A,$08,$FB,$5A; 24B8
+        .byte   $24,$F9,$91,$24,$F9,$A3,$24,$F9; 24C0
+        .byte   $A3,$24,$FF,$05,$0A,$0F,$14,$19; 24C8
+        .byte   $1E,$23,$28,$2D,$32,$37,$3C,$41; 24D0
+        .byte   $46,$4B,$50,$01,$08,$05,$00,$01; 24D8
+        .byte   $07,$01,$04,$12,$06,$08,$01,$02; 24E0
+        .byte   $01,$14,$07,$04,$10,$02,$04,$02; 24E8
+        .byte   $14,$00,$81,$FF,$FF,$01,$00,$FF; 24F0
+        .byte   $FF,$00,$00,$06,$08,$03,$04,$01; 24F8
+        .byte   $0A,$07,$03,$10,$16,$02,$13,$02; 2500
+        .byte   $13,$02,$16,$02,$16,$02,$13,$02; 2508
+        .byte   $18,$01,$16,$01,$14,$02,$16,$02; 2510
+        .byte   $13,$02,$13,$02,$16,$02,$16,$02; 2518
+        .byte   $13,$04,$FE,$FA,$CB,$24,$FD,$ED; 2520
+        .byte   $24,$F9,$04,$25,$30,$02,$F9,$04; 2528
+        .byte   $25,$30,$02,$F9,$04,$25,$16,$02; 2530
+        .byte   $18,$01,$16,$01,$14,$02,$18,$01; 2538
+        .byte   $16,$01,$14,$02,$1B,$10,$1D,$08; 2540
+        .byte   $FB,$E4,$24,$1F,$05,$FB,$DB,$24; 2548
+        .byte   $1F,$10,$FF,$13,$02,$0F,$02,$0F; 2550
+        .byte   $02,$13,$02,$13,$02,$0F,$02,$14; 2558
+        .byte   $01,$13,$01,$11,$02,$13,$02,$0F; 2560
+        .byte   $02,$0F,$02,$13,$02,$13,$02,$0F; 2568
+        .byte   $02,$03,$02,$FE,$06,$08,$03,$04; 2570
+        .byte   $01,$0A,$07,$03,$20,$06,$08,$01; 2578
+        .byte   $02,$01,$14,$07,$04,$20,$01,$08; 2580
+        .byte   $05,$00,$01,$07,$01,$04,$22,$FA; 2588
+        .byte   $CB,$24,$FB,$74,$25,$FC,$ED,$24; 2590
+        .byte   $F9,$53,$25,$30,$02,$F9,$53,$25; 2598
+        .byte   $30,$02,$F9,$53,$25,$13,$02,$14; 25A0
+        .byte   $01,$13,$01,$11,$02,$14,$01,$13; 25A8
+        .byte   $01,$11,$02,$14,$10,$16,$08,$FB; 25B0
+        .byte   $7D,$25,$1B,$05,$FB,$86,$25,$1B; 25B8
+        .byte   $10,$FF,$04,$08,$0C,$10,$14,$18; 25C0
+        .byte   $1C,$20,$24,$28,$2C,$30,$02,$04; 25C8
+        .byte   $02,$14,$00,$81,$FF,$FF,$01,$00; 25D0
+        .byte   $FF,$FF,$00,$00,$01,$08,$01,$03; 25D8
+        .byte   $01,$23,$07,$00,$12,$FA,$C2,$25; 25E0
+        .byte   $FD,$CE,$25,$1D,$04,$1D,$01,$1D; 25E8
+        .byte   $01,$1D,$08,$1D,$01,$1D,$01,$1F; 25F0
+        .byte   $02,$1D,$02,$1F,$02,$1D,$04,$1D; 25F8
+        .byte   $01,$1D,$01,$1D,$02,$1A,$02,$1B; 2600
+        .byte   $02,$1D,$04,$1D,$01,$1D,$01,$1F; 2608
+        .byte   $02,$1D,$02,$1F,$02,$22,$0C,$FF; 2610
+        .byte   $01,$08,$01,$03,$01,$23,$07,$00; 2618
+        .byte   $22,$FA,$C2,$25,$FB,$18,$26,$FC; 2620
+        .byte   $CE,$25,$1A,$04,$1A,$01,$1A,$01; 2628
+        .byte   $1A,$08,$1A,$01,$1A,$01,$1B,$02; 2630
+        .byte   $1A,$02,$1B,$02,$1A,$04,$1A,$01; 2638
+        .byte   $1A,$01,$18,$02,$16,$02,$18,$02; 2640
+        .byte   $1A,$04,$1A,$01,$1A,$01,$18,$02; 2648
+        .byte   $1A,$02,$18,$02,$16,$0C,$FF; 2650
 
 ; --------------------------------------------------------------------------
 ; Steps in each of the three pitch-sweep segments
@@ -3967,20 +4219,30 @@ L2BC0:  lda     ($10),y                 ; 2BC0
         .byte   $00,$00,$00,$18,$18,$38,$F0,$E0; 38ED
         .byte   $00,$00,$00,$18,$18,$18,$18,$18; 38F5
         .byte   $18,$18,$18             ; 38FD
-L3900:  .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3900
+
+; --------------------------------------------------------------------------
+; Character $20 of the $3800 set: blank.
+; --------------------------------------------------------------------------
+BlankChar:
+        .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3900
         .byte   $AA,$80,$80,$80,$80,$80,$80,$AA; 3908
         .byte   $AA,$B0,$B0,$B0,$B0,$B0,$B0,$AA; 3910
         .byte   $AA,$BC,$BC,$BC,$BC,$BC,$BC,$AA; 3918
         .byte   $AA,$BF,$BF,$BF,$BF,$BF,$BF,$AA; 3920
         .byte   $C0,$C0,$C0,$C0,$C0,$C0,$C0,$C0; 3928
-L3930:  .byte   $80,$C0,$E0,$70,$38,$FC,$00,$00; 3930
-L3938:  .byte   $03,$01,$00,$80,$80,$FF,$80,$80; 3938
-L3940:  .byte   $00,$00,$00,$00,$F8,$1C,$0E,$07; 3940
-L3948:  .byte   $00,$00,$80,$80,$FF,$80,$80,$00; 3948
-L3950:  .byte   $04,$04,$04,$04,$04,$04,$04,$1F; 3950
-L3958:  .byte   $80,$C0,$E0,$70,$38,$1C,$0C,$04; 3958
-L3960:  .byte   $23,$21,$20,$20,$20,$20,$20,$F8; 3960
-L3968:  .byte   $00,$00,$20,$30,$38,$3C,$2E,$27; 3968
+
+; --------------------------------------------------------------------------
+; Characters $26-$2D of the $3800 set: the pieces the hurdle drawers copy.
+; --------------------------------------------------------------------------
+HurdleArt:
+        .byte   $80,$C0,$E0,$70,$38,$FC,$00,$00; 3930
+        .byte   $03,$01,$00,$80,$80,$FF,$80,$80; 3938
+        .byte   $00,$00,$00,$00,$F8,$1C,$0E,$07; 3940
+        .byte   $00,$00,$80,$80,$FF,$80,$80,$00; 3948
+        .byte   $04,$04,$04,$04,$04,$04,$04,$1F; 3950
+        .byte   $80,$C0,$E0,$70,$38,$1C,$0C,$04; 3958
+        .byte   $23,$21,$20,$20,$20,$20,$20,$F8; 3960
+        .byte   $00,$00,$20,$30,$38,$3C,$2E,$27; 3968
         .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3970
         .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3978
         .byte   $54,$54,$44,$44,$44,$54,$54,$00; 3980
@@ -3998,13 +4260,18 @@ L3968:  .byte   $00,$00,$20,$30,$38,$3C,$2E,$27; 3968
         .byte   $04,$04,$04,$04,$04,$04,$04,$04; 39E0
         .byte   $10,$10,$10,$10,$10,$10,$10,$10; 39E8
         .byte   $40,$40,$40,$40,$40,$40,$40,$40; 39F0
-L39F8:  .byte   $00,$00,$00,$00,$00,$00,$00,$00; 39F8
-L3A00:  .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3A00
-L3A08:  .byte   $00,$01,$01,$01,$01,$06,$1A,$05; 3A08
-L3A10:  .byte   $11,$66,$9A,$A6,$A9,$69,$99,$55; 3A10
-L3A18:  .byte   $40,$90,$50,$64,$A4,$A5,$9A,$55; 3A18
-L3A20:  .byte   $00,$00,$00,$00,$00,$00,$40,$00; 3A20
-L3A28:  .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3A28
+
+; --------------------------------------------------------------------------
+; Characters $3F-$45 of the $3800 set: the scenery strip RotateCharsLeft scrolls.
+; --------------------------------------------------------------------------
+SceneryChars:
+        .byte   $00,$00,$00,$00,$00,$00,$00,$00; 39F8
+        .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3A00
+        .byte   $00,$01,$01,$01,$01,$06,$1A,$05; 3A08
+        .byte   $11,$66,$9A,$A6,$A9,$69,$99,$55; 3A10
+        .byte   $40,$90,$50,$64,$A4,$A5,$9A,$55; 3A18
+        .byte   $00,$00,$00,$00,$00,$00,$40,$00; 3A20
+        .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3A28
         .byte   $00,$00,$00,$00,$54,$A9,$AA,$55; 3A30
         .byte   $00,$00,$00,$00,$00,$00,$40,$50; 3A38
         .byte   $00,$00,$00,$00,$00,$00,$00,$01; 3A40
@@ -4032,7 +4299,12 @@ L3A28:  .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3A28
         .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3AF0
         .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3AF8
         .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3B00
-L3B08:  .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3B08
+
+; --------------------------------------------------------------------------
+; Characters $61-$70: the 16 cells under the object, rebuilt with it merged in.
+; --------------------------------------------------------------------------
+ObjectChars:
+        .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3B08
         .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3B10
         .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3B18
         .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3B20
@@ -4048,22 +4320,27 @@ L3B08:  .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3B08
         .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3B70
         .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3B78
         .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3B80
-L3B88:  .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3B88
-L3B90:  .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3B90
-L3B98:  .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3B98
-L3BA0:  .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3BA0
-L3BA8:  .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3BA8
-L3BB0:  .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3BB0
-L3BB8:  .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3BB8
-L3BC0:  .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3BC0
-L3BC8:  .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3BC8
-L3BD0:  .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3BD0
-L3BD8:  .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3BD8
-L3BE0:  .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3BE0
-L3BE8:  .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3BE8
-L3BF0:  .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3BF0
-L3BF8:  .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3BF8
-L3C00:  .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3C00
+
+; --------------------------------------------------------------------------
+; Characters $71-$80: the hurdles and finish line are drawn here, then merged into ObjectChars.
+; --------------------------------------------------------------------------
+ObjectBitmap:
+        .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3B88
+        .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3B90
+        .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3B98
+        .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3BA0
+        .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3BA8
+        .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3BB0
+        .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3BB8
+        .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3BC0
+        .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3BC8
+        .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3BD0
+        .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3BD8
+        .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3BE0
+        .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3BE8
+        .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3BF0
+        .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3BF8
+        .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3C00
         .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3C08
         .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3C10
         .byte   $00,$00,$00,$00,$00,$00,$00,$00; 3C18

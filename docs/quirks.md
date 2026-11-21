@@ -35,6 +35,7 @@ What the original does that looks accidental or unfinished, kept as it is in the
 | Part 2 `$241D`–`$2436` | Bytes after `EventTableOffset` that decode as a routine printing A as two hex digits at `$0F99,X`; nothing reaches `$241D` | Remnant: a hex printer left from development |
 | Part 2 `$2109`–`$2110` | Eight bytes before `Entry_day_two` (`EA 20 58 60 EA …`); nothing reaches them | Remnant: leftover bytes |
 | Part 2 flight on NTSC | Flight steps are paced by `DelayXY` (CPU cycles) while distance is added each frame, so on an NTSC C16 a step lasts about 7.8 frames against 4.5 on PAL and every distance comes out about 1.5 times longer (javelin up to 182.5 m) | Undocumented coherent: written and tuned for PAL |
+| Part 1 write-only variables | `EventSpare`, `ScoreSpare`, `FrameStepSeen`, `CountdownSpare`, `HurdleSpare`, `SpeedDiv64`, `SpeedCopy` and `SpeedHalf` are set but never read; `RotateCount` is decremented but never tested | Remnant: left from development |
 | Both tune players | A misplaced tune command (`$FF` inside a call, `$FE` at depth 0, calls nested past 16) executes `BRK` with a code in X (1–3), dropping into the KERNAL's monitor | Undocumented coherent: a development trap left in |
 | Part 2 `TopFrameTable` | Entry 9 (`$3890`) repeats frame 1 and is never selected: the run cycle wraps at 9 | Remnant: purpose unknown |
 

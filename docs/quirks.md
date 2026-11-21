@@ -9,8 +9,11 @@ What the original does that looks accidental or unfinished, kept as it is in the
 | Where | What | Class |
 |:------|:-----|:------|
 | Part 1 `$22E3` | Second entry of the sound jump table (`JMP $2783`, silence) has no caller in part 1; part 2's counterpart at `$1803` is called from five places | Unreachable |
-| Part 2 `$212F` | Ten `NOP`s between the start-up copy loop and the stack reset | Uncertain: likely padding left from editing |
-| Part 2 `$0800`–`$0BDF` | The unpacked image holds 1 KB of data in colour RAM; `Entry_day_two` first copies it down to `$0400`–`$07DF` | Undocumented coherent |
+| Part 2 `$212F` | Ten `NOP`s between the start-up copy loop and the stack reset; present on the 1985 tape too | Uncertain: likely padding left from editing |
+| Part 2 `$0800`–`$0BDF` | The tape loader puts `ADDS` (1 KB) in colour RAM at `$0800`; `Entry_day_two` copies it down to `$0400`–`$07DF` before using the screen | Undocumented coherent |
+| Tapes | Each file was saved with an end address one short (`$2FFF`, `$3FFF`), so the last byte of each intended range is not on the tape; the PRGs have whatever was in RAM there (`$7D`, `$DE`, `$AA`) | Likely defect (mastering), harmless |
+| Tape side 2 | `ADDS` was saved from `$1400` (its header) but the loader loads it at `$0800` | Undocumented coherent: saved from where it lived during development |
+| Tape side 2 | The loader's file names are `MAIN*` and `ADDS*`, used with length 4, so the `*` is never read | Remnant |
 
 ---
 
@@ -21,4 +24,5 @@ What the original does that looks accidental or unfinished, kept as it is in the
 | Part 1 `$170C`–`$1725` | Code-shaped bytes (increment six screen digits at `$0C2F`); no `JSR`, `JMP`, table or lo/hi pair reaches `$170C` | Unused score routine (remnant); check with a VICE breakpoint during play |
 | Part 2 `$2140`–`$2162` | Code-shaped bytes reading TED timers `$FF00`/`$FF02` into `$28`–`$2B`; no reference to `$2140` | Unused random-number routine (remnant); same check |
 | Part 2 `$2109`–`$2110` | Eight bytes before `Entry_day_two` (`EA 20 58 60 EA …`) | Leftover bytes; not code reached from anywhere |
+| Part 1 | What happens when an event is qualified (does `Lives` stay, how points are scored) | Not yet seen: needs a run with input |
 | Both | Most variables and routines below the main loops are still neutral names | Later slices of stage 4 |

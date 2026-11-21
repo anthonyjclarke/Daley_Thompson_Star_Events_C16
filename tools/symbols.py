@@ -39,6 +39,20 @@ BLOCKS = [
          entries=[0x100D], ranges=[STUB],
          labels={0x100D: ("SfxStart_day_two", "Packed part 2: blanks the screen, copies the decruncher. Provisional name.")}),
 
+    # The 1985 tape loaders (SYS 1536): load MAIN and ADDS with secondary address 0 at fixed addresses, then
+    # jump to the game. tools/tape_check.py proves the tape's MAIN and ADDS are the unpacked images' bytes.
+    dict(name="loader_side1", kind="c16tap", file="original/dt_star_events_side1.tap", index=0, entries=[0x0600],
+         ranges=[(0x0639, 0x063D, "ByteTable", "MainName_side1", "'MAIN1' (length 5)"),
+                 (0x063E, 0x0642, "ByteTable", "AddsName_side1", "'ADDS1' (length 5)")],
+         labels={0x0600: ("TapeLoader_side1", "SYS 1536: LOAD 'MAIN1' at $1000 and 'ADDS1' at $3000 from tape, then start part 1."),
+                 0x1010: ("Entry_day_one", "")}),
+    dict(name="loader_side2", kind="c16tap", file="original/dt_star_events_side2.tap", index=0, entries=[0x0600],
+         ranges=[(0x0639, 0x063D, "ByteTable", "MainName_side2", "'MAIN*', used with length 4 as 'MAIN'"),
+                 (0x063E, 0x0642, "ByteTable", "AddsName_side2", "'ADDS*', used with length 4 as 'ADDS'")],
+         labels={0x0600: ("TapeLoader_side2", "SYS 1536: LOAD 'MAIN' at $1000 and 'ADDS' at $0800 (not its header's $1400),\n"
+                          "then start part 2."),
+                 0x2111: ("Entry_day_two", "")}),
+
     # The unpacked game, as the decruncher leaves it (VICE dump, checked by tools/unpack_sfx.py --check).
     dict(name="day_one", kind="prg", file="original/day_one_unpacked_vice.prg",
          entries=[0x1010, 0x1584, 0x22E3] + D1_SPLITS + [c + 7 for c in D1_INLINE_CALLS],
@@ -53,14 +67,13 @@ BLOCKS = [
                  0x106E: ("AdvancePackedPtr", "Step the packed-screen pointer by one."),
                  0x1077: ("DrawPackedScreen", "Decode the packed screen at $3000 into screen $0C00 and colour $0800.\n"
                           "Codes: $FB run, $FC set address, $FD next row (+40), $FE set colour, $FF end; others are characters."),
-                 0x1121: ("EventNumber", "1-4: picks the event's name, distance and set-up. TODO(name): rung 3 not yet reached."),
+                 0x1121: ("EventNumber", "1-4: the event being run; picks its name, distance and set-up."),
                  0x1123: ("EventDistanceText", "Four 10-byte fields: ' 100', ' 400', ' 110', ' 200' (indexed 0, 10, 20, 30)."),
                  0x114B: ("EventNameText", "Four 10-byte fields: SPRINT, RUN, HURDLES, HURDLES."),
                  0x1173: ("GameOverText", "'GAME OVER', drawn by ShowGameOver."),
-                 0x117C: ("Counter117C", "Set to 3 at start; that many $12 characters drawn at $0CF1; 0 ends the game.\n"
-                          "TODO(user): attempts, lives or qualifying tries?"),
+                 0x117C: ("Lives", "Set to 3; one glyph each at $0CF1. One is lost when an event ends unqualified; 0 ends the game."),
                  0x1191: ("ShowGameOver", "Print GAME OVER, play a tune, wait for fire."),
-                 0x123C: ("InitGame_day_one", "Clear the score tables and set Counter117C to 3, then fall into the event set-up."),
+                 0x123C: ("InitGame_day_one", "Clear the score tables and set Lives to 3, then fall into the event set-up."),
                  0x125A: ("StartEvent_day_one", "Draw the screen, step EventNumber, print the event's name and distance, set TED, install the IRQ."),
                  0x139B: ("MainLoop_day_one", "Once a frame: read the joystick, act on a change, wait for raster line $A8, update, check the event's end."),
                  0x14D9: ("JoyLast", "Last value read from TED_KEYLATCH with $FD written to $FD30/$FF08; a change calls $19BE."),

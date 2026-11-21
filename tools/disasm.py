@@ -47,6 +47,10 @@ def original(block):
     if kind == "tap":
         b = list(tap_blocks(path))[block.get("index", 0)]
         return b["start"], b["data"], b""
+    if kind == "c16tap":  # a program file on a raw C16 tape, decoded by tools/c16_tap.py
+        from c16_tap import programs
+        prog = programs(path)[block.get("index", 0)]
+        return prog["start"], prog["data"], b""
     if kind == "raw":
         return block["start"], path.read_bytes(), b""
     raise ValueError(f"unknown kind {kind!r}")

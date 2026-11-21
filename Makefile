@@ -11,6 +11,7 @@ disasm:
 verify:
 	cd original && shasum -a 256 -c SHA256SUMS
 	$(PY) tools/unpack_sfx.py --check
+	$(PY) tools/tape_check.py
 	$(PY) tools/disasm.py --check
 
 # Describe the original files.

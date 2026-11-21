@@ -172,7 +172,7 @@ L1117:  .byte   $00,$00,$7C,$6C,$5C,$4C,$3C,$2C; 1117
         .byte   $1C,$0C                 ; 111F
 
 ; --------------------------------------------------------------------------
-; 1-4: picks the event's name, distance and set-up. TODO(name): rung 3 not yet reached.
+; 1-4: the event being run; picks its name, distance and set-up.
 ; --------------------------------------------------------------------------
 EventNumber:
         .byte   $00                     ; 1121
@@ -206,11 +206,9 @@ GameOverText:
         .byte   $52                     ; 117B
 
 ; --------------------------------------------------------------------------
-; Set to 3 at start; that many $12 characters drawn at $0CF1; 0 ends the game.
-; TODO(user): attempts, lives or qualifying tries?
+; Set to 3; one glyph each at $0CF1. One is lost when an event ends unqualified; 0 ends the game.
 ; --------------------------------------------------------------------------
-Counter117C:
-        .byte   $00                     ; 117C
+Lives:  .byte   $00                     ; 117C
 L117D:  .byte   $00                     ; 117D
 L117E:  .byte   $00,$00,$00,$00,$00     ; 117E
 L1183:  .byte   $00                     ; 1183
@@ -302,7 +300,7 @@ L1239:  jmp     ShowGameOver            ; 1239
 
 
 ; --------------------------------------------------------------------------
-; Clear the score tables and set Counter117C to 3, then fall into the event set-up.
+; Clear the score tables and set Lives to 3, then fall into the event set-up.
 ; --------------------------------------------------------------------------
 InitGame_day_one:
         lda     #$00                    ; 123C
@@ -316,14 +314,14 @@ L1243:  sta     L117E,y                 ; 1243
         sta     L1987                   ; 124F
         sta     L169D                   ; 1252
         lda     #$03                    ; 1255
-        sta     Counter117C             ; 1257
+        sta     Lives                   ; 1257
 
 ; --------------------------------------------------------------------------
 ; Draw the screen, step EventNumber, print the event's name and distance, set TED, install the IRQ.
 ; --------------------------------------------------------------------------
 StartEvent_day_one:
         sei                             ; 125A
-        ldy     Counter117C             ; 125B
+        ldy     Lives                   ; 125B
         beq     L1239                   ; 125E
         jsr     DrawPackedScreen        ; 1260
         jsr     L22E6                   ; 1263
@@ -344,7 +342,7 @@ StartEvent_day_one:
         sta     L1CB5                   ; 128B
         lda     #$A2                    ; 128E
         sta     L1CB6                   ; 1290
-        ldy     Counter117C             ; 1293
+        ldy     Lives                   ; 1293
 L1296:  lda     #$12                    ; 1296
         sta     $0CF1,y                 ; 1298
         dey                             ; 129B
@@ -481,7 +479,7 @@ L13BE:  lda     TED_VLINE_LO            ; 13BE
         sta     L1CB7                   ; 13C7
         jsr     L1B6E                   ; 13CA
         jsr     L1B05                   ; 13CD
-        lda     Counter117C             ; 13D0
+        lda     Lives                   ; 13D0
         bne     L13D8                   ; 13D3
         jmp     ShowGameOver            ; 13D5
 
@@ -2004,7 +2002,7 @@ L222E:  .byte   $11,$15,$01,$0C,$09,$06,$09,$05; 222E
 L2237:  .byte   $06,$01,$09,$0C,$05,$04 ; 2237
 L223D:  jsr     L1214                   ; 223D
         ldy     #$00                    ; 2240
-        dec     Counter117C             ; 2242
+        dec     Lives                   ; 2242
 L2245:  lda     L2237,y                 ; 2245
         sta     $0EB7,y                 ; 2248
         lda     #$71                    ; 224B

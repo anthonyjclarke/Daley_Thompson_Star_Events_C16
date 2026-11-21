@@ -176,7 +176,7 @@ flowchart TD
 
 ### Input
 
-Day Two takes the joystick or the keyboard. On the start screen, `SelectInputMode` sets `InputMode` from two keys and prints KEY or JOY at the bottom left; through the C16 keyboard matrix as recalled, the keys are J (joystick) and K (keys). `ReadInput`, called from raster split 1, sets `InputBits` (bit 7 fire, bit 3 right, bit 2 left) from the joystick or, with keys, from three keys that decode to Q (left), Y (right) and SPACE (fire). The key names come from the matrix as recalled and are not yet checked in VICE.
+Day Two takes the joystick or the keyboard. On the start screen, `SelectInputMode` sets `InputMode` from two keys and prints KEY or JOY at the bottom left; the keys are J (joystick) and K (keys). `ReadInput`, called from raster split 1, sets `InputBits` (bit 7 fire, bit 3 right, bit 2 left) from the joystick or, with keys, from three keys that decode to Q (left), Y (right) and SPACE (fire). All five keys were confirmed by pressing them in VICE: J and K switch the mode and its text, and Q, Y and SPACE reach `ReadKeys` as left, right and fire.
 
 ### Run-Up and Take-Off
 

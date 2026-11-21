@@ -49,7 +49,7 @@ The clock counts in its own units: one displayed second is 60 frames, which is 1
 
 Day Two is long jump, shot-put and javelin, with three attempts at each. Qualify with any of the three to go on to the next event; fail all three and you're back at the start screen.
 
-**Controls.** On the start screen, press J for joystick or K for keys; the choice shows as JOY or KEY at the bottom left. With keys, Q and Y are left and right and SPACE is fire. (These key names come from reading the keyboard matrix in the code and haven't yet been checked on a machine.) The keyboard's speed drains a little more slowly than the joystick's.
+**Controls.** On the start screen, press J for joystick or K for keys; the choice shows as JOY or KEY at the bottom left. With keys, Q and Y are left and right and SPACE is fire. These keys were checked in VICE. The keyboard's speed drains a little more slowly than the joystick's.
 
 **Run-up.** Alternate left and right as in Day One to build speed.
 

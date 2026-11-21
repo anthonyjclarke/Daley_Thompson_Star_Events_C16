@@ -37,4 +37,3 @@ What the original does that looks accidental or unfinished, kept as it is in the
 | Part 2 `$2140`–`$2162` | Code-shaped bytes reading TED timers `$FF00`/`$FF02` into `$28`–`$2B`; no reference to `$2140` | Unused random-number routine (remnant); never executed in the coverage runs |
 | Part 2 `$241D`–`$2436` | Bytes after `EventTableOffset` that decode as a routine printing A as two hex digits at `$0F99,X`; no `JSR`, `JMP` or pointer reaches `$241D` | Debug remnant: a hex printer left from development |
 | Part 2 `$2109`–`$2110` | Eight bytes before `Entry_day_two` (`EA 20 58 60 EA …`) | Leftover bytes; not code reached from anywhere |
-| Part 2 | Keys, read through the C16 keyboard matrix as recalled (not checked in VICE): `SelectInputMode` J → JOY, K → KEY; `ReadKeys` Q left, Y right, SPACE fire | The J/K–JOY/KEY match supports the reading; press the keys in VICE to confirm |

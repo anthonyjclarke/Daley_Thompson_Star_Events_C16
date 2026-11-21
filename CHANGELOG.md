@@ -2,6 +2,15 @@
 
 ---
 
+## [0.7.1] 22-11-2026
+
+### Changed
+
+- The Day Two keys are confirmed in VICE: J and K select JOY and KEY, and Q, Y and SPACE are left, right and fire.
+  The open item on the key mapping is closed.
+
+---
+
 ## [0.7.0] 22-11-2026
 
 ### Added

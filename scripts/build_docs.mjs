@@ -113,11 +113,15 @@ export function buildHandbook(root = ROOT, configFile = 'docs/handbook.json') {
         renderer.image = ({ href, text, title }) => {
             if (external(href)) throw new Error(`Remote image prevents offline export: ${href}`);
             const { target } = localPath(doc.source, href);
+            const ext = path.extname(target).toLowerCase();
+            const sound = { '.m4a': 'audio/mp4', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg', '.wav': 'audio/wav' }[ext];
             if (!media.has(target)) {
-                const mime = { '.svg': 'image/svg+xml', '.png': 'image/png', '.gif': 'image/gif', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg' }[path.extname(target).toLowerCase()];
+                const mime = sound || { '.svg': 'image/svg+xml', '.png': 'image/png', '.gif': 'image/gif', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg' }[ext];
                 if (!mime) throw new Error(`Unsupported image: ${target}`);
                 media.set(target, `data:${mime};base64,${read(target).toString('base64')}`);
             }
+            // An "image" link to an audio file becomes an embedded player with its alt text as the caption.
+            if (sound) return `<figure class="sound"><figcaption>${escape(text)}</figcaption><audio controls preload="metadata" src="${media.get(target)}"></audio></figure>`;
             if (target.includes('/badges/')) return `<img class="badge" src="${media.get(target)}" alt="${escape(text)}">`;
             return `<img class="zoomable" src="${media.get(target)}" alt="${escape(text)}"${title ? ` title="${escape(title)}"` : ''} tabindex="0" role="button" aria-label="Enlarge: ${escape(text)}">`;
         };

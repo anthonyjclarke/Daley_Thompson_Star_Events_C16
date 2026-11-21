@@ -1,10 +1,10 @@
 # Testing Worklist
 
-What still needs testing or checking, and how. Items done in VICE are listed once with where the proof lives; everything else is open. Tick items off by moving them to the first table and recording the result in [the evidence](evidence.md) or [the quirks](quirks.md).
+What still needs testing or checking, and how. Items already checked, in the code or in VICE, are listed once with where the proof lives; everything else is open. Tick items off by moving them to the first table and recording the result in [the evidence](evidence.md) or [the quirks](quirks.md).
 
 ---
 
-## Checked in VICE
+## Checked
 
 | Item                           | How it was checked                           | Recorded in             |
 |:-------------------------------|:---------------------------------------------|:------------------------|
@@ -24,6 +24,7 @@ What still needs testing or checking, and how. Items done in VICE are listed onc
 | NTSC race clock                | `c16ntsc` in VICE: 1.00 s a displayed second | evidence, part 1        |
 | Day One GAME OVER R marker     | Code read; screen redraw run in `cpu6502.py` | quirks                  |
 | Tunes decoded                  | `tools/decode_tunes.py`; title timed in VICE | analysis, The Tunes     |
+| Sound clips                    | `render_sounds.py`; matches VICE's dump      | analysis, Sound         |
 | Day Two on NTSC                | 189 forced attempts with `--ntsc`            | analysis, How Far       |
 | Names                          | Every data label named; branch targets left  | evidence; worklist      |
 | Decruncher                     | Exomizer 2.0 re-crunch is byte-identical     | artifacts; exo_check.py |
@@ -45,8 +46,8 @@ These need hands, ears or real hardware; the monitor can't do them.
 | Speed quirk            | Compare runs ending just below and at full speed                 | Noticeable in play?                     |
 | Day Two attempts       | Fail three times; qualify once                                   | Back to title / next event?             |
 | High score             | Score, return to the title                                       | High score kept and shown?              |
-| Sound: Day One         | Listen to start, qualified, failed, game over and footsteps      | Describe each; any glitches?            |
-| Sound: Day Two         | Listen to the title tune, event tune, qualified tune and effects | Describe each; any glitches?            |
+| Sound: Day One         | Listen to start, qualified, failed, game over and footsteps      | Same as the handbook's clips?           |
+| Sound: Day Two         | Listen to the title tune, event tune, qualified tune and effects | Same as the handbook's clips?           |
 | Real C16               | Load both tape sides on a PAL C16 (16 KB)                        | Loads, runs, any difference to VICE     |
 | Plus/4                 | Load and play on a Plus/4                                        | Does it run unchanged?                  |
 | Real keyboard aliasing | Try A, 4, E, SHIFT in Day One on hardware                        | Same as in VICE?                        |
@@ -61,9 +62,3 @@ Nothing is open: every code check is done.
 ### Names Still Neutral
 
 Every routine, variable, table and patched operand in both parts now has a name (22-11-2026). What remains neutral is 526 branch targets, 250 in Day One and 276 in Day Two, each inside a routine that has a name and a block comment. They stay `Lxxxx` by choice: they are jump points within a routine, not things of their own.
-
----
-
-## Graphics
-
-Every graphic on the earlier list is now drawn in [the graphics chapter](GRAPHICS.md): Day One's screen from its packed data and scenery, the hurdles and finish line, the title lettering and score digits, the shot and javelin, and the Day Two title and Day One GAME OVER screens. Nothing is outstanding here.

@@ -6,53 +6,33 @@ Decomposition of *Daley Thompson's Star Events* for the Commodore 16, which I wr
 
 ## Originals
 
-| File                                    | What it is                                 | Block            |
-|:----------------------------------------|:-------------------------------------------|:-----------------|
-| `daley_thompsons_star_events_day_one.prg` | Part 1, crunched, `SYS 4109`, $1001–$287B | `day_one_packed` |
-| `daley_thompsons_star_events_day_two.prg` | Part 2, crunched, `SYS 4109`, $1001–$2E0F | `day_two_packed` |
-| `day_one_unpacked_vice.prg`             | Part 1 unpacked, $0FFE–$3FFF, entry $1010  | `day_one`        |
-| `day_two_unpacked_vice.prg`             | Part 2 unpacked, $07FE–$3FFF, entry $2111  | `day_two`        |
-| `dt_star_events_side1.tap`              | Side 1 of the 1985 tape: `DALEY1`, `MAIN1`, `ADDS1` | `loader_side1` |
-| `dt_star_events_side2.tap`              | Side 2 of the 1985 tape: `DALEY`, `MAIN`, `ADDS`    | `loader_side2` |
-
-The tapes are 2004 tape images (origin unknown) of the 1985 release. Their timing is perfectly regular (every wave exactly 53, 105 or 210 units, with no jitter), so they were generated from the file data by software, not sampled from a cassette: they record the release's files, names and loader, not its audio. Each side is in the C16 KERNAL's own format, with no turbo: a 67-byte loader at `$0600`, which `SYS 1536` starts, LOADs the game's two files and jumps to the game. Every block decodes cleanly (`tools/c16_tap.py`), and `tools/tape_check.py` shows that each file, placed where the loader puts it, is byte for byte the unpacked image. So the tape and the PRGs hold the same game, and the tape keeps the earlier form: the loader, the file names and where each file loads.
-
-The two PRGs were crunched with Exomizer 2.0, a version from between 2008 and 2017, so they are a later conversion of the tape's memory; who made them is unknown. Re-crunching the rebuilt game with Exomizer 2.0 gives both files byte for byte (`tools/exo_check.py`). They stay as originals too.
-
-The unpacked images were made by starting each PRG in VICE (`xplus4`, C16 PAL, 16 KB), stopping at the decruncher's final `JMP` (`$019D` for part 1, `$01A2` for part 2) and saving the range the decruncher wrote with the monitor's `save` command. `tools/unpack_sfx.py` runs the same decruncher in a 6502 emulator, and `make verify` checks that both ways give the same bytes.
+`original/` holds what survives, read-only and checked by hash: the two sides of the 1985 cassette as tape images, the two crunched PRGs made from them much later with Exomizer 2.0, and the two unpacked images dumped from VICE for this project. [The artifacts](docs/ARTIFACTS.md) describe each file and how they relate; [source and validation](docs/SOURCE_AND_VALIDATION.md) shows how every one of them is rebuilt byte for byte.
 
 ---
 
 ## Building
 
-| Command               | Does                                                        |
-|:----------------------|:------------------------------------------------------------|
-| `make verify`         | Originals unchanged; unpack and tape match; every block rebuilds byte for byte |
-| `make disasm`         | Regenerate `src/` from `tools/symbols.py`                   |
-| `make run-original`   | Original part 1 in VICE (`PART=two` for part 2)             |
-| `make run`            | Rebuilt packed PRG in VICE                                  |
-| `make run-unpacked`   | Rebuilt unpacked image, started at its entry                |
-| `python3 tools/shots.py` | Scripted start-up screenshots of all three, compared    |
-| `python3 tools/run_tape.py 1` | Load a side from tape in VICE (`LOAD`, PLAY, `SYS1536`) and screenshot it |
-| `make docs`           | Regenerate the code reference and the HTML handbook          |
-
-`docs/evidence.md` holds the proof for each name, `docs/quirks.md` the original's oddities and the open items, and `docs/WORKLIST.md` what still needs testing by hand or checking.
+`make verify` checks the originals and rebuilds every block byte for byte; `make docs` regenerates the code reference and the handbook. The other targets and every script are in [build and run](docs/BUILD_AND_RUN.md).
 
 ---
 
 ## Documentation
 
-The [complete handbook](docs/DALEY_THOMPSON.html) is one offline HTML file with every chapter, the screenshots and diagrams. Open it in a browser. Its chapters are the Markdown files here:
+The [complete handbook](docs/DALEY_THOMPSON.html) is one offline HTML file with every chapter, the screenshots, graphics, diagrams and sound clips. Open it in a browser. Its chapters are the Markdown files here:
 
-| Chapter                                              | What it covers                                     |
-|:-----------------------------------------------------|:---------------------------------------------------|
-| [History and credits](docs/HISTORY_AND_CREDITS.md)   | Who wrote it, recollections, the surviving copies  |
-| [Playing the game](docs/PLAYING.md)                  | Controls, events, qualifying and scoring           |
-| [Artifacts](docs/ARTIFACTS.md)                       | The tapes, the loader and the crunched PRGs        |
-| [Codebase analysis](CODEBASE_ANALYSIS.md)            | How both parts work                                |
-| [Graphics](docs/GRAPHICS.md)                         | Character sets, the athlete, moving without sprites |
-| [Source and validation](docs/SOURCE_AND_VALIDATION.md) | How the disassembly is made and checked          |
-| [Build and run](docs/BUILD_AND_RUN.md)               | Make targets and scripts                           |
-| [Code reference](docs/CODE_REFERENCE.md)             | Every name, generated from `tools/symbols.py`      |
+| Chapter                                                | What it covers                                     |
+|:-------------------------------------------------------|:---------------------------------------------------|
+| [History and credits](docs/HISTORY_AND_CREDITS.md)     | Who wrote it, the packaging, recollections         |
+| [Playing the game](docs/PLAYING.md)                    | Loading, controls, every event, scoring            |
+| [Artifacts](docs/ARTIFACTS.md)                         | The tapes, the loader and the crunched PRGs        |
+| [Codebase analysis](CODEBASE_ANALYSIS.md)              | How both parts work, with the sounds               |
+| [Graphics](docs/GRAPHICS.md)                           | Screens, character sets, the athlete, the boards   |
+| [Source and validation](docs/SOURCE_AND_VALIDATION.md) | How the work was done and how it is checked        |
+| [Build and run](docs/BUILD_AND_RUN.md)                 | Make targets, scripts and tools                    |
+| [Evidence](docs/evidence.md)                           | The proof behind each name                         |
+| [Quirks](docs/quirks.md)                               | What the original does oddly, kept in the build    |
+| [Worklist](docs/WORKLIST.md)                           | What is checked and what still needs a person      |
+| [Changelog](CHANGELOG.md)                              | Every change to the project                        |
+| [Code reference](docs/CODE_REFERENCE.md)               | Every name, generated from `tools/symbols.py`      |
 
 `make docs` regenerates the code reference and the HTML; see [maintaining the HTML](docs/HTML_DOCUMENTATION.md).

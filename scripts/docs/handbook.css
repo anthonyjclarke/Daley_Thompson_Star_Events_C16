@@ -58,6 +58,9 @@ li { margin: 6px 0; }
 .historical > summary { cursor: pointer; font-weight: 700; font-size: 18px; }
 .historical article { margin-top: 20px; }
 .historical-notice { padding: 16px; background: #fff1d9; border-left: 4px solid #c38324; font-size: 13px; }
+figure.sound { margin: 14px 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; }
+figure.sound figcaption { font-size: 14px; color: var(--muted); margin-bottom: 6px; }
+figure.sound audio { display: block; width: 100%; }
 figure.diagram { margin: 25px 0; padding: 12px; border: 1px solid var(--line); border-radius: 8px; overflow-x: auto; }
 .mermaid { text-align: center; font-size: 13px; }
 .mermaid svg { height: auto; max-width: 100%; }

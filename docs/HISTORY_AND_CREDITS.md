@@ -16,6 +16,14 @@ The game follows Ocean's C64 decathlon game. The C64 title screen kept with the 
 
 ---
 
+## The Cassette Inlay
+
+![The C16 cassette inlay](images/cassette_inlay.jpg)
+
+The inlay (scanned from `Original Assets/`) describes seven events for one player, a joystick for control and the loading steps. Its tips say to run by moving the joystick continuously left and right, to press fire to jump or throw, and in the jumping and throwing events to launch as near 45° and as close to the take-off line as possible. The code agrees on the run, fire and the line; on the angle it doesn't: 45° is best only in the shot-put, while the long jump peaks at 55–59° and the javelin below 35° ([what makes a long throw](PLAYING.md#day-two-the-field-events)). A loose slip of revised loading instructions came with the tape; it is shown with [the loader](ARTIFACTS.md#the-tapes).
+
+---
+
 ## Recollections
 
 Anthony gave these on 21 November 2026, about 41 years after the event. They're recorded as memory, not proof; the [evidence](evidence.md) keeps them alongside what the code shows.
@@ -31,7 +39,7 @@ Anthony gave these on 21 November 2026, about 41 years after the event. They're 
 | Advert boards    | Copied from the C64 version                                     |
 | Running control  | Probably alternating two keys, or moving the joystick left and right |
 
-Most other details aren't remembered: the attempts counter, scoring, menus, the joystick port, the tunes, the screen packer, the unused routines, the label names, the tape loader and where the crunched PRGs came from.
+Most other details aren't remembered: the attempts counter, scoring, menus, the joystick port, the tunes, the screen packer, the unused routines, the label names, the tape loader and where the crunched PRGs came from. The code has since answered most of them.
 
 ---
 
@@ -39,7 +47,9 @@ Most other details aren't remembered: the attempts counter, scoring, menus, the 
 
 Several of these recollections can now be checked against the code:
 
-- **Running control.** The run is joystick left-right alternation in both parts (`JoyWaggle`, `JoyWaggle_day_two`). Day Two also offers keys, which look like Q and Y with SPACE for fire.
+- **Running control.** The run is joystick left-right alternation in both parts (`JoyWaggle`, `JoyWaggle_day_two`), on control port 2. Day Two also offers keys, Q and Y with SPACE for fire, and Day One answers to A and 4 through the way it reads the joystick; all were pressed in VICE.
+- **The tunes.** Both parts play the same three tunes; the title and GAME OVER tune is *Chariots of Fire* ([the tunes](../CODEBASE_ANALYSIS.md#the-tunes)).
+- **The loader and the PRGs.** The tape's 67-byte loader at `$0600` loads the two files of each side; the crunched PRGs were made from the same memory with Exomizer 2.0, between 2008 and 2017 ([artifacts](ARTIFACTS.md)).
 - **Two parts.** Each part fills the 16 KB machine to `$3FFF`, and Day Two loads its character set into colour RAM and copies it down to fit.
 - **Watching the C64 version.** Without the C64 source, the C16 game has its own design throughout: a character-mode athlete, scenery scrolled by rotating character bitmaps, and hurdles drawn pixel by pixel into the character set.
 

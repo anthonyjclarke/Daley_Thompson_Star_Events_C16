@@ -1,6 +1,6 @@
 # Graphics
 
-The C16 has no hardware sprites, so everything that moves in *Star Events* is made of characters. This chapter shows the character sets and the athlete as they sit in memory, and explains the techniques used to animate them. The pictures are drawn straight from the original images by `tools/render_graphics.py`; the screenshots come from VICE by `tools/doc_shots.py`.
+The C16 has no hardware sprites, so everything that moves in *Star Events* is made of characters. This chapter shows the character sets and the athlete as they sit in memory, and explains the techniques used to animate them. The pictures are drawn straight from the original images by `tools/render_graphics.py`; the screenshots come from VICE by `tools/doc_shots.py`. A screenshot of every event is in [playing the game](PLAYING.md).
 
 ---
 
@@ -8,15 +8,12 @@ The C16 has no hardware sprites, so everything that moves in *Star Events* is ma
 
 Both parts use TED's 40×25 character screen at `$0C00` with colour RAM at `$0800`, in multicolour character mode (`$FF07` bit 4). A multicolour cell shows four colours in pixel pairs: the three background registers `$FF15`–`$FF17` and the cell's own colour. Thirteen raster splits a frame rewrite the background registers, so each horizontal band of the screen (sky, scenery, track, panels) gets its own palette from the same characters.
 
-![Day One, 400 m](images/event_400m.png)
 
-Day One's screen is unpacked at the start of each event from a packed description at `$3000` (`DrawPackedScreen`). The codes `$FB`–`$FF` mean a run of one character, a new address, the next row, a new colour, and the end; every other byte is a character.
+Day One's screen is unpacked at the start of each event from a packed description at `$3000` (`DrawPackedScreen`). The codes `$FB`–`$FF` mean a run of one character, a new address, the row below the last new address, a new colour, and the end; every other byte is a character.
 
 ![Day One screen from its own code](images/screen_day_one.svg)
 
 This is what the packed data holds, drawn by running the game's own `DrawPackedScreen` and then `DrawSceneryRows` in the project's 6502 emulator. The packed data is only the panels: score and qualifying time, the event box, the RECORDS box and the bottom line. `DrawSceneryRows` adds the two scenery rows, characters `$3F`–`$45` over `$46`–`$4C` repeated across the screen. The event's name, distance and records, the track, the athlete and the sky are drawn by other routines, and the colours of each band come from the raster splits, so the background here is plain black.
-
-![Day Two, long jump](images/event_long_jump.png)
 
 Day Two draws its screen in pieces (`DrawEventScreen`, `DrawPieceList`) and writes the event's title in a large font made of characters, from glyph numbers (`TitleGlyphs`).
 
@@ -123,7 +120,6 @@ The colours are neutral stand-ins for the multicolour values, as in Day One's sh
 
 The shot and the javelin are drawn as separate small objects. `DrawShotBall` redraws an 8-byte ball (`ShotBitmap`) into character `$6A` at the shot's pixel row, so it can move up and down a pixel at a time. `DrawJavelinShaft` writes ten cells, five across and two down (`JavelinCellOffsets`), with characters counting down from the phase's first (`JavelinChars`): rising, level, falling, and nose-down as it lands.
 
-![Shot-put](images/event_shot_put.png)
 
 ---
 
@@ -145,4 +141,4 @@ Day Two opens on FIRE TO START, with the javelin's records, the scrolling boards
 
 ![Day One GAME OVER](images/game_over_day_one.png)
 
-Day One has no title screen: it goes straight into the first race. When the last attempt is lost, `ShowGameOver` prints GAME OVER at `$0EB7`, plays the tune and waits for fire. In this shot one R is still shown under the distance, although no attempts are left.
+Day One has no title screen: it goes straight into the first race. When the last attempt is lost, `ShowGameOver` prints GAME OVER at `$0EB7`, plays the tune and waits for fire. In this shot one R is still shown under the distance, although no attempts are left: the markers are drawn only when a race starts ([the quirks](quirks.md)).

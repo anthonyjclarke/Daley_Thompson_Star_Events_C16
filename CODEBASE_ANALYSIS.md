@@ -121,7 +121,7 @@ A controlled run confirmed the role: with `SpeedDecay` patched to `RTS` in VICE'
 
 The athlete doesn't move across the screen; the world moves past him. Once a frame, from the last raster split, `MoveRace` turns `RunSpeed` into movement:
 
-1. `RunSpeed / 32` whole steps of `MoveTrackMarks`, plus one more whenever a fraction accumulated in `$2181` carries.
+1. `RunSpeed / 32` whole steps of `MoveTrackMarks`, plus one more whenever the fraction accumulated in `MarkFraction` carries.
 2. Each step moves the two marks on the track (row 23) one sub-character position left, using characters `$3B`–`$3F` as five positions within a cell. Each time a mark crosses a whole cell, `StepAthleteFrame` advances the running animation, so the legs keep pace with the ground.
 3. Hurdles and the finish line move with the track marks (`ScrollTrackObjects`).
 4. `RunSpeed / 128` steps (plus a fraction) of `ScrollStep`, which rotates the scenery characters one pixel (`ScrollScenery`) and advances the distance (`AdvanceDistance`).
@@ -142,14 +142,7 @@ If a hurdle reaches the athlete's window (`ObjectX` `$26`–`$43`) while he is n
 
 ### Qualifying and Scoring
 
-`JudgeTime` copies the clock into the layout of `QualifyTimes` and compares them digit by digit:
-
-| Event           | Qualifying time | `QualifyIndex` |
-|:----------------|:----------------|:---------------|
-| 100 m           | 013:00          | 0              |
-| 110 m hurdles   | 015:00          | 12             |
-| 400 m           | 060:00          | 6              |
-| 200 m hurdles   | 038:00          | 18             |
+`JudgeTime` copies the clock into the layout of `QualifyTimes` and compares them digit by digit. Each event's limit sits at `QualifyIndex` 0 (100 m), 12 (110 m hurdles), 6 (400 m) or 18 (200 m hurdles); the times themselves are listed in [playing the game](docs/PLAYING.md#day-one-the-running-events).
 
 Under the time, it prints QUALIFIED, plays `PlayQualifiedSound` and calls `AwardTimeBonus`, which adds 6 points to the score 255 − (sum of three of the time's ASCII digits) times. Faster times give a smaller digit sum and so more points; every score rise seen in VICE was a multiple of 6. Over the time, it prints FAILED, plays `PlayFailedSound` and takes one of `Lives`. At 0, `ShowGameOver` prints GAME OVER, plays a tune and waits for fire.
 
@@ -246,15 +239,7 @@ These are rung 3 for the flight code and the counter. The run-up itself was not 
 
 ### Attempts and Judging
 
-Each event allows three attempts (`AttemptNumber` 0–2). `JudgeAttempt` compares the attempt's distance (`AttemptDistance`, five ASCII digits) with the event's entry in `QualifyLengthTable`:
-
-| Event      | World record | Qualifying length |
-|:-----------|:-------------|:------------------|
-| Long jump  | 011.87 m     | 006.80 m          |
-| Shot-put   | 017.60 m     | 013.90 m          |
-| Javelin    | 101.30 m     | 065.70 m          |
-
-A longer distance sets `AttemptResult` to 1 (qualified), otherwise `$FF`. A distance beating `BestTable` is copied in as the new best, and a qualified one is also compared with `WorldRecordTable`. The three results are kept in `AttemptResults`, and `ShowAttemptMarks` colours the three marks by the FOUL label. `AddDistanceToScore` adds the metres and tenths to the score and keeps a `HighScore`.
+Each event allows three attempts (`AttemptNumber` 0–2). `JudgeAttempt` compares the attempt's distance (`AttemptDistance`, five ASCII digits) with the event's entry in `QualifyLengthTable` (the lengths and world records are listed in [playing the game](docs/PLAYING.md#day-two-the-field-events)). A longer distance sets `AttemptResult` to 1 (qualified), otherwise `$FF`. A distance beating `BestTable` is copied in as the new best, and a qualified one is also compared with `WorldRecordTable`. The three results are kept in `AttemptResults`, and `ShowAttemptMarks` colours the three marks by the FOUL label. `AddDistanceToScore` adds the metres and tenths to the score and keeps a `HighScore`.
 
 After three attempts, any qualified one moves to the next event; after the javelin, `EventIndex` goes back to the long jump. If none qualified, the game returns to the FIRE TO START screen. A run in VICE with the fire wait patched out showed the cycle: three failed attempts, then back to the start.
 
@@ -262,16 +247,7 @@ After three attempts, any qualified one moves to the next event; after the javel
 
 ## Graphics
 
-Both parts are character-mode screens using multicolour characters from RAM. Day One's athlete is two 6×3-character halves drawn from `AthleteFrames` (`DrawAthlete`), with frames 36 bytes apart. Day Two's athlete is a 6×6 block of characters `$C6` down (`DrawAthlete_day_two`).
-
-Motion is done with characters rather than hardware sprites, which the C16 doesn't have:
-
-- **Scenery** scrolls by rotating the bitmaps of seven characters one pixel at a time (`RotateCharsLeft`).
-- **Track marks** move through five pre-drawn characters for the sub-cell positions.
-- **Hurdles and the finish line** are drawn pixel by pixel into a 256-byte block of the character set.
-- **Day Two's advert boards** scroll a whole character at a time (`ScrollAdvertBoards`), and its big title letters are glyph numbers (`TitleGlyphs`).
-
-The advert boards (Barclays, Lee Cooper, Pepsi, Ocean, Boots, WH Smith) were copied from the C64 version, as Anthony recalls.
+Both parts are multicolour character screens with no sprites: the athlete, the hurdles, the scenery and the boards are all characters, animated by rewriting their bitmaps or by swapping character codes. [The graphics chapter](docs/GRAPHICS.md) shows every set, frame and object, drawn from the originals, and how each one moves.
 
 ---
 
@@ -293,7 +269,25 @@ The 35 notes run a semitone apart from A2 to G5: note 0 is `$007`, which TED pla
 | *Chariots of Fire*    | GAME OVER (`$2405`)           | Title screen (`$1925`)        | Melody 130 s; bass loops    |
 | Qualified             | Never played (`$25E5`)        | After a qualified attempt     | 4.6 s                       |
 
+![Title and GAME OVER tune: Chariots of Fire (first 40 seconds)](docs/sounds/title_tune.m4a)
+
+![Race and event fanfare](docs/sounds/event_fanfare.m4a)
+
+![Qualified tune (Day Two; unused in Day One)](docs/sounds/qualified_tune.m4a)
+
 The three tunes are identical in both parts, note for note. The title and GAME OVER melody follows the interval pattern of the opening of Vangelis's *Chariots of Fire* theme, transposed to G, over a bass of repeated quavers that jumps back to its start after 66 seconds and never ends. Day One's unused tune call at `$22F6` is the qualified tune: Day One plays a short effect for QUALIFIED instead.
+
+### The Effects
+
+![Day One: the QUALIFIED effect, then FAILED](docs/sounds/day_one_effects.m4a)
+
+![Footsteps (Day One, at a steady run)](docs/sounds/footsteps.m4a)
+
+![Day Two: SoundEffectA_day_two, then SoundEffectB_day_two (played with the fail message)](docs/sounds/day_two_effects.m4a)
+
+### How the Clips Were Made
+
+`tools/render_sounds.py` runs each part's own sound code in `tools/cpu6502.py`: the routine that starts the tune or effect, then the sound step once a frame, as the raster split calls it. It records TED's sound registers (`$FF0E`–`$FF12`) after every frame and plays them through a simple TED model: two square-wave voices at 111860.78 / (1024 − value) Hz, voice 2 switchable to noise, volume 0–8. Over the first 80 seconds from power-on, the frequencies it records match VICE's own register dump of the title screen frame for frame. The model leaves out TED's exact waveform and output filtering, so the clips give the notes, rhythm and effects as the code plays them, not the precise tone of a real machine.
 
 ---
 
@@ -321,7 +315,7 @@ Unresolved:            none
 ```text
 Purpose and scope:     move the world past the athlete once a frame
 Entry / calling:       Split13_day_one, while RaceRunning
-Inputs:                RunSpeed; fraction accumulators $2181 and $2183
+Inputs:                RunSpeed; MarkFraction and SceneFraction
 Outputs and clobbers:  track marks, objects, scenery, distance digits; A, X, Y
 Algorithm:             RunSpeed/32 MoveTrackMarks (+1 on fraction carry) with ScrollTrackObjects;
                        RunSpeed/128 ScrollStep (+fraction)
@@ -358,6 +352,4 @@ Unresolved:            what follows beating the world record
 
 ## Coverage
 
-VICE's execution map (`memmapshow`) was recorded over three runs: Day One with no input, Day One with the speed held (all four events qualified), and Day Two's attempt cycle. Every executed instruction lies on an instruction start of the traced disassembly, so no code is missing from the trace. The routines that never ran, and that nothing references, are listed as open items in [the quirks](docs/quirks.md): an uncalled screen-digit counter and tune call in Day One, and a timer-reading routine and a hex printer in Day Two.
-
-The runs didn't exercise jumps, throws or a qualified attempt in Day Two, so "never executed" there isn't proof of dead code. For those parts, the static search (no reference anywhere) is the main evidence.
+VICE's execution map (`memmapshow`) was recorded over three runs: Day One with no input, Day One with the speed held (all four events qualified), and Day Two's attempt cycle. Every executed instruction lies on an instruction start of the traced disassembly, so no code is missing from the trace. The routines that never ran, and that nothing reaches directly or indirectly, are listed in [the quirks](docs/quirks.md): an uncalled screen-digit counter and tune call in Day One, and a timer-reading routine and a hex printer in Day Two. Those three runs didn't include Day Two's flights; `tools/flight_probe.py` later ran all three flight handlers, and the static search of both images is the main evidence that the leftovers are dead.

@@ -2,6 +2,26 @@
 
 ---
 
+## [0.10.0] 22-11-2026
+
+### Added
+
+- Sound clips in the handbook: the three tunes and the effects, rendered from the game's own sound code by
+  `tools/render_sounds.py` (matches VICE's register dump frame for frame). The handbook generator embeds audio.
+- The cassette inlay and Ocean's revised loading slip, scanned from `Original Assets/`, and the inlay's tips
+  checked against the code.
+- The start-up and tape-versus-PRG screenshots in the validation chapter, and a "How the Work Was Done" section.
+- Every script and library in the build-and-run tables.
+
+### Changed
+
+- Documentation review: each fact lives in one chapter. The README no longer repeats the artifacts and build
+  tables; the analysis points to the playing guide for the times and lengths and to the graphics chapter for the
+  pictures; the evidence points to the history for the recollections; repeated screenshots are gone. Stale
+  passages (keys, open items, neutral names, the `$FD` code) are brought up to date.
+
+---
+
 ## [0.9.2] 22-11-2026
 
 ### Added

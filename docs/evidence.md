@@ -6,19 +6,7 @@ One entry per name that claims a role: what was seen, how, and when. The source 
 
 ## Anthony's Recollections
 
-Given 21-11-2026, about 41 years after the event. Memory is evidence, not proof.
-
-| Topic                | Recollection                                                   |
-|:---------------------|:---------------------------------------------------------------|
-| Authors              | Written jointly by Anthony and Jason Perkins; no one else involved |
-| Commission           | D.C. Ward (Ocean) commissioned the C16 version                 |
-| Brief                | Replicate the C64 game as faithfully as the C16 allowed        |
-| Source material      | None from Ocean: everything done by watching the C64 version   |
-| Two parts            | Memory was very tight, so many C64 features were dropped and the game split in two |
-| Tools                | Written and assembled on a C64; the runtime loaded onto the C16 |
-| Advert boards        | Copied from the C64 version                                    |
-| Running control      | Probably alternate two keys or move the joystick left and right |
-| Not remembered       | Attempts counter, scoring, menu, joystick port, tunes, screen packer, unused routines, `NOP`s, bugs, label names, the `$0600` loader, the PRGs' origin |
+Given 21-11-2026, about 41 years after the event, and listed in [the history](HISTORY_AND_CREDITS.md#recollections). Memory is evidence, not proof: a recollection counts for a name only where the code or a run agrees, and each name's row below says which it rests on.
 
 ---
 

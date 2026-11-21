@@ -15,9 +15,9 @@ What survives of the 1985 release, what each file is, and how the files relate. 
 | `day_one_unpacked_vice.prg`               | 12,292    | `175f57575a143316` |
 | `day_two_unpacked_vice.prg`               | 14,340    | `006b2048ec2eaefd` |
 
-The two tapes are the earliest form: images of the two sides of the 1985 cassette. The two crunched PRGs are a later conversion of the same game into single files, of unknown origin. The two unpacked images were made for this project from the crunched PRGs (see [validation](SOURCE_AND_VALIDATION.md)).
+The two tapes are the earliest form: images of the two sides of the 1985 cassette. The two crunched PRGs are a later conversion of the same game into single files, made with Exomizer 2.0 between 2008 and 2017 ([below](#the-crunched-prgs)). The two unpacked images were made for this project from the crunched PRGs (see [validation](SOURCE_AND_VALIDATION.md)).
 
-`Original Assets/` holds the cassette and C64 title-screen pictures, Ocean's 1985 advert, the cassette inlay and the revised loading instructions, as PDFs.
+`Original Assets/` holds the cassette and C64 title-screen pictures, Ocean's 1985 advert, and scans of the cassette inlay and of a revised loading slip; [the history](HISTORY_AND_CREDITS.md) shows the first four.
 
 ---
 
@@ -38,7 +38,9 @@ Every block on both sides decodes cleanly: both copies pass their checksums and 
 
 **The timing is synthetic.** All but six waves per side are exactly 53, 105 or 210 units long. A cassette sampled by a real tape interface always wobbles, so these 2004 files were generated from the file data by software. They record the release's files, names and loader, but not the audio of a real tape.
 
-**The loader.** `DALEY1` / `DALEY` is a 67-byte program at `$0600`, started by `SYS 1536` as the loading instructions say. It calls the KERNAL's `SETLFS`, `SETNAM` and `LOAD` for each game file with secondary address 0, which makes `LOAD` use the loader's own address rather than the file's header. That is why side 2's `ADDS`, saved from `$1400`, lands at `$0800`. It then jumps to the game: `$1010` on side 1, `$2111` on side 2. The loaders are the blocks `loader_side1` and `loader_side2` and rebuild byte for byte.
+![Ocean's revised loading instructions](images/loading_instructions.jpg)
+
+**The loader.** `DALEY1` / `DALEY` is a 67-byte program at `$0600`, started by `SYS 1536` as Ocean's revised loading slip says: it tells the player to ignore the inlay's loading steps, type `LOAD"",1,1`, wait for READY and then type `SYS 1536`. It calls the KERNAL's `SETLFS`, `SETNAM` and `LOAD` for each game file with secondary address 0, which makes `LOAD` use the loader's own address rather than the file's header. That is why side 2's `ADDS`, saved from `$1400`, lands at `$0800`. It then jumps to the game: `$1010` on side 1, `$2111` on side 2. The loaders are the blocks `loader_side1` and `loader_side2` and rebuild byte for byte.
 
 **Tape oddities.** Each game file was saved with its end address one byte short, so the last byte of each intended range isn't on the tape. Side 2's loader names its files `MAIN*` and `ADDS*` but passes a length of 4, so the `*` is never used. Both are listed in [the quirks](quirks.md).
 

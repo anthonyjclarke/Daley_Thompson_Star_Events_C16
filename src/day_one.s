@@ -210,9 +210,18 @@ GameOverText:
 ; --------------------------------------------------------------------------
 Lives:  .byte   $00                     ; 117C
 L117D:  .byte   $00                     ; 117D
-L117E:  .byte   $00,$00,$00,$00,$00     ; 117E
+
+; --------------------------------------------------------------------------
+; Six decimal digits (0-9, most significant first) waiting to be added by AddScore.
+; --------------------------------------------------------------------------
+ScorePending:
+        .byte   $00,$00,$00,$00,$00     ; 117E
 L1183:  .byte   $00                     ; 1183
-L1184:  .byte   $00,$00,$00,$00,$00,$00 ; 1184
+
+; --------------------------------------------------------------------------
+; Six decimal digits (0-9, most significant first), shown at $0C30 by AddScore.
+; --------------------------------------------------------------------------
+Score:  .byte   $00,$00,$00,$00,$00,$00 ; 1184
 L118A:  .byte   $00,$00,$00,$00,$00,$00,$EA; 118A
 
 ; --------------------------------------------------------------------------
@@ -231,8 +240,8 @@ L119D:  sta     $0EB7,y                 ; 119D
         dey                             ; 11A5
         bpl     L1193                   ; 11A6
         lda     #$01                    ; 11A8
-        sta     L169D                   ; 11AA
-        jsr     L1214                   ; 11AD
+        sta     RaceRunning             ; 11AA
+        jsr     AddScore                ; 11AD
 L11B0:  jsr     L22EE                   ; 11B0
 L11B3:  lda     TED_VLINE_LO            ; 11B3
         cmp     #$A8                    ; 11B6
@@ -245,7 +254,7 @@ L11B3:  lda     TED_VLINE_LO            ; 11B3
         and     #$C0                    ; 11C7
         bne     L11E9                   ; 11C9
         lda     #$40                    ; 11CB
-        sta     L1987                   ; 11CD
+        sta     RunSpeed                ; 11CD
         lda     #$00                    ; 11D0
         sta     L1CB7                   ; 11D2
         sta     L14D8                   ; 11D5
@@ -259,7 +268,12 @@ L11B3:  lda     TED_VLINE_LO            ; 11B3
 L11E9:  jmp     InitGame_day_one        ; 11E9
 
 L11EC:  .byte   $00                     ; 11EC
-L11ED:  lda     L21DA                   ; 11ED
+
+; --------------------------------------------------------------------------
+; Add 6 points to the score 255 - (sum of three of the time's ASCII digits) times.
+; --------------------------------------------------------------------------
+AwardTimeBonus:
+        lda     L21DA                   ; 11ED
         clc                             ; 11F0
         adc     L21DB                   ; 11F1
         clc                             ; 11F4
@@ -272,26 +286,31 @@ L11ED:  lda     L21DA                   ; 11ED
         sta     L11EC                   ; 1203
 L1206:  lda     #$06                    ; 1206
         sta     L1183                   ; 1208
-        jsr     L1214                   ; 120B
+        jsr     AddScore                ; 120B
         dec     L11EC                   ; 120E
         bne     L1206                   ; 1211
 L1213:  rts                             ; 1213
 
-L1214:  ldx     #$05                    ; 1214
-L1216:  lda     L117E,x                 ; 1216
+
+; --------------------------------------------------------------------------
+; Add ScorePending to Score digit by digit with carry, print Score at $0C30, clear ScorePending.
+; --------------------------------------------------------------------------
+AddScore:
+        ldx     #$05                    ; 1214
+L1216:  lda     ScorePending,x          ; 1216
         clc                             ; 1219
-        adc     L1184,x                 ; 121A
+        adc     Score,x                 ; 121A
         cmp     #$0A                    ; 121D
         bcc     L1227                   ; 121F
         sec                             ; 1221
         sbc     #$0A                    ; 1222
         inc     L117D,x                 ; 1224
-L1227:  sta     L1184,x                 ; 1227
+L1227:  sta     Score,x                 ; 1227
         clc                             ; 122A
         adc     #$30                    ; 122B
         sta     $0C30,x                 ; 122D
         lda     #$00                    ; 1230
-        sta     L117E,x                 ; 1232
+        sta     ScorePending,x          ; 1232
         dex                             ; 1235
         bpl     L1216                   ; 1236
         rts                             ; 1238
@@ -306,13 +325,13 @@ InitGame_day_one:
         lda     #$00                    ; 123C
         sta     EventNumber             ; 123E
         ldy     #$05                    ; 1241
-L1243:  sta     L117E,y                 ; 1243
-        sta     L1184,y                 ; 1246
+L1243:  sta     ScorePending,y          ; 1243
+        sta     Score,y                 ; 1246
         sta     L118A,y                 ; 1249
         dey                             ; 124C
         bpl     L1243                   ; 124D
-        sta     L1987                   ; 124F
-        sta     L169D                   ; 1252
+        sta     RunSpeed                ; 124F
+        sta     RaceRunning             ; 1252
         lda     #$03                    ; 1255
         sta     Lives                   ; 1257
 
@@ -331,7 +350,7 @@ StartEvent_day_one:
         lda     #$06                    ; 126E
         sta     L156B                   ; 1270
         lda     #$40                    ; 1273
-        sta     L1987                   ; 1275
+        sta     RunSpeed                ; 1275
         lda     #$00                    ; 1278
         sta     L1122                   ; 127A
         sta     L156D                   ; 127D
@@ -349,7 +368,7 @@ L1296:  lda     #$12                    ; 1296
         bne     L1296                   ; 129C
         lda     #$00                    ; 129E
         ldy     #$05                    ; 12A0
-L12A2:  sta     L117E,y                 ; 12A2
+L12A2:  sta     ScorePending,y          ; 12A2
         sta     L118A,y                 ; 12A5
         dey                             ; 12A8
         bpl     L12A2                   ; 12A9
@@ -430,7 +449,7 @@ L1306:  sta     $0CF6,y                 ; 1306
         ldx     #$00                    ; 1356
         lda     #$30                    ; 1358
 L135A:  sta     $0C2F,x                 ; 135A
-        sta     L1834,x                 ; 135D
+        sta     RaceClock,x             ; 135D
         sta     L1836,x                 ; 1360
         inx                             ; 1363
         cpx     #$06                    ; 1364
@@ -446,14 +465,14 @@ L135A:  sta     $0C2F,x                 ; 135A
         cli                             ; 137D
         jsr     L2184                   ; 137E
         jsr     L17C6                   ; 1381
-        jsr     L16B4                   ; 1384
+        jsr     ClearSpeedMeter         ; 1384
         jsr     L18BF                   ; 1387
         jsr     L18AC                   ; 138A
         jsr     L192D                   ; 138D
-        jsr     L1214                   ; 1390
+        jsr     AddScore                ; 1390
         lda     #$01                    ; 1393
         sta     L14DC                   ; 1395
-        jsr     L1A0C                   ; 1398
+        jsr     StartCountdown          ; 1398
 
 ; --------------------------------------------------------------------------
 ; Once a frame: read the joystick, act on a change, wait for raster line $A8, update, check the event's end.
@@ -468,10 +487,10 @@ MainLoop_day_one:
         sta     JoyLast                 ; 13AB
         cmp     #$FF                    ; 13AE
         beq     L13B5                   ; 13B0
-        jsr     L19BE                   ; 13B2
-L13B5:  jsr     L1996                   ; 13B5
-        jsr     L1996                   ; 13B8
-        jsr     L1A8B                   ; 13BB
+        jsr     JoyWaggle               ; 13B2
+L13B5:  jsr     SpeedDecay              ; 13B5
+        jsr     SpeedDecay              ; 13B8
+        jsr     CheckEventEnd           ; 13BB
 L13BE:  lda     TED_VLINE_LO            ; 13BE
         cmp     #$A8                    ; 13C1
         bne     L13BE                   ; 13C3
@@ -548,8 +567,8 @@ L1441:  lda     JoyLast                 ; 1441
         jsr     L1B05                   ; 1466
         lda     #$01                    ; 1469
         sta     L14DA                   ; 146B
-        jsr     L1996                   ; 146E
-        jsr     L1996                   ; 1471
+        jsr     SpeedDecay              ; 146E
+        jsr     SpeedDecay              ; 1471
 L1474:  ldx     #$01                    ; 1474
         stx     L14D8                   ; 1476
         lda     $0FD0,x                 ; 1479
@@ -579,8 +598,8 @@ L148B:  lda     JoyLast                 ; 148B
         jsr     L1B05                   ; 14B0
         lda     #$01                    ; 14B3
         sta     L14DA                   ; 14B5
-        jsr     L1996                   ; 14B8
-        jsr     L1996                   ; 14BB
+        jsr     SpeedDecay              ; 14B8
+        jsr     SpeedDecay              ; 14BB
 L14BE:  ldx     #$01                    ; 14BE
         stx     L14D8                   ; 14C0
         lda     $0FD0,x                 ; 14C3
@@ -597,7 +616,7 @@ L14D5:  jmp     MainLoop_day_one        ; 14D5
 L14D8:  .byte   $00                     ; 14D8
 
 ; --------------------------------------------------------------------------
-; Last value read from TED_KEYLATCH with $FD written to $FD30/$FF08; a change calls $19BE.
+; Last value read from TED_KEYLATCH with $FD written to $FD30/$FF08; a change calls JoyWaggle.
 ; --------------------------------------------------------------------------
 JoyLast:.byte   $00                     ; 14D9
 L14DA:  .byte   $00                     ; 14DA
@@ -737,16 +756,16 @@ L15C6:  lda     #$00                    ; 15C6
         sta     TED_BG0                 ; 15C8
         lda     #$42                    ; 15CB
         sta     TED_RASTER_CMP          ; 15CD
-        dec     L1A89                   ; 15D0
+        dec     DelayTicks              ; 15D0
         lda     #$96                    ; 15D3
         sta     TED_BG1                 ; 15D5
         lda     #$71                    ; 15D8
         sta     TED_BG2                 ; 15DA
-        lda     L169D                   ; 15DD
+        lda     RaceRunning             ; 15DD
         beq     L15EA                   ; 15E0
         lda     L14DC                   ; 15E2
         beq     L15EA                   ; 15E5
-        jsr     L183F                   ; 15E7
+        jsr     TickRaceClock           ; 15E7
 L15EA:  rts                             ; 15EA
 
 L15EB:  lda     #$16                    ; 15EB
@@ -834,12 +853,17 @@ L1680:  lda     #$00                    ; 1680
         sta     TED_BG1                 ; 168C
         lda     #$71                    ; 168F
         sta     TED_BG2                 ; 1691
-        lda     L169D                   ; 1694
+        lda     RaceRunning             ; 1694
         beq     L169C                   ; 1697
         jsr     L2111                   ; 1699
 L169C:  rts                             ; 169C
 
-L169D:  .byte   $00                     ; 169D
+
+; --------------------------------------------------------------------------
+; 1 from the end of the start countdown until the event ends; gates the race clock.
+; --------------------------------------------------------------------------
+RaceRunning:
+        .byte   $00                     ; 169D
 L169E:  .byte   $00                     ; 169E
 L169F:  ldx     #$00                    ; 169F
         lda     #$21                    ; 16A1
@@ -849,10 +873,15 @@ L16A3:  sta     L16C2,x                 ; 16A3
         bne     L16A3                   ; 16A9
         lda     #$25                    ; 16AB
         sta     L16C2,x                 ; 16AD
-        jsr     L16B4                   ; 16B0
+        jsr     ClearSpeedMeter         ; 16B0
         rts                             ; 16B3
 
-L16B4:  ldx     #$00                    ; 16B4
+
+; --------------------------------------------------------------------------
+; Copy the 8 characters at $16C2 to the speed meter at $0FC6.
+; --------------------------------------------------------------------------
+ClearSpeedMeter:
+        ldx     #$00                    ; 16B4
 L16B6:  lda     L16C2,x                 ; 16B6
         sta     $0FC6,x                 ; 16B9
         inx                             ; 16BC
@@ -862,7 +891,12 @@ L16B6:  lda     L16C2,x                 ; 16B6
 
 L16C2:  .byte   $21,$21,$21,$21,$21,$21,$21,$21; 16C2
         .byte   $25                     ; 16CA
-L16CB:  lda     L1987                   ; 16CB
+
+; --------------------------------------------------------------------------
+; Draw RunSpeed / 4 steps at $0FC6 with characters $21-$24, four steps to a cell.
+; --------------------------------------------------------------------------
+DrawSpeedMeter:
+        lda     RunSpeed                ; 16CB
         lsr     a                       ; 16CE
         lsr     a                       ; 16CF
         tax                             ; 16D0
@@ -997,7 +1031,7 @@ L17F5:  inx                             ; 17F5
 
 L17FB:  .byte   $08                     ; 17FB
 L17FC:  .byte   $88,$07,$0E             ; 17FC
-L17FF:  lda     L169D                   ; 17FF
+L17FF:  lda     RaceRunning             ; 17FF
         beq     L181F                   ; 1802
         lda     L14DC                   ; 1804
         beq     L181F                   ; 1807
@@ -1020,19 +1054,30 @@ L1820:  lda     #$30                    ; 1820
         jmp     L1815                   ; 182A
 
 L182D:  .byte   $04,$00,$00,$00,$00,$00,$00; 182D
-L1834:  .byte   $30                     ; 1834
+
+; --------------------------------------------------------------------------
+; Five ASCII digits, least significant first ($1834 counts 0-5, the others 0-9).
+; Shown most significant first at $0FDD-$0FE2 by TickRaceClock.
+; --------------------------------------------------------------------------
+RaceClock:
+        .byte   $30                     ; 1834
 L1835:  .byte   $30                     ; 1835
 L1836:  .byte   $30                     ; 1836
 L1837:  .byte   $30                     ; 1837
 L1838:  .byte   $30,$00,$00,$00,$00,$A2,$00; 1838
-L183F:  lda     L1834                   ; 183F
+
+; --------------------------------------------------------------------------
+; Step RaceClock and print it; called from the split at $15C6 while RaceRunning is set.
+; --------------------------------------------------------------------------
+TickRaceClock:
+        lda     RaceClock               ; 183F
         cmp     #$35                    ; 1842
         bcs     L184C                   ; 1844
-        inc     L1834                   ; 1846
+        inc     RaceClock               ; 1846
         jmp     L187F                   ; 1849
 
 L184C:  lda     #$30                    ; 184C
-        sta     L1834                   ; 184E
+        sta     RaceClock               ; 184E
         lda     L1835                   ; 1851
         cmp     #$39                    ; 1854
         bcs     L185E                   ; 1856
@@ -1058,7 +1103,7 @@ L1872:  lda     #$30                    ; 1872
 L187F:  lda     L1838                   ; 187F
         cmp     #$39                    ; 1882
         bcs     L18A5                   ; 1884
-        lda     L1834                   ; 1886
+        lda     RaceClock               ; 1886
         sta     $0FE2                   ; 1889
         lda     L1835                   ; 188C
         sta     $0FE1                   ; 188F
@@ -1163,27 +1208,41 @@ L1976:  sta     $0CBF,x                 ; 1976
 L1985:  rts                             ; 1985
 
         .byte   $00                     ; 1986
-L1987:  .byte   $00                     ; 1987
-L1988:  lda     L1987                   ; 1988
+
+; --------------------------------------------------------------------------
+; Runner's speed, 0-$70. Raised by JoyWaggle, lowered by SpeedDecay, shown by DrawSpeedMeter.
+; --------------------------------------------------------------------------
+RunSpeed:
+        .byte   $00                     ; 1987
+
+; --------------------------------------------------------------------------
+; RunSpeed + 1 up to $70, then redraw the meter.
+; --------------------------------------------------------------------------
+SpeedUp:lda     RunSpeed                ; 1988
         cmp     #$70                    ; 198B
         bcs     L1995                   ; 198D
-        inc     L1987                   ; 198F
-        jsr     L16CB                   ; 1992
+        inc     RunSpeed                ; 198F
+        jsr     DrawSpeedMeter          ; 1992
 L1995:  rts                             ; 1995
 
-L1996:  lda     L19BC                   ; 1996
+
+; --------------------------------------------------------------------------
+; Every 6 calls (3 once RunSpeed >= $60), RunSpeed - 1 down to 0, then redraw the meter.
+; --------------------------------------------------------------------------
+SpeedDecay:
+        lda     L19BC                   ; 1996
         bne     L19B8                   ; 1999
         lda     #$06                    ; 199B
         sta     L19BC                   ; 199D
-        lda     L1987                   ; 19A0
+        lda     RunSpeed                ; 19A0
         cmp     #$60                    ; 19A3
         bcc     L19AC                   ; 19A5
         lda     #$03                    ; 19A7
         sta     L19BC                   ; 19A9
-L19AC:  lda     L1987                   ; 19AC
+L19AC:  lda     RunSpeed                ; 19AC
         beq     L19B7                   ; 19AF
-        dec     L1987                   ; 19B1
-        jsr     L16CB                   ; 19B4
+        dec     RunSpeed                ; 19B1
+        jsr     DrawSpeedMeter          ; 19B4
 L19B7:  rts                             ; 19B7
 
 L19B8:  dec     L19BC                   ; 19B8
@@ -1191,7 +1250,12 @@ L19B8:  dec     L19BC                   ; 19B8
 
 L19BC:  .byte   $02                     ; 19BC
 L19BD:  .byte   $00                     ; 19BD
-L19BE:  eor     #$FF                    ; 19BE
+
+; --------------------------------------------------------------------------
+; Record left and right in WaggleSeen; once both are seen, RunSpeed + 5 (+2 from $40) and clear it.
+; --------------------------------------------------------------------------
+JoyWaggle:
+        eor     #$FF                    ; 19BE
         sta     L1A0B                   ; 19C0
         and     #$0C                    ; 19C3
         cmp     #$0C                    ; 19C5
@@ -1202,36 +1266,46 @@ L19BE:  eor     #$FF                    ; 19BE
         lsr     a                       ; 19CE
         bcc     L19DC                   ; 19CF
         lda     #$01                    ; 19D1
-        ora     L1A0A                   ; 19D3
-        sta     L1A0A                   ; 19D6
+        ora     WaggleSeen              ; 19D3
+        sta     WaggleSeen              ; 19D6
         jmp     L19E7                   ; 19D9
 
 L19DC:  lsr     a                       ; 19DC
         bcc     L1A09                   ; 19DD
         lda     #$02                    ; 19DF
-        ora     L1A0A                   ; 19E1
-        sta     L1A0A                   ; 19E4
-L19E7:  lda     L1A0A                   ; 19E7
+        ora     WaggleSeen              ; 19E1
+        sta     WaggleSeen              ; 19E4
+L19E7:  lda     WaggleSeen              ; 19E7
         cmp     #$03                    ; 19EA
         bne     L1A09                   ; 19EC
-        lda     L1987                   ; 19EE
+        lda     RunSpeed                ; 19EE
         cmp     #$40                    ; 19F1
         bcs     L19FE                   ; 19F3
-        jsr     L1988                   ; 19F5
-        jsr     L1988                   ; 19F8
-        jsr     L1988                   ; 19FB
-L19FE:  jsr     L1988                   ; 19FE
-        jsr     L1988                   ; 1A01
+        jsr     SpeedUp                 ; 19F5
+        jsr     SpeedUp                 ; 19F8
+        jsr     SpeedUp                 ; 19FB
+L19FE:  jsr     SpeedUp                 ; 19FE
+        jsr     SpeedUp                 ; 1A01
         lda     #$00                    ; 1A04
-        sta     L1A0A                   ; 1A06
+        sta     WaggleSeen              ; 1A06
 L1A09:  rts                             ; 1A09
 
-L1A0A:  .byte   $00                     ; 1A0A
+
+; --------------------------------------------------------------------------
+; Bit 0: right seen, bit 1: left seen, since the last speed step.
+; --------------------------------------------------------------------------
+WaggleSeen:
+        .byte   $00                     ; 1A0A
 L1A0B:  .byte   $00                     ; 1A0B
-L1A0C:  ldy     #$00                    ; 1A0C
-        sty     L169D                   ; 1A0E
+
+; --------------------------------------------------------------------------
+; Show ON YOUR MARKS, GET SET and GO at $0E8E, waiting between them, then set RaceRunning.
+; --------------------------------------------------------------------------
+StartCountdown:
+        ldy     #$00                    ; 1A0C
+        sty     RaceRunning             ; 1A0E
         sty     L1A8A                   ; 1A11
-L1A14:  lda     L1A73,y                 ; 1A14
+L1A14:  lda     OnYourMarksText,y       ; 1A14
         sta     $0E8E,y                 ; 1A17
         lda     #$71                    ; 1A1A
         sta     $0A8E,y                 ; 1A1C
@@ -1241,28 +1315,33 @@ L1A14:  lda     L1A73,y                 ; 1A14
 L1A24:  lda     L2AF4                   ; 1A24
         ora     L2B3E                   ; 1A27
         bne     L1A24                   ; 1A2A
-        jsr     L1A5B                   ; 1A2C
+        jsr     ClearMessage            ; 1A2C
         ldy     #$00                    ; 1A2F
-L1A31:  lda     L1A80,y                 ; 1A31
+L1A31:  lda     GetSetText,y            ; 1A31
         sta     $0E91,y                 ; 1A34
         iny                             ; 1A37
         cpy     #$07                    ; 1A38
         bne     L1A31                   ; 1A3A
-        jsr     L1A68                   ; 1A3C
-        jsr     L1A5B                   ; 1A3F
+        jsr     WaitTicks               ; 1A3C
+        jsr     ClearMessage            ; 1A3F
         ldy     #$00                    ; 1A42
-L1A44:  lda     L1A87,y                 ; 1A44
+L1A44:  lda     GoText,y                ; 1A44
         sta     $0E93,y                 ; 1A47
         iny                             ; 1A4A
         cpy     #$02                    ; 1A4B
         bne     L1A44                   ; 1A4D
-        jsr     L1A68                   ; 1A4F
-        jsr     L1A5B                   ; 1A52
+        jsr     WaitTicks               ; 1A4F
+        jsr     ClearMessage            ; 1A52
         lda     #$01                    ; 1A55
-        sta     L169D                   ; 1A57
+        sta     RaceRunning             ; 1A57
         rts                             ; 1A5A
 
-L1A5B:  ldy     #$00                    ; 1A5B
+
+; --------------------------------------------------------------------------
+; Blank the 13 characters at $0E8E.
+; --------------------------------------------------------------------------
+ClearMessage:
+        ldy     #$00                    ; 1A5B
 L1A5D:  lda     #$20                    ; 1A5D
         sta     $0E8E,y                 ; 1A5F
         iny                             ; 1A62
@@ -1270,19 +1349,49 @@ L1A5D:  lda     #$20                    ; 1A5D
         bne     L1A5D                   ; 1A65
         rts                             ; 1A67
 
-L1A68:  lda     #$64                    ; 1A68
-        sta     L1A89                   ; 1A6A
-L1A6D:  lda     L1A89                   ; 1A6D
+
+; --------------------------------------------------------------------------
+; Set DelayTicks to 100 and wait for the IRQ to count it to 0.
+; --------------------------------------------------------------------------
+WaitTicks:
+        lda     #$64                    ; 1A68
+        sta     DelayTicks              ; 1A6A
+L1A6D:  lda     DelayTicks              ; 1A6D
         bne     L1A6D                   ; 1A70
         rts                             ; 1A72
 
-L1A73:  .byte   $0F,$0E,$20,$19,$0F,$15,$12,$20; 1A73
+
+; --------------------------------------------------------------------------
+; Screen codes, 13 bytes.
+; --------------------------------------------------------------------------
+OnYourMarksText:
+        .byte   $0F,$0E,$20,$19,$0F,$15,$12,$20; 1A73
         .byte   $0D,$01,$12,$0B,$13     ; 1A7B
-L1A80:  .byte   $07,$05,$14,$20,$13,$05,$14; 1A80
-L1A87:  .byte   $07,$0F                 ; 1A87
-L1A89:  .byte   $00                     ; 1A89
+
+; --------------------------------------------------------------------------
+; Screen codes, 7 bytes.
+; --------------------------------------------------------------------------
+GetSetText:
+        .byte   $07,$05,$14,$20,$13,$05,$14; 1A80
+
+; --------------------------------------------------------------------------
+; Screen codes, 2 bytes.
+; --------------------------------------------------------------------------
+GoText: .byte   $07,$0F                 ; 1A87
+
+; --------------------------------------------------------------------------
+; Counted down by the split at $15C6.
+; --------------------------------------------------------------------------
+DelayTicks:
+        .byte   $00                     ; 1A89
 L1A8A:  .byte   $00                     ; 1A8A
-L1A8B:  lda     EventNumber             ; 1A8B
+
+; --------------------------------------------------------------------------
+; End the event when the distance shown at $0FD1 reaches its length (with RunSpeed > 0),
+; or when RaceClock's tens digit reaches 7; JudgeTime decides, then StartEvent_day_one.
+; --------------------------------------------------------------------------
+CheckEventEnd:
+        lda     EventNumber             ; 1A8B
         cmp     #$01                    ; 1A8E
         beq     L1ACD                   ; 1A90
         cmp     #$03                    ; 1A92
@@ -1320,15 +1429,15 @@ L1ACD:  ldx     #$01                    ; 1ACD
         cmp     #$31                    ; 1AD2
         bne     L1AF2                   ; 1AD4
 L1AD6:  lda     #$00                    ; 1AD6
-        sta     L169D                   ; 1AD8
-        lda     L1987                   ; 1ADB
+        sta     RaceRunning             ; 1AD8
+        lda     RunSpeed                ; 1ADB
         beq     L1AF2                   ; 1ADE
-L1AE0:  jsr     L21DF                   ; 1AE0
+L1AE0:  jsr     JudgeTime               ; 1AE0
         pla                             ; 1AE3
         pla                             ; 1AE4
         lda     #$FF                    ; 1AE5
-        sta     L1A89                   ; 1AE7
-L1AEA:  lda     L1A89                   ; 1AEA
+        sta     DelayTicks              ; 1AE7
+L1AEA:  lda     DelayTicks              ; 1AEA
         bne     L1AEA                   ; 1AED
         jmp     StartEvent_day_one      ; 1AEF
 
@@ -1336,7 +1445,7 @@ L1AF2:  lda     L1837                   ; 1AF2
         cmp     #$37                    ; 1AF5
         bcc     L1B04                   ; 1AF7
         lda     #$00                    ; 1AF9
-        sta     L169D                   ; 1AFB
+        sta     RaceRunning             ; 1AFB
         sta     L14DC                   ; 1AFE
         jmp     L1AE0                   ; 1B01
 
@@ -1863,7 +1972,7 @@ L20DA:  asl     L3BA0,x                 ; 20DA
 
 L2111:  lda     #$01                    ; 2111
         sta     L176F                   ; 2113
-        lda     L1987                   ; 2116
+        lda     RunSpeed                ; 2116
         sta     L217F                   ; 2119
         sta     L217E                   ; 211C
         lsr     a                       ; 211F
@@ -1944,8 +2053,8 @@ L21A9:  ldx     #$12                    ; 21A9
         jmp     L21AE                   ; 21AB
 
 L21AE:  ldy     #$00                    ; 21AE
-        stx     L21C0                   ; 21B0
-L21B3:  lda     L21C1,x                 ; 21B3
+        stx     QualifyIndex            ; 21B0
+L21B3:  lda     QualifyTimes,x          ; 21B3
         sta     $0C40,y                 ; 21B6
         inx                             ; 21B9
         iny                             ; 21BA
@@ -1953,29 +2062,50 @@ L21B3:  lda     L21C1,x                 ; 21B3
         bne     L21B3                   ; 21BD
         rts                             ; 21BF
 
-L21C0:  .byte   $00                     ; 21C0
-L21C1:  .byte   $30,$31,$33,$3A,$30,$30,$30,$36; 21C1
+
+; --------------------------------------------------------------------------
+; Offset of this event's entry in QualifyTimes: 0, 12, 6, 18 for events 1-4.
+; --------------------------------------------------------------------------
+QualifyIndex:
+        .byte   $00                     ; 21C0
+
+; --------------------------------------------------------------------------
+; Four 6-character ASCII times: 013:00, 060:00, 015:00, 038:00.
+; --------------------------------------------------------------------------
+QualifyTimes:
+        .byte   $30,$31,$33,$3A,$30,$30,$30,$36; 21C1
         .byte   $30,$3A,$30,$30,$30,$31,$35,$3A; 21C9
         .byte   $30,$30,$30,$33,$38,$3A,$30,$30; 21D1
-L21D9:  .byte   $00                     ; 21D9
+
+; --------------------------------------------------------------------------
+; RaceClock copied into QualifyTimes' layout.
+; --------------------------------------------------------------------------
+TimeToJudge:
+        .byte   $00                     ; 21D9
 L21DA:  .byte   $00                     ; 21DA
 L21DB:  .byte   $00,$3A                 ; 21DB
 L21DD:  .byte   $00                     ; 21DD
 L21DE:  .byte   $00                     ; 21DE
-L21DF:  lda     L1838                   ; 21DF
-        sta     L21D9                   ; 21E2
+
+; --------------------------------------------------------------------------
+; Compare the time with QualifyTimes: under it, QUALIFIED and AwardTimeBonus;
+; over it, FAILED and one of Lives lost.
+; --------------------------------------------------------------------------
+JudgeTime:
+        lda     L1838                   ; 21DF
+        sta     TimeToJudge             ; 21E2
         lda     L1837                   ; 21E5
         sta     L21DA                   ; 21E8
         lda     L1836                   ; 21EB
         sta     L21DB                   ; 21EE
         lda     L1835                   ; 21F1
         sta     L21DD                   ; 21F4
-        lda     L1834                   ; 21F7
+        lda     RaceClock               ; 21F7
         sta     L21DE                   ; 21FA
-        ldx     L21C0                   ; 21FD
+        ldx     QualifyIndex            ; 21FD
         ldy     #$00                    ; 2200
-L2202:  lda     L21D9,y                 ; 2202
-        cmp     L21C1,x                 ; 2205
+L2202:  lda     TimeToJudge,y           ; 2202
+        cmp     QualifyTimes,x          ; 2205
         beq     L220E                   ; 2208
         bcc     L2215                   ; 220A
         bcs     L223D                   ; 220C
@@ -1985,9 +2115,9 @@ L220E:  inx                             ; 220E
         bne     L2202                   ; 2212
         rts                             ; 2214
 
-L2215:  jsr     L11ED                   ; 2215
+L2215:  jsr     AwardTimeBonus          ; 2215
         ldy     #$00                    ; 2218
-L221A:  lda     L222E,y                 ; 221A
+L221A:  lda     QualifiedText,y         ; 221A
         sta     $0EB6,y                 ; 221D
         lda     #$71                    ; 2220
         sta     $0AB6,y                 ; 2222
@@ -1997,13 +2127,23 @@ L221A:  lda     L222E,y                 ; 221A
         jsr     L22FE                   ; 222A
         rts                             ; 222D
 
-L222E:  .byte   $11,$15,$01,$0C,$09,$06,$09,$05; 222E
+
+; --------------------------------------------------------------------------
+; Screen codes, 9 bytes.
+; --------------------------------------------------------------------------
+QualifiedText:
+        .byte   $11,$15,$01,$0C,$09,$06,$09,$05; 222E
         .byte   $04                     ; 2236
-L2237:  .byte   $06,$01,$09,$0C,$05,$04 ; 2237
-L223D:  jsr     L1214                   ; 223D
+
+; --------------------------------------------------------------------------
+; Screen codes, 6 bytes.
+; --------------------------------------------------------------------------
+FailedText:
+        .byte   $06,$01,$09,$0C,$05,$04 ; 2237
+L223D:  jsr     AddScore                ; 223D
         ldy     #$00                    ; 2240
         dec     Lives                   ; 2242
-L2245:  lda     L2237,y                 ; 2245
+L2245:  lda     FailedText,y            ; 2245
         sta     $0EB7,y                 ; 2248
         lda     #$71                    ; 224B
         sta     $0AB7,y                 ; 224D

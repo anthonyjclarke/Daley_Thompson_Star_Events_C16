@@ -2,6 +2,21 @@
 
 ---
 
+## [0.4.0] 21-11-2026
+
+### Added
+
+- Part 1 race names: `RunSpeed`, `JoyWaggle`, `SpeedUp`, `SpeedDecay`, the speed meter, `StartCountdown` and its texts,
+  `RaceClock`, `CheckEventEnd`, `JudgeTime` and `QualifyTimes`, `Score`, `AddScore` and `AwardTimeBonus`.
+- Evidence for them, including a controlled VICE run (speed held at maximum) that qualifies every event.
+- Quirk: part 1 runs its four events again after the 200 m hurdles.
+
+### Changed
+
+- `Lives`: the qualified path is now observed; the open item for it is closed.
+
+---
+
 ## [0.3.0] 21-11-2026
 
 ### Added

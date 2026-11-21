@@ -14,6 +14,7 @@ What the original does that looks accidental or unfinished, kept as it is in the
 | Tapes | Each file was saved with an end address one short (`$2FFF`, `$3FFF`), so the last byte of each intended range is not on the tape; the PRGs have whatever was in RAM there (`$7D`, `$DE`, `$AA`) | Likely defect (mastering), harmless |
 | Tape side 2 | `ADDS` was saved from `$1400` (its header) but the loader loads it at `$0800` | Undocumented coherent: saved from where it lived during development |
 | Tape side 2 | The loader's file names are `MAIN*` and `ADDS*`, used with length 4, so the `*` is never read | Remnant |
+| Part 1 | After the fourth event (200 m hurdles) `EventNumber` returns to 1 and the four events run again with the score kept; there is no hand-over to part 2 | Undocumented coherent: the parts are on separate tape sides |
 
 ---
 
@@ -24,5 +25,5 @@ What the original does that looks accidental or unfinished, kept as it is in the
 | Part 1 `$170C`–`$1725` | Code-shaped bytes (increment six screen digits at `$0C2F`); no `JSR`, `JMP`, table or lo/hi pair reaches `$170C` | Unused score routine (remnant); check with a VICE breakpoint during play |
 | Part 2 `$2140`–`$2162` | Code-shaped bytes reading TED timers `$FF00`/`$FF02` into `$28`–`$2B`; no reference to `$2140` | Unused random-number routine (remnant); same check |
 | Part 2 `$2109`–`$2110` | Eight bytes before `Entry_day_two` (`EA 20 58 60 EA …`) | Leftover bytes; not code reached from anywhere |
-| Part 1 | What happens when an event is qualified (does `Lives` stay, how points are scored) | Not yet seen: needs a run with input |
+| Part 1 `RaceClock` | The last digit counts 0–5 and the one before it 0–9, so the clock is not true hundredths; how often `TickRaceClock` runs per frame is not yet measured | A frame counter shown as a time; measure ticks per second in VICE |
 | Both | Most variables and routines below the main loops are still neutral names | Later slices of stage 4 |

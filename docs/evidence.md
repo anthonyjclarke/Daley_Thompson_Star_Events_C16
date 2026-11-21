@@ -84,4 +84,12 @@ Given 21-11-2026, about 41 years after the event. Memory is evidence, not proof.
 | `EventJumpTable_day_two` | 1 | Three words read by `$42 * 2` into the `JMP` at `$2F11`   | 21-11-2026 |
 | `ScreenRowTable`      | 1    | 25 words `$0C00 + 40n`, read by `ScreenAddress`           | 21-11-2026 |
 | `ClearScreen`         | 1    | Space to `$0C00`–`$0FFF`, `$71` to `$0800`–`$0BFF`        | 21-11-2026 |
+| `WorldRecordTable`, `QualifyLengthTable`, `BestTable` | 2 | Read by `ShowEventTables` into `$0C68`, `$0C90`, `$0CB8`; in VICE they appear on the rows labelled WORLD RECORD, QUALIFYING LENGTH and BEST (`101:30`, `065:70`, `000:00` for event 2) | 21-11-2026 |
+| `EventTableOffset`    | 1    | `$00`, `$05`, `$0A` indexed by `EventIndex`; used by `ShowEventTables` and `JudgeAttempt` | 21-11-2026 |
+| `JudgeAttempt`, `AttemptResult` | 1 | 5-digit subtraction of the distance (`$2774`–`$2778`) from the qualifying length: borrow → 1, else `$FF`; then the same against `BestTable` (copied on a borrow) and, if qualified, `WorldRecordTable`. `$2CA1` also sets `$FF` | 21-11-2026 |
+| `AttemptNumber`, `AttemptResults` | 2 | `StartEvent_day_two` sets `$54`–`$56` to `$FF`; after each attempt `$54,AttemptNumber` = 0 if `AttemptResult` is 1, else 1. Sampled in VICE (fire wait patched out in RAM, no input): `AttemptNumber` 0 → 1 → 2, results 1, 1, 1, then back to the start screen | 21-11-2026 |
+| `EventIndex`          | 1    | After three attempts, any 0 in `AttemptResults` steps it 0 → 1 → 2 → 0 and starts the next event; none → `StartGame_day_two` | 21-11-2026 |
+| `InputBits`, `ReadInput`, `ReadKeys`, `TestKey` | 1 | Joystick: `$FD` to `$FF08`, inverted, mask `$8C`. Keys: three (row, column) pairs at `$23E8`/`$23E5` mapped to bits `$04`, `$08`, `$80`. Which keys these are is not yet checked | 21-11-2026 |
+| `InputMode`, `SelectInputMode`, `KeyJoyText` | 2 | Two keys in keyboard row `$EF` set it to 1 or 0; `KEY` or `JOY` from `$33D5` printed at `$0F99`. KEY is shown at start-up in VICE | 21-11-2026 |
+| `JoyWaggle_day_two`, `SpeedUp_day_two`, `SpeedDecay_day_two`, `RunSpeed_day_two` | 1 | The same scheme as part 1: left then right (either order) gives 5 speed steps (2 from `$0C`), maximum `$1F`; decay every 2 calls with the joystick, every 3 with keys. A RAM-patched run did not produce a jump, so no rung 3 yet | 21-11-2026 |
 | `StartGame_day_two`   | 2    | Reached in VICE: the long jump "FIRE TO START" screen with the scrolling advert boards | 21-11-2026 |

@@ -2,6 +2,18 @@
 
 ---
 
+## [0.5.0] 21-11-2026
+
+### Added
+
+- Part 2 names: input (`InputBits`, `ReadInput`, `ReadKeys`, `InputMode`, `SelectInputMode`), speed (`JoyWaggle_day_two`,
+  `SpeedUp_day_two`, `SpeedDecay_day_two`), events and attempts (`EventIndex`, `AttemptNumber`, `AttemptResults`,
+  `JudgeAttempt`) and the WORLD RECORD, QUALIFYING LENGTH and BEST tables.
+- Evidence for them, including a VICE run of the attempt cycle.
+- Open item: an uncalled hex-print routine at `$241D` in part 2.
+
+---
+
 ## [0.4.0] 21-11-2026
 
 ### Added

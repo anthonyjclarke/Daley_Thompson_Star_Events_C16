@@ -5,6 +5,14 @@
 
         .setcpu "6502"
 
+RunSpeed_day_two:= $0037
+WaggleSeen_day_two:= $0040
+InputBits       := $0041
+EventIndex      := $0042
+AttemptNumber   := $004F
+RunUpActive     := $0050
+AttemptResult   := $0053
+AttemptResults  := $0054
 CINV            := $0314
 CINV_HI         := $0315
 TED_T1_LO       := $FF00
@@ -1390,7 +1398,12 @@ L2114:  lda     L0800,x                 ; 2114
         txs                             ; 213B
         jmp     InitGame_day_two        ; 213C
 
-L213F:  .byte   $00,$AD,$00,$FF,$25,$2A,$6D,$02; 213F
+
+; --------------------------------------------------------------------------
+; 1: joystick, 0: keys. Set by SelectInputMode.
+; --------------------------------------------------------------------------
+InputMode:
+        .byte   $00,$AD,$00,$FF,$25,$2A,$6D,$02; 213F
         .byte   $FF,$0A,$0A,$26,$2B,$26,$2A,$26; 2147
         .byte   $29,$26,$28,$18,$A0,$29,$A2,$FC; 214F
         .byte   $98,$B4,$2C,$75,$2C,$95,$2C,$E8; 2157
@@ -1513,7 +1526,7 @@ L2215:  dex                             ; 2215
         lda     #$0E                    ; 2224
         sta     TED_BG0                 ; 2226
         sta     TED_BORDER              ; 2229
-        jsr     L29BF                   ; 222C
+        jsr     PollInput_day_two       ; 222C
         lda     #$39                    ; 222F
         sta     TED_BG1                 ; 2231
         lda     #$3E                    ; 2234
@@ -1547,7 +1560,7 @@ L2261:  lda     $20                     ; 2261
         sta     TED_CHARSET             ; 2263
         lda     #$71                    ; 2266
         sta     TED_BG0                 ; 2268
-        jsr     L29BF                   ; 226B
+        jsr     PollInput_day_two       ; 226B
         rts                             ; 226E
 
 L226F:  ldx     #$06                    ; 226F
@@ -1632,11 +1645,11 @@ L2302:  lda     TED_CTRL2               ; 2302
         jsr     L2DBB                   ; 2316
         jsr     L2C86                   ; 2319
         jsr     L2DD9                   ; 231C
-        jsr     L2A31                   ; 231F
+        jsr     SpeedDecay_day_two      ; 231F
         jsr     L27A6                   ; 2322
         jsr     L2DF8                   ; 2325
         jsr     SoundVectors_day_two    ; 2328
-        jsr     L3395                   ; 232B
+        jsr     SelectInputMode         ; 232B
         lda     #$FF                    ; 232E
         sta     $27                     ; 2330
         rts                             ; 2332
@@ -1707,9 +1720,14 @@ L2375           := * + 2
         pla                             ; 2390
         rti                             ; 2391
 
-L2392:  lda     L213F                   ; 2392
+
+; --------------------------------------------------------------------------
+; Set InputBits from the joystick ($FD to $FF08) or, with InputMode 0, from three keys.
+; --------------------------------------------------------------------------
+ReadInput:
+        lda     InputMode               ; 2392
         bne     L239D                   ; 2395
-        jsr     L23BA                   ; 2397
+        jsr     ReadKeys                ; 2397
         jmp     L23AB                   ; 239A
 
 L239D:  lda     #$FD                    ; 239D
@@ -1717,31 +1735,40 @@ L239D:  lda     #$FD                    ; 239D
         lda     TED_KEYLATCH            ; 23A2
         eor     #$FF                    ; 23A5
         and     #$8C                    ; 23A7
-        sta     $41                     ; 23A9
+        sta     InputBits               ; 23A9
 L23AB:  lda     $7F                     ; 23AB
         bne     L23B9                   ; 23AD
         lda     $4B                     ; 23AF
         bne     L23B9                   ; 23B1
-        lda     $41                     ; 23B3
+        lda     InputBits               ; 23B3
         and     #$7F                    ; 23B5
-        sta     $41                     ; 23B7
+        sta     InputBits               ; 23B7
 L23B9:  rts                             ; 23B9
 
-L23BA:  lda     #$00                    ; 23BA
-        sta     $41                     ; 23BC
+
+; --------------------------------------------------------------------------
+; Test the three keys in KeyColumns/KeyRows and set the matching KeyBits in InputBits.
+; --------------------------------------------------------------------------
+ReadKeys:
+        lda     #$00                    ; 23BA
+        sta     InputBits               ; 23BC
         ldx     #$02                    ; 23BE
-L23C0:  lda     L23E5,x                 ; 23C0
-        ldy     L23E8,x                 ; 23C3
-        jsr     L23D6                   ; 23C6
+L23C0:  lda     KeyColumns,x            ; 23C0
+        ldy     KeyRows,x               ; 23C3
+        jsr     TestKey                 ; 23C6
         bcc     L23D2                   ; 23C9
-        lda     L23EB,x                 ; 23CB
-        ora     $41                     ; 23CE
-        sta     $41                     ; 23D0
+        lda     KeyBits,x               ; 23CB
+        ora     InputBits               ; 23CE
+        sta     InputBits               ; 23D0
 L23D2:  dex                             ; 23D2
         bpl     L23C0                   ; 23D3
         rts                             ; 23D5
 
-L23D6:  sty     $FD30                   ; 23D6
+
+; --------------------------------------------------------------------------
+; Select keyboard row Y, test column mask A; carry set if the key is down.
+; --------------------------------------------------------------------------
+TestKey:sty     $FD30                   ; 23D6
         sty     TED_KEYLATCH            ; 23D9
         and     TED_KEYLATCH            ; 23DC
         bne     L23E3                   ; 23DF
@@ -1751,9 +1778,22 @@ L23D6:  sty     $FD30                   ; 23D6
 L23E3:  clc                             ; 23E3
         rts                             ; 23E4
 
-L23E5:  .byte   $40,$02,$10             ; 23E5
-L23E8:  .byte   $7F,$F7,$7F             ; 23E8
-L23EB:  .byte   $04,$08,$80             ; 23EB
+
+; --------------------------------------------------------------------------
+; Column mask of each of the three keys.
+; --------------------------------------------------------------------------
+KeyColumns:
+        .byte   $40,$02,$10             ; 23E5
+
+; --------------------------------------------------------------------------
+; Row select of each of the three keys.
+; --------------------------------------------------------------------------
+KeyRows:.byte   $7F,$F7,$7F             ; 23E8
+
+; --------------------------------------------------------------------------
+; InputBits bit for each key: left, right, fire.
+; --------------------------------------------------------------------------
+KeyBits:.byte   $04,$08,$80             ; 23EB
 
 ; --------------------------------------------------------------------------
 ; Raster line of each split (13 entries)
@@ -1780,7 +1820,13 @@ SplitTable_day_two:
         .addr   L22EC                   ; 2411
         .addr   L2302                   ; 2413
 L2415:  .byte   $00,$28,$50,$78,$A0     ; 2415
-L241A:  .byte   $00,$05,$0A,$48,$4A,$4A,$4A,$4A; 241A
+
+; --------------------------------------------------------------------------
+; Offset of each event's entry in the distance tables: 0, 5, 10.
+; The bytes after them, from $241D, are a routine nothing calls (see docs/quirks.md).
+; --------------------------------------------------------------------------
+EventTableOffset:
+        .byte   $00,$05,$0A,$48,$4A,$4A,$4A,$4A; 241A
         .byte   $20,$26,$24,$68,$29,$0F,$C9,$0A; 2422
         .byte   $90,$02,$69,$06,$69,$30,$29,$3F; 242A
         .byte   $9D,$99,$0F,$E8,$60     ; 2432
@@ -1798,13 +1844,18 @@ InitGame_day_two:
         jsr     InstallIrq_day_two      ; 2445
         jmp     StartGame_day_two       ; 2448
 
-L244B:  ldx     #$06                    ; 244B
+
+; --------------------------------------------------------------------------
+; Mark all three attempts not taken, draw the event, then run the attempts.
+; --------------------------------------------------------------------------
+StartEvent_day_two:
+        ldx     #$06                    ; 244B
         lda     #$30                    ; 244D
-L244F:  sta     L2772,x                 ; 244F
+L244F:  sta     DistanceDigits,x        ; 244F
         dex                             ; 2452
         bpl     L244F                   ; 2453
         lda     #$FF                    ; 2455
-        sta     $54                     ; 2457
+        sta     AttemptResults          ; 2457
         sta     $55                     ; 2459
         sta     $56                     ; 245B
         lda     #$04                    ; 245D
@@ -1817,10 +1868,15 @@ L244F:  sta     L2772,x                 ; 244F
         jsr     L220A                   ; 246E
         jsr     L1803                   ; 2471
         lda     #$00                    ; 2474
-        sta     $4F                     ; 2476
-L2478:  ldx     #$06                    ; 2478
+        sta     AttemptNumber           ; 2476
+
+; --------------------------------------------------------------------------
+; Reset the distance and the athlete, draw the screen, wait for the run-up to end.
+; --------------------------------------------------------------------------
+StartAttempt_day_two:
+        ldx     #$06                    ; 2478
         lda     #$30                    ; 247A
-L247C:  sta     L2772,x                 ; 247C
+L247C:  sta     DistanceDigits,x        ; 247C
         dex                             ; 247F
         bpl     L247C                   ; 2480
         lda     #$00                    ; 2482
@@ -1854,40 +1910,40 @@ L247C:  sta     L2772,x                 ; 247C
         sta     $57                     ; 24BF
         sta     $5B                     ; 24C1
         sta     $60                     ; 24C3
-        sta     $50                     ; 24C5
+        sta     RunUpActive             ; 24C5
         sta     $58                     ; 24C7
         lda     #$00                    ; 24C9
-        sta     $37                     ; 24CB
-        sta     $53                     ; 24CD
+        sta     RunSpeed_day_two        ; 24CB
+        sta     AttemptResult           ; 24CD
         sta     $4A                     ; 24CF
         sta     $4B                     ; 24D1
         sta     $4B                     ; 24D3
         lda     #$01                    ; 24D5
         sta     $51                     ; 24D7
-L24D9:  bit     $41                     ; 24D9
+L24D9:  bit     InputBits               ; 24D9
         bmi     L24E4                   ; 24DB
-        ldy     $53                     ; 24DD
+        ldy     AttemptResult           ; 24DD
         bne     L24EE                   ; 24DF
         jmp     L24D9                   ; 24E1
 
-L24E4:  lda     $42                     ; 24E4
+L24E4:  lda     EventIndex              ; 24E4
         bne     L24EE                   ; 24E6
-        lda     $37                     ; 24E8
+        lda     RunSpeed_day_two        ; 24E8
         cmp     #$0F                    ; 24EA
         bcc     L24D9                   ; 24EC
-L24EE:  lda     $37                     ; 24EE
+L24EE:  lda     RunSpeed_day_two        ; 24EE
         sta     $67                     ; 24F0
         lda     #$00                    ; 24F2
-        sta     $50                     ; 24F4
+        sta     RunUpActive             ; 24F4
         sta     $51                     ; 24F6
         sta     $60                     ; 24F8
-        sta     $37                     ; 24FA
+        sta     RunSpeed_day_two        ; 24FA
         sta     $2D                     ; 24FC
         sta     $2E                     ; 24FE
         sta     $33                     ; 2500
         lda     #$FF                    ; 2502
         sta     $7D                     ; 2504
-        bit     $41                     ; 2506
+        bit     InputBits               ; 2506
         bpl     L250D                   ; 2508
         jmp     L2EB7                   ; 250A
 
@@ -1895,9 +1951,9 @@ L250D:  ldx     #$50                    ; 250D
         jsr     L2CAC                   ; 250F
         ldx     #$02                    ; 2512
         jsr     L2E64                   ; 2514
-L2517:  jsr     L2A7E                   ; 2517
+L2517:  jsr     ShowEventTables         ; 2517
         jsr     L3354                   ; 251A
-        lda     $53                     ; 251D
+        lda     AttemptResult           ; 251D
         cmp     #$FF                    ; 251F
         bne     L252C                   ; 2521
         jsr     L32FF                   ; 2523
@@ -1919,33 +1975,33 @@ L252F:  ldx     #$00                    ; 252F
 L254C:  lda     #$32                    ; 254C
         sta     $36                     ; 254E
         ldx     #$00                    ; 2550
-        lda     $53                     ; 2552
+        lda     AttemptResult           ; 2552
         cmp     #$01                    ; 2554
         beq     L255A                   ; 2556
         ldx     #$01                    ; 2558
 L255A:  txa                             ; 255A
-        ldx     $4F                     ; 255B
-        sta     $54,x                   ; 255D
-        inc     $4F                     ; 255F
-        lda     $4F                     ; 2561
+        ldx     AttemptNumber           ; 255B
+        sta     AttemptResults,x        ; 255D
+        inc     AttemptNumber           ; 255F
+        lda     AttemptNumber           ; 2561
         cmp     #$03                    ; 2563
         beq     L256A                   ; 2565
-        jmp     L2478                   ; 2567
+        jmp     StartAttempt_day_two    ; 2567
 
 L256A:  ldx     #$02                    ; 256A
-L256C:  lda     $54,x                   ; 256C
+L256C:  lda     AttemptResults,x        ; 256C
         beq     L2576                   ; 256E
         dex                             ; 2570
         bpl     L256C                   ; 2571
         jmp     StartGame_day_two       ; 2573
 
-L2576:  ldx     $42                     ; 2576
+L2576:  ldx     EventIndex              ; 2576
         inx                             ; 2578
         cpx     #$03                    ; 2579
         bne     L257F                   ; 257B
         ldx     #$00                    ; 257D
-L257F:  stx     $42                     ; 257F
-        jmp     L244B                   ; 2581
+L257F:  stx     EventIndex              ; 257F
+        jmp     StartEvent_day_two      ; 2581
 
 
 ; --------------------------------------------------------------------------
@@ -1955,7 +2011,7 @@ StartGame_day_two:
         jsr     ClearZeroPage           ; 2584
         ldx     #$0C                    ; 2587
         lda     #$30                    ; 2589
-L258B:  sta     L2772,x                 ; 258B
+L258B:  sta     DistanceDigits,x        ; 258B
         dex                             ; 258E
         bpl     L258B                   ; 258F
         lda     #$01                    ; 2591
@@ -1974,19 +2030,19 @@ L258B:  sta     L2772,x                 ; 258B
         inx                             ; 25AC
         stx     $33                     ; 25AD
         lda     #$16                    ; 25AF
-        sta     $37                     ; 25B1
+        sta     RunSpeed_day_two        ; 25B1
         lda     #$04                    ; 25B3
         sta     $20                     ; 25B5
         lda     #$80                    ; 25B7
         sta     $31                     ; 25B9
         lda     #$02                    ; 25BB
-        sta     $42                     ; 25BD
+        sta     EventIndex              ; 25BD
         jsr     L28C0                   ; 25BF
 L25C2:  jsr     L180E                   ; 25C2
 L25C5:  lda     L2012                   ; 25C5
         ora     L205C                   ; 25C8
         beq     L25C2                   ; 25CB
-        bit     $41                     ; 25CD
+        bit     InputBits               ; 25CD
         bpl     L25C5                   ; 25CF
         jsr     ClearZeroPage           ; 25D1
         lda     #$32                    ; 25D4
@@ -1997,7 +2053,7 @@ L25C5:  lda     L2012                   ; 25C5
 L25DF:  sta     L277A,x                 ; 25DF
         dex                             ; 25E2
         bpl     L25DF                   ; 25E3
-        jmp     L244B                   ; 25E5
+        jmp     StartEvent_day_two      ; 25E5
 
 L25E8:  ldx     $2E                     ; 25E8
         bne     L25ED                   ; 25EA
@@ -2202,7 +2258,7 @@ L274F:  lda     TED_RASTER_CMP          ; 274F
         rts                             ; 2757
 
 L2758:  ldx     #$0C                    ; 2758
-L275A:  lda     L2772,x                 ; 275A
+L275A:  lda     DistanceDigits,x        ; 275A
         and     #$0F                    ; 275D
         asl     a                       ; 275F
         adc     #$40                    ; 2760
@@ -2215,7 +2271,12 @@ L275A:  lda     L2772,x                 ; 275A
         bpl     L275A                   ; 276F
         rts                             ; 2771
 
-L2772:  .byte   $30                     ; 2772
+
+; --------------------------------------------------------------------------
+; ASCII digits; $2774-$2778 hold the attempt's distance, compared by JudgeAttempt.
+; --------------------------------------------------------------------------
+DistanceDigits:
+        .byte   $30                     ; 2772
 L2773:  .byte   $30                     ; 2773
 L2774:  .byte   $30                     ; 2774
 L2775:  .byte   $30                     ; 2775
@@ -2239,7 +2300,7 @@ L278E:  lda     #$6C                    ; 278E
         rts                             ; 27A5
 
 L27A6:  ldx     #$00                    ; 27A6
-        lda     $37                     ; 27A8
+        lda     RunSpeed_day_two        ; 27A8
         cmp     #$04                    ; 27AA
         bcc     L27BC                   ; 27AC
         and     #$FC                    ; 27AE
@@ -2251,7 +2312,7 @@ L27B3:  lda     #$03                    ; 27B3
         inx                             ; 27B8
         dey                             ; 27B9
         bne     L27B3                   ; 27BA
-L27BC:  lda     $37                     ; 27BC
+L27BC:  lda     RunSpeed_day_two        ; 27BC
         and     #$03                    ; 27BE
         jsr     L27D1                   ; 27C0
 L27C3:  inx                             ; 27C3
@@ -2335,7 +2396,7 @@ L285D:  ldy     L289C,x                 ; 285D
 L2868:  lda     $60                     ; 2868
         beq     L286F                   ; 286A
         jsr     L2881                   ; 286C
-L286F:  lda     $42                     ; 286F
+L286F:  lda     EventIndex              ; 286F
         beq     L2880                   ; 2871
         cmp     #$01                    ; 2873
         beq     L287D                   ; 2875
@@ -2398,7 +2459,7 @@ L28F6:  lda     L2935,x                 ; 28F6
         sta     L0CA3,x                 ; 290B
         dex                             ; 290E
         bpl     L28F6                   ; 290F
-        jsr     L2A7E                   ; 2911
+        jsr     ShowEventTables         ; 2911
         jsr     L2BB4                   ; 2914
         ldx     #$9E                    ; 2917
         ldy     #$29                    ; 2919
@@ -2438,12 +2499,23 @@ L297B:  .byte   $46,$4F,$55,$4C,$53,$20,$25,$20; 297B
         .byte   $08,$46,$04,$6E,$08,$67,$06,$96; 29AB
         .byte   $08,$58,$06,$BE,$08,$42,$06,$A7; 29B3
         .byte   $08,$00,$06,$FF         ; 29BB
-L29BF:  jsr     L2392                   ; 29BF
-        lda     $50                     ; 29C2
-        bne     L29C7                   ; 29C4
+
+; --------------------------------------------------------------------------
+; ReadInput, then JoyWaggle_day_two while RunUpActive.
+; --------------------------------------------------------------------------
+PollInput_day_two:
+        jsr     ReadInput               ; 29BF
+        lda     RunUpActive             ; 29C2
+        bne     JoyWaggle_day_two       ; 29C4
         rts                             ; 29C6
 
-L29C7:  lda     $41                     ; 29C7
+
+; --------------------------------------------------------------------------
+; Record left and right in WaggleSeen_day_two; once both are seen,
+; RunSpeed_day_two + 5 (+2 from $0C) and clear it.
+; --------------------------------------------------------------------------
+JoyWaggle_day_two:
+        lda     InputBits               ; 29C7
         sta     $3F                     ; 29C9
         and     #$0C                    ; 29CB
         cmp     #$0C                    ; 29CD
@@ -2454,36 +2526,41 @@ L29C7:  lda     $41                     ; 29C7
         lsr     a                       ; 29D5
         bcc     L29E1                   ; 29D6
         lda     #$01                    ; 29D8
-        ora     $40                     ; 29DA
-        sta     $40                     ; 29DC
+        ora     WaggleSeen_day_two      ; 29DA
+        sta     WaggleSeen_day_two      ; 29DC
         jmp     L29EA                   ; 29DE
 
 L29E1:  lsr     a                       ; 29E1
         bcc     L2A09                   ; 29E2
         lda     #$02                    ; 29E4
-        ora     $40                     ; 29E6
-        sta     $40                     ; 29E8
-L29EA:  lda     $40                     ; 29EA
+        ora     WaggleSeen_day_two      ; 29E6
+        sta     WaggleSeen_day_two      ; 29E8
+L29EA:  lda     WaggleSeen_day_two      ; 29EA
         cmp     #$03                    ; 29EC
         bne     L2A09                   ; 29EE
-        lda     $37                     ; 29F0
+        lda     RunSpeed_day_two        ; 29F0
         cmp     #$0C                    ; 29F2
         bcs     L29FF                   ; 29F4
-        jsr     L2A0A                   ; 29F6
-        jsr     L2A0A                   ; 29F9
-        jsr     L2A0A                   ; 29FC
-L29FF:  jsr     L2A0A                   ; 29FF
-        jsr     L2A0A                   ; 2A02
+        jsr     SpeedUp_day_two         ; 29F6
+        jsr     SpeedUp_day_two         ; 29F9
+        jsr     SpeedUp_day_two         ; 29FC
+L29FF:  jsr     SpeedUp_day_two         ; 29FF
+        jsr     SpeedUp_day_two         ; 2A02
         lda     #$00                    ; 2A05
-        sta     $40                     ; 2A07
+        sta     WaggleSeen_day_two      ; 2A07
 L2A09:  rts                             ; 2A09
 
-L2A0A:  lda     $37                     ; 2A0A
+
+; --------------------------------------------------------------------------
+; RunSpeed_day_two + 1 up to $1F; also steps the athlete's animation.
+; --------------------------------------------------------------------------
+SpeedUp_day_two:
+        lda     RunSpeed_day_two        ; 2A0A
         cmp     #$1F                    ; 2A0C
         bne     L2A11                   ; 2A0E
         rts                             ; 2A10
 
-L2A11:  inc     $37                     ; 2A11
+L2A11:  inc     RunSpeed_day_two        ; 2A11
         lda     $38                     ; 2A13
         cmp     #$0E                    ; 2A15
         bcs     L2A30                   ; 2A17
@@ -2502,44 +2579,69 @@ L2A11:  inc     $37                     ; 2A11
         stx     $6A                     ; 2A2E
 L2A30:  rts                             ; 2A30
 
-L2A31:  lda     $7F                     ; 2A31
+
+; --------------------------------------------------------------------------
+; Every 2 (joystick) or 3 (keys) calls, RunSpeed_day_two - 1 down to 0.
+; --------------------------------------------------------------------------
+SpeedDecay_day_two:
+        lda     $7F                     ; 2A31
         bne     L2A39                   ; 2A33
         dec     $57                     ; 2A35
         beq     L2A3A                   ; 2A37
 L2A39:  rts                             ; 2A39
 
-L2A3A:  lda     L213F                   ; 2A3A
+L2A3A:  lda     InputMode               ; 2A3A
         eor     #$01                    ; 2A3D
         clc                             ; 2A3F
         adc     #$02                    ; 2A40
         sta     $57                     ; 2A42
-        lda     $37                     ; 2A44
+        lda     RunSpeed_day_two        ; 2A44
         bne     L2A49                   ; 2A46
         rts                             ; 2A48
 
-L2A49:  dec     $37                     ; 2A49
+L2A49:  dec     RunSpeed_day_two        ; 2A49
 L2A4B:  rts                             ; 2A4B
 
-L2A4C:  .byte   $30,$31,$31,$38,$37,$30,$31,$37; 2A4C
+
+; --------------------------------------------------------------------------
+; Three 5-digit ASCII lengths shown as WORLD RECORD: 011.87, 017.60, 101.30.
+; --------------------------------------------------------------------------
+WorldRecordTable:
+        .byte   $30,$31,$31,$38,$37,$30,$31,$37; 2A4C
         .byte   $36,$30,$31,$30,$31,$33 ; 2A54
 L2A5A:  .byte   $30                     ; 2A5A
-L2A5B:  .byte   $30,$30,$36,$38,$30,$30,$31,$33; 2A5B
+
+; --------------------------------------------------------------------------
+; Three 5-digit ASCII lengths shown as QUALIFYING LENGTH: 006.80, 013.90, 065.70.
+; --------------------------------------------------------------------------
+QualifyLengthTable:
+        .byte   $30,$30,$36,$38,$30,$30,$31,$33; 2A5B
         .byte   $39,$30,$30,$36,$35,$37 ; 2A63
 L2A69:  .byte   $30                     ; 2A69
-L2A6A:  .byte   $30,$30,$30,$30,$30,$30,$30,$30; 2A6A
+
+; --------------------------------------------------------------------------
+; Three 5-digit ASCII lengths shown as BEST; a better attempt is copied in by JudgeAttempt.
+; --------------------------------------------------------------------------
+BestTable:
+        .byte   $30,$30,$30,$30,$30,$30,$30,$30; 2A6A
         .byte   $30,$30,$30,$30,$30,$30 ; 2A72
 L2A78:  .byte   $30                     ; 2A78
 L2A79:  .byte   $30,$30,$30,$30,$30     ; 2A79
-L2A7E:  ldx     $42                     ; 2A7E
-        ldy     L241A,x                 ; 2A80
+
+; --------------------------------------------------------------------------
+; Print this event's world record, qualifying length and best at $0C68, $0C90, $0CB8.
+; --------------------------------------------------------------------------
+ShowEventTables:
+        ldx     EventIndex              ; 2A7E
+        ldy     EventTableOffset,x      ; 2A80
         ldx     #$00                    ; 2A83
-L2A85:  lda     L2A4C,y                 ; 2A85
+L2A85:  lda     WorldRecordTable,y      ; 2A85
         and     #$3F                    ; 2A88
         sta     L0C68,x                 ; 2A8A
-        lda     L2A5B,y                 ; 2A8D
+        lda     QualifyLengthTable,y    ; 2A8D
         and     #$3F                    ; 2A90
         sta     L0C90,x                 ; 2A92
-        lda     L2A6A,y                 ; 2A95
+        lda     BestTable,y             ; 2A95
         and     #$3F                    ; 2A98
         sta     L0CB8,x                 ; 2A9A
         iny                             ; 2A9D
@@ -2549,7 +2651,7 @@ L2A85:  lda     L2A4C,y                 ; 2A85
         inx                             ; 2AA3
 L2AA4:  cpx     #$06                    ; 2AA4
         bne     L2A85                   ; 2AA6
-        lda     $42                     ; 2AA8
+        lda     EventIndex              ; 2AA8
         clc                             ; 2AAA
         adc     $7F                     ; 2AAB
         tax                             ; 2AAD
@@ -2718,7 +2820,7 @@ L2C17:  sta     ($23),y                 ; 2C17
 
 L2C2C:  rts                             ; 2C2C
 
-L2C2D:  ldx     $42                     ; 2C2D
+L2C2D:  ldx     EventIndex              ; 2C2D
         lda     L2C77,x                 ; 2C2F
         sta     $49                     ; 2C32
         txa                             ; 2C34
@@ -2741,12 +2843,12 @@ L2C2D:  ldx     $42                     ; 2C2D
         sta     $72                     ; 2C56
         lda     #$77                    ; 2C58
         sta     $4E                     ; 2C5A
-        lda     $42                     ; 2C5C
+        lda     EventIndex              ; 2C5C
         sta     $7B                     ; 2C5E
         beq     L2C66                   ; 2C60
         lda     #$0A                    ; 2C62
         sta     $7B                     ; 2C64
-L2C66:  ldx     $42                     ; 2C66
+L2C66:  ldx     EventIndex              ; 2C66
         lda     L2C74,x                 ; 2C68
         ldx     #$07                    ; 2C6B
 L2C6D:  sta     L17F8,x                 ; 2C6D
@@ -2783,7 +2885,7 @@ L2CA1:  ldx     $4C                     ; 2CA1
         cpx     #$50                    ; 2CA3
         bcs     L2CAC                   ; 2CA5
         lda     #$FF                    ; 2CA7
-        sta     $53                     ; 2CA9
+        sta     AttemptResult           ; 2CA9
         rts                             ; 2CAB
 
 L2CAC:  txa                             ; 2CAC
@@ -2796,7 +2898,7 @@ L2CAC:  txa                             ; 2CAC
         lsr     a                       ; 2CB7
         tax                             ; 2CB8
         ldy     #$20                    ; 2CB9
-        lda     $42                     ; 2CBB
+        lda     EventIndex              ; 2CBB
         bne     L2CC1                   ; 2CBD
         ldy     #$FF                    ; 2CBF
 L2CC1:  stx     $81                     ; 2CC1
@@ -2813,7 +2915,7 @@ L2CC3:  tya                             ; 2CC3
         ldx     $81                     ; 2CD7
         lda     $86                     ; 2CD9
         bne     L2CE9                   ; 2CDB
-        lda     $37                     ; 2CDD
+        lda     RunSpeed_day_two        ; 2CDD
         beq     L2CE9                   ; 2CDF
         cmp     #$0F                    ; 2CE1
         bcc     L2CE7                   ; 2CE3
@@ -2826,7 +2928,7 @@ L2CE9:  lda     #$1B                    ; 2CE9
         sta     L0EF9,x                 ; 2CF3
         sta     L0F20,x                 ; 2CF6
         ldy     #$71                    ; 2CF9
-        lda     $42                     ; 2CFB
+        lda     EventIndex              ; 2CFB
         bne     L2D01                   ; 2CFD
         ldy     #$67                    ; 2CFF
 L2D01:  tya                             ; 2D01
@@ -2847,7 +2949,7 @@ L2D14:  lda     $4D                     ; 2D14
         asl     a                       ; 2D1B
         tax                             ; 2D1C
         ldy     #$00                    ; 2D1D
-        lda     $42                     ; 2D1F
+        lda     EventIndex              ; 2D1F
         bne     L2D27                   ; 2D21
         txa                             ; 2D23
         ora     #$40                    ; 2D24
@@ -2884,7 +2986,7 @@ L2DBB:  lda     $51                     ; 2DBB
         bne     L2DC0                   ; 2DBD
         rts                             ; 2DBF
 
-L2DC0:  lda     $37                     ; 2DC0
+L2DC0:  lda     RunSpeed_day_two        ; 2DC0
         beq     L2DD4                   ; 2DC2
         lsr     a                       ; 2DC4
         lsr     a                       ; 2DC5
@@ -2905,7 +3007,7 @@ L2DD4:  sta     $33                     ; 2DD4
 
 L2DD9:  ldx     #$02                    ; 2DD9
 L2DDB:  lda     #$71                    ; 2DDB
-        ldy     $54,x                   ; 2DDD
+        ldy     AttemptResults,x        ; 2DDD
         cpy     #$FF                    ; 2DDF
         beq     L2DF4                   ; 2DE1
         cpy     #$00                    ; 2DE3
@@ -2924,7 +3026,7 @@ L2DF4:  dex                             ; 2DF4
         bpl     L2DDB                   ; 2DF5
         rts                             ; 2DF7
 
-L2DF8:  lda     $37                     ; 2DF8
+L2DF8:  lda     RunSpeed_day_two        ; 2DF8
         bne     L2DFD                   ; 2DFA
         rts                             ; 2DFC
 
@@ -2932,7 +3034,7 @@ L2DFD:  dec     $58                     ; 2DFD
         beq     L2E02                   ; 2DFF
         rts                             ; 2E01
 
-L2E02:  lda     $37                     ; 2E02
+L2E02:  lda     RunSpeed_day_two        ; 2E02
         lsr     a                       ; 2E04
         lsr     a                       ; 2E05
         eor     #$07                    ; 2E06
@@ -2946,7 +3048,7 @@ L2E02:  lda     $37                     ; 2E02
         lda     $7F                     ; 2E15
         bne     L2E1C                   ; 2E17
         jsr     L182E                   ; 2E19
-L2E1C:  lda     $42                     ; 2E1C
+L2E1C:  lda     EventIndex              ; 2E1C
         beq     L2E24                   ; 2E1E
         ldx     $7B                     ; 2E20
         bne     L2E2D                   ; 2E22
@@ -3042,12 +3144,12 @@ L2ED1:  ldx     #$03                    ; 2ED1
         cld                             ; 2EE4
         lda     $65                     ; 2EE5
         jsr     L21F9                   ; 2EE7
-        stx     L2772                   ; 2EEA
+        stx     DistanceDigits          ; 2EEA
         sty     L2773                   ; 2EED
-        bit     $41                     ; 2EF0
+        bit     InputBits               ; 2EF0
         bmi     L2ED1                   ; 2EF2
 L2EF4:  cld                             ; 2EF4
-        lda     $42                     ; 2EF5
+        lda     EventIndex              ; 2EF5
         asl     a                       ; 2EF7
         tax                             ; 2EF8
         lda     EventJumpTable_day_two,x; 2EF9
@@ -3192,7 +3294,7 @@ L2FE0:  .byte   $00                     ; 2FE0
 L2FE1:  .byte   $00,$0D,$07,$0E,$08     ; 2FE1
 L2FE6:  lda     #$00                    ; 2FE6
         sta     $33                     ; 2FE8
-        jmp     L3295                   ; 2FEA
+        jmp     JudgeAttempt            ; 2FEA
 
 L2FED:  dec     $82                     ; 2FED
         beq     L2FB9                   ; 2FEF
@@ -3288,7 +3390,7 @@ L307E:  lda     #$01                    ; 307E
 
 L3085:  lda     #$00                    ; 3085
         sta     $33                     ; 3087
-        jmp     L3295                   ; 3089
+        jmp     JudgeAttempt            ; 3089
 
 L308C:  lda     #$0B                    ; 308C
         sta     $7B                     ; 308E
@@ -3368,7 +3470,7 @@ L3110:  inc     $77                     ; 3110
 
 L3115:  lda     #$00                    ; 3115
         sta     $33                     ; 3117
-        jmp     L3295                   ; 3119
+        jmp     JudgeAttempt            ; 3119
 
 L311C:  dec     $7C                     ; 311C
         beq     L3110                   ; 311E
@@ -3528,10 +3630,10 @@ L323B:  lda     $78                     ; 323B
         dec     $78                     ; 323F
         rts                             ; 3241
 
-L3242:  lda     $42                     ; 3242
+L3242:  lda     EventIndex              ; 3242
         asl     a                       ; 3244
         clc                             ; 3245
-        adc     $42                     ; 3246
+        adc     EventIndex              ; 3246
         tax                             ; 3248
         lda     L326D,x                 ; 3249
         pha                             ; 324C
@@ -3556,23 +3658,29 @@ L326D:  .byte   $01                     ; 326D
 L326E:  .byte   $01                     ; 326E
 L326F:  .byte   $00,$02,$03,$00,$07,$03,$00,$60; 326F
 L3277:  sta     L3294                   ; 3277
-        lda     L2772,y                 ; 327A
+        lda     DistanceDigits,y        ; 327A
         clc                             ; 327D
         adc     L3294                   ; 327E
         cmp     #$3A                    ; 3281
         bmi     L3290                   ; 3283
         sec                             ; 3285
         sbc     #$0A                    ; 3286
-        sta     L2772,y                 ; 3288
+        sta     DistanceDigits,y        ; 3288
         lda     #$01                    ; 328B
         dey                             ; 328D
         bpl     L3277                   ; 328E
-L3290:  sta     L2772,y                 ; 3290
+L3290:  sta     DistanceDigits,y        ; 3290
         rts                             ; 3293
 
 L3294:  .byte   $00                     ; 3294
-L3295:  ldy     $42                     ; 3295
-        lda     L241A,y                 ; 3297
+
+; --------------------------------------------------------------------------
+; AttemptResult 1 if the distance beats QualifyLengthTable, else $FF; copy it to
+; BestTable if better; if qualified, compare it with WorldRecordTable.
+; --------------------------------------------------------------------------
+JudgeAttempt:
+        ldy     EventIndex              ; 3295
+        lda     EventTableOffset,y      ; 3297
         clc                             ; 329A
         adc     #$05                    ; 329B
         sta     $7E                     ; 329D
@@ -3587,7 +3695,7 @@ L32A3:  lda     L2A5A,x                 ; 32A3
         ldy     #$01                    ; 32AD
         bcc     L32B3                   ; 32AF
         ldy     #$FF                    ; 32B1
-L32B3:  sty     $53                     ; 32B3
+L32B3:  sty     AttemptResult           ; 32B3
         sty     $7D                     ; 32B5
         ldx     $7E                     ; 32B7
         ldy     #$05                    ; 32B9
@@ -3606,7 +3714,7 @@ L32CB:  lda     $7E                     ; 32CB
         tax                             ; 32D0
         ldy     #$00                    ; 32D1
 L32D3:  lda     L2774,y                 ; 32D3
-        sta     L2A6A,x                 ; 32D6
+        sta     BestTable,x             ; 32D6
         inx                             ; 32D9
         iny                             ; 32DA
         cpy     #$05                    ; 32DB
@@ -3697,25 +3805,30 @@ L3385:  lda     L277A,x                 ; 3385
 L3390:  and     #$0F                    ; 3390
         jmp     L3277                   ; 3392
 
-L3395:  lda     #$04                    ; 3395
+
+; --------------------------------------------------------------------------
+; One key sets InputMode to joystick, another to keys; print KEY or JOY at $0F99.
+; --------------------------------------------------------------------------
+SelectInputMode:
+        lda     #$04                    ; 3395
         ldy     #$EF                    ; 3397
-        jsr     L23D6                   ; 3399
+        jsr     TestKey                 ; 3399
         bcc     L33A3                   ; 339C
         lda     #$01                    ; 339E
-        sta     L213F                   ; 33A0
+        sta     InputMode               ; 33A0
 L33A3:  lda     #$20                    ; 33A3
         ldy     #$EF                    ; 33A5
-        jsr     L23D6                   ; 33A7
+        jsr     TestKey                 ; 33A7
         bcc     L33B1                   ; 33AA
         lda     #$00                    ; 33AC
-        sta     L213F                   ; 33AE
-L33B1:  lda     L213F                   ; 33B1
+        sta     InputMode               ; 33AE
+L33B1:  lda     InputMode               ; 33B1
         asl     a                       ; 33B4
         clc                             ; 33B5
-        adc     L213F                   ; 33B6
+        adc     InputMode               ; 33B6
         tax                             ; 33B9
         ldy     #$00                    ; 33BA
-L33BC:  lda     L33D5,x                 ; 33BC
+L33BC:  lda     KeyJoyText,x            ; 33BC
         and     #$3F                    ; 33BF
         sta     L0F99,y                 ; 33C1
         lda     L0832                   ; 33C4
@@ -3728,7 +3841,12 @@ L33BC:  lda     L33D5,x                 ; 33BC
         bne     L33BC                   ; 33D2
         rts                             ; 33D4
 
-L33D5:  .byte   $4B,$45,$59,$4A,$4F,$59,$BF,$FF; 33D5
+
+; --------------------------------------------------------------------------
+; 'KEY' and 'JOY', 3 bytes each, indexed by InputMode * 3.
+; --------------------------------------------------------------------------
+KeyJoyText:
+        .byte   $4B,$45,$59,$4A,$4F,$59,$BF,$FF; 33D5
         .byte   $FF,$FF,$A7,$08,$1C,$00,$18,$08; 33DD
         .byte   $18,$00,$98,$00,$0C,$00,$08,$00; 33E5
         .byte   $2A,$00,$FE,$21,$FF,$FF,$FF,$BF; 33ED

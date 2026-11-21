@@ -17,6 +17,7 @@ What still needs testing or checking, and how. Items done in VICE are listed onc
 | Day One keys A, 4, E, SHIFT    | Pressed in VICE, breakpoint at `$13AB`       | evidence, part 1        |
 | Joystick port                  | Keyset joystick on each port; VICE source    | evidence, part 1        |
 | Advertising boards             | Rendered from `ADDS`, matched to the screen  | `GRAPHICS`              |
+| All other graphics             | Rendered from the originals; VICE shots      | `GRAPHICS`              |
 
 ---
 
@@ -57,20 +58,10 @@ These can be done from the disassembly and VICE without a player.
 | Decruncher               | Compare with a real Exomizer build           |
 | Day One `RecordTimes`    | Confirm nothing writes the records box       |
 | NTSC                     | Race clock speed on a 60 Hz machine?         |
+| Day One GAME OVER        | Why is one R lives marker left on screen?    |
 
 ---
 
-## Graphics Still to Show
+## Graphics
 
-The handbook shows both character sets, both athletes, the advertising boards and a screenshot of every event ([graphics](GRAPHICS.md)). Still to draw:
-
-| Graphic               | Source                                               |
-|:----------------------|:-----------------------------------------------------|
-| Title lettering       | `TitleGlyphs` / `TitleOffsets` (Day Two)             |
-| Large score digits    | Characters `$40` + 2n (`DrawScoreLine`)              |
-| Day One hurdles       | `DrawHurdleA` / `DrawHurdleB` bitmaps                |
-| Day One finish line   | `DrawFinishLine`                                     |
-| Day One scenery strip | Characters `$3F`–`$4C`, rotated by `RotateCharsLeft` |
-| Day One packed screen | `DrawPackedScreen` data at `$3000`                   |
-| Shot and javelin      | `ShotBitmap`, `JavelinChars`                         |
-| Title screens         | Screenshots of each part's title and GAME OVER       |
+Every graphic on the earlier list is now drawn in [the graphics chapter](GRAPHICS.md): Day One's screen from its packed data and scenery, the hurdles and finish line, the title lettering and score digits, the shot and javelin, and the Day Two title and Day One GAME OVER screens. Nothing is outstanding here.

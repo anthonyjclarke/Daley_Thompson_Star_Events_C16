@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """Screenshots of every event for the documentation, from the original PRGs in VICE.
 
-Run from the project root:   python3 tools/doc_shots.py
+Run from the project root:   python3 tools/doc_shots.py [titles]
 
 Part 1: runs with SpeedDecay patched to RTS in RAM and RunSpeed set to $70 once each race starts, so
 every event qualifies and the next one follows; a shot is taken in each event once its distance passes
 20 m. Part 2: removes the FIRE TO START wait in RAM, sets EventIndex at StartEvent_day_two ($244B) and
-takes a shot of each event's screen. The patches change RAM in VICE only, never the build. Writes
-docs/images/event_*.png.
+takes a shot of each event's screen. Also the Day Two title (FIRE TO START) and Day One's GAME OVER, reached by
+letting three races run out unplayed (break at the GAME OVER wait, $11B3). The patches change RAM in VICE only,
+never the build. Writes docs/images/event_*.png, title_day_two.png and game_over_day_one.png.
 """
 import re
 import shutil
@@ -97,7 +98,35 @@ def part2():
             stop(vice, mon)
 
 
+def titles():
+    vice, mon = start("original/daley_thompsons_star_events_day_two.prg")
+    try:
+        time.sleep(4)
+        shot(mon, "title_day_two")
+    finally:
+        stop(vice, mon)
+    vice, mon = start("original/daley_thompsons_star_events_day_one.prg")
+    try:
+        time.sleep(2)
+        mon.send("break exec 11b3", 0.2)
+        mon.send("x", 0.1)
+        text, t1 = "", time.time()
+        while "stop on" not in text.lower() and time.time() - t1 < 240:
+            text += mon.read(1)
+        mon.send("del", 0.2)
+        print("GAME OVER text at $0EB7:", bytes(mem(mon, 0x0EB7, 0x0EBF)).hex())
+        mon.send("x", 0.1)  # let a few frames draw: the stop can show a frame from before ShowGameOver
+        time.sleep(1.5)
+        shot(mon, "game_over_day_one")
+    finally:
+        stop(vice, mon)
+
+
 if __name__ == "__main__":
     OUT.mkdir(parents=True, exist_ok=True)
-    part1()
-    part2()
+    if sys.argv[1:] == ["titles"]:
+        titles()
+    else:
+        part1()
+        part2()
+        titles()

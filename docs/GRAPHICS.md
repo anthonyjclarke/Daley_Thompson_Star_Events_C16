@@ -12,6 +12,10 @@ Both parts use TED's 40×25 character screen at `$0C00` with colour RAM at `$080
 
 Day One's screen is unpacked at the start of each event from a packed description at `$3000` (`DrawPackedScreen`). The codes `$FB`–`$FF` mean a run of one character, a new address, the next row, a new colour, and the end; every other byte is a character.
 
+![Day One screen from its own code](images/screen_day_one.svg)
+
+This is what the packed data holds, drawn by running the game's own `DrawPackedScreen` and then `DrawSceneryRows` in the project's 6502 emulator. The packed data is only the panels: score and qualifying time, the event box, the RECORDS box and the bottom line. `DrawSceneryRows` adds the two scenery rows, characters `$3F`–`$45` over `$46`–`$4C` repeated across the screen. The event's name, distance and records, the track, the athlete and the sky are drawn by other routines, and the colours of each band come from the raster splits, so the background here is plain black.
+
 ![Day Two, long jump](images/event_long_jump.png)
 
 Day Two draws its screen in pieces (`DrawEventScreen`, `DrawPieceList`) and writes the event's title in a large font made of characters, from glyph numbers (`TitleGlyphs`).
@@ -41,6 +45,14 @@ Several characters are rewritten while the game runs. The scenery characters are
 The athlete is two blocks of 6×3 characters, top and bottom, drawn at `$0E5E` and `$0ED6` by `DrawAthlete`. `AthleteFrames` holds seven frames of 36 bytes: character codes, with spaces left transparent. Frames are selected by offset (`AthleteTopFrame`, `AthleteBottomFrame`), and `StepAthleteFrame` advances them whenever a track mark crosses a cell, so the stride matches the ground's speed. Fire in a hurdle event switches to the jump frames at offsets `$B4` and `$D8`.
 
 The colours in this picture are neutral stand-ins for the four multicolour values; on screen they come from the raster split that covers the athlete's rows.
+
+---
+
+## Hurdles and the Finish Line
+
+![Day One object block](images/objects_day_one.svg)
+
+Hurdles and the finish line share one 256-byte block of the character set, `$3B08`–`$3C07` (characters `$61`–`$80`). `PlotObjectPixel` addresses it as 4 characters wide by 8 tall: byte = (Y AND `$F8`) × 4 + (Y AND 7) + (X AND `$F8`). The pictures above come from running `DrawHurdleA`, `DrawHurdleB` and `DrawFinishLine` in the emulator. The hurdles are copied in from bitmaps at `$3900`–`$3968`, two different hurdle pictures; the finish line is plotted a pixel pair at a time as a slanted line, here from `PlotX` = 8. On screen, `WriteObjectCells` places these characters at the object's position, and the code at `$20D6` shifts the block's pixels left so that it can move between whole characters.
 
 ---
 
@@ -103,6 +115,34 @@ Day Two's athlete is 6×6 characters, `$A3`–`$C6`, laid out in four 3×3 block
 
 The colours are neutral stand-ins for the multicolour values, as in Day One's sheet.
 
-The shot and the javelin are drawn as separate small objects. `DrawShotBall` redraws an 8-byte ball (`ShotBitmap`) into character `$6A` at the shot's pixel row; `DrawJavelinShaft` writes ten cells whose characters depend on the javelin's phase.
+---
+
+## Shot and Javelin
+
+![Day Two shot and javelin](images/implements_day_two.svg)
+
+The shot and the javelin are drawn as separate small objects. `DrawShotBall` redraws an 8-byte ball (`ShotBitmap`) into character `$6A` at the shot's pixel row, so it can move up and down a pixel at a time. `DrawJavelinShaft` writes ten cells, five across and two down (`JavelinCellOffsets`), with characters counting down from the phase's first (`JavelinChars`): rising, level, falling, and nose-down as it lands.
 
 ![Shot-put](images/event_shot_put.png)
+
+---
+
+## Title Lettering and Score Digits
+
+![Day Two lettering and digits](images/lettering_day_two.svg)
+
+Day Two's event titles are written in a large font. `TitleGlyphs` holds each title as a start column, then glyph numbers, `$00` for a space and `$FF` for the end; glyph *g* is two characters side by side, `$CB` + 2*g* and `$CC` + 2*g*, on screen row 1. The four titles are LONG JUMP, SHOT PUT, JAVELIN and FIRE TO START. Two glyph numbers, `$C7` and `$C8`, wrap past `$FF` and pick characters from lower in the set.
+
+The angle, distance and score along the bottom use two-row digits: `DrawScoreLine` puts digit *d* as character `$40` + 2*d* over `$41` + 2*d*.
+
+---
+
+## Title and GAME OVER Screens
+
+![Day Two title screen](images/title_day_two.png)
+
+Day Two opens on FIRE TO START, with the javelin's records, the scrolling boards and a runner already moving; the title lettering cycles colours (`CycleTitleColours`).
+
+![Day One GAME OVER](images/game_over_day_one.png)
+
+Day One has no title screen: it goes straight into the first race. When the last attempt is lost, `ShowGameOver` prints GAME OVER at `$0EB7`, plays the tune and waits for fire. In this shot one R is still shown under the distance, although no attempts are left.

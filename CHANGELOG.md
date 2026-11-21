@@ -2,6 +2,19 @@
 
 ---
 
+## [0.8.1] 22-11-2026
+
+### Added
+
+- Graphics, all drawn from the originals by `tools/render_graphics.py`: Day One's screen from its own
+  `DrawPackedScreen` and `DrawSceneryRows` (run in `tools/cpu6502.py`), the hurdle and finish-line object block,
+  Day Two's title lettering and score digits, and the shot and javelin. The renderer now uses VICE's full TED
+  palette, sampled from one screenshot.
+- Screenshots of the Day Two title screen and Day One's GAME OVER (`tools/doc_shots.py titles`).
+- Worklist: the graphics list is done; new check for the R marker left at GAME OVER.
+
+---
+
 ## [0.8.0] 22-11-2026
 
 ### Added

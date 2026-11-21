@@ -28,6 +28,7 @@ What the original does that looks accidental or unfinished, kept as it is in the
 | Part 2 `RunwayCellStep` | Every 14th runway cell in flight places a marker and adds no distance | Undocumented coherent |
 | Part 2 `LongJump` | The hang lasts until the runway band turns to sand (`RunwayBandColour`), so the jumper always reaches the pit; a slow jump still measures about 3.5 m | Undocumented coherent |
 | Part 1 `MainLoop_day_one` | Writing `$FD` to `$FD30` as well as `$FF08` selects keyboard row 1, so A, 4, E and SHIFT act as left, right and fire although Day One has no key option | Uncertain: deliberate key support or a side effect of the latch write |
+| Part 2 `TopFrameTable` | Entry 9 (`$3890`) repeats frame 1 and is never selected: the run cycle wraps at 9 | Remnant: purpose unknown |
 
 ---
 

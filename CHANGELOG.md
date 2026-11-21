@@ -2,6 +2,24 @@
 
 ---
 
+## [0.8.0] 22-11-2026
+
+### Added
+
+- `docs/WORKLIST.md`: what is checked in VICE, what needs a person or real hardware, what is left to check in the
+  code, and which graphics the handbook still lacks.
+- Graphics: the six advertising boards (`advert_boards_day_two.svg`) and Day Two's athlete frames
+  (`athlete_day_two.svg`), from `tools/render_graphics.py`.
+- Names: `NextBoardChar`, `BoardStarts`, `BoardColours`, `TopFrameTable`, `BottomFrameTable`, `AthleteCellOffsets`.
+
+### Changed
+
+- The `$0400` data (`ADDS`) is the advertising-board artwork, shown as characters `$80`–`$FF` because TED takes a
+  256-character set on a 2 KB boundary; the graphics chapter and memory map now say so.
+- Quirk: top frame 9 repeats frame 1 and is never selected.
+
+---
+
 ## [0.7.3] 22-11-2026
 
 ### Added

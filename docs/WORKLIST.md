@@ -1,0 +1,76 @@
+# Testing Worklist
+
+What still needs testing or checking, and how. Items done in VICE are listed once with where the proof lives; everything else is open. Tick items off by moving them to the first table and recording the result in [the evidence](evidence.md) or [the quirks](quirks.md).
+
+---
+
+## Checked in VICE
+
+| Item                           | How it was checked                           | Recorded in             |
+|:-------------------------------|:---------------------------------------------|:------------------------|
+| Byte-identical rebuild         | `make verify`, every change                  | `SOURCE_AND_VALIDATION` |
+| Tapes equal the unpacked PRGs  | `tools/tape_check.py`                        | `ARTIFACTS`             |
+| Code coverage                  | VICE execution map over three runs           | evidence, Coverage      |
+| Day One race speed             | `SpeedDecay` patched in a controlled run     | evidence, part 1        |
+| Day Two distances              | `tools/flight_probe.py`, 189 forced attempts | analysis, How Far       |
+| Day Two keys J, K, Q, Y, SPACE | Pressed in VICE, breakpoint at `$23CB`       | evidence, part 2        |
+| Day One keys A, 4, E, SHIFT    | Pressed in VICE, breakpoint at `$13AB`       | evidence, part 1        |
+| Joystick port                  | Keyset joystick on each port; VICE source    | evidence, part 1        |
+| Advertising boards             | Rendered from `ADDS`, matched to the screen  | `GRAPHICS`              |
+
+---
+
+## Needs a Person at the Machine
+
+These need hands, ears or real hardware; the monitor can't do them.
+
+| Item                   | What to do                                                       | What to note                        |
+|:-----------------------|:-----------------------------------------------------------------|:------------------------------------|
+| Day One feel           | Play all four races with a joystick on port 2                    | Can you qualify? Is 13 s fair?      |
+| Hurdles                | Jump and hit hurdles in both hurdle races                        | Does a hit really cost nothing?     |
+| Day One restart        | Lose all attempts, press fire at GAME OVER                       | Score and event reset as expected?  |
+| Long jump              | Jump at 55–59° and at 60°+ at full speed                         | Near 11 m, then about 4.6 m?        |
+| Shot-put               | Throw at 45°, then at 60° slow and fast                          | Slow beats fast outside 35–54°?     |
+| Javelin                | Throw under 35° at full speed                                    | Beats the 101.30 m world record?    |
+| Speed quirk            | Compare runs ending just below and at full speed                 | Noticeable in play?                 |
+| Day Two attempts       | Fail three times; qualify once                                   | Back to title / next event?         |
+| High score             | Score, return to the title                                       | High score kept and shown?          |
+| Sound: Day One         | Listen to start, qualified, failed, game over and footsteps      | Describe each; any glitches?        |
+| Sound: Day Two         | Listen to the title tune, event tune, qualified tune and effects | Describe each; any glitches?        |
+| Real C16               | Load both tape sides on a PAL C16 (16 KB)                        | Loads, runs, any difference to VICE |
+| Plus/4                 | Load and play on a Plus/4                                        | Does it run unchanged?              |
+| Real keyboard aliasing | Try A, 4, E, SHIFT in Day One on hardware                        | Same as in VICE?                    |
+| Day Two joystick mode  | Press J, then try letter keys during an event                    | Do any keys act as the joystick?    |
+
+---
+
+## To Check in the Code
+
+These can be done from the disassembly and VICE without a player.
+
+| Item                     | Question                                     |
+|:-------------------------|:---------------------------------------------|
+| Day Two joystick mode    | Which key row does `$FD30` hold in JOY mode? |
+| Unused code (six blocks) | Any indirect caller? See the quirks          |
+| Neutral names            | Name the remaining `Lxxxx` labels            |
+| Sound data               | Decode the tunes into notes and lengths      |
+| Decruncher               | Compare with a real Exomizer build           |
+| Day One `RecordTimes`    | Confirm nothing writes the records box       |
+| NTSC                     | Race clock speed on a 60 Hz machine?         |
+
+---
+
+## Graphics Still to Show
+
+The handbook shows both character sets, both athletes, the advertising boards and a screenshot of every event ([graphics](GRAPHICS.md)). Still to draw:
+
+| Graphic               | Source                                               |
+|:----------------------|:-----------------------------------------------------|
+| Title lettering       | `TitleGlyphs` / `TitleOffsets` (Day Two)             |
+| Large score digits    | Characters `$40` + 2n (`DrawScoreLine`)              |
+| Day One hurdles       | `DrawHurdleA` / `DrawHurdleB` bitmaps                |
+| Day One finish line   | `DrawFinishLine`                                     |
+| Day One scenery strip | Characters `$3F`–`$4C`, rotated by `RotateCharsLeft` |
+| Day One packed screen | `DrawPackedScreen` data at `$3000`                   |
+| Shot and javelin      | `ShotBitmap`, `JavelinChars`                         |
+| Title screens         | Screenshots of each part's title and GAME OVER       |

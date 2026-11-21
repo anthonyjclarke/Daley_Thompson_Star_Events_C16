@@ -28,6 +28,7 @@
                 "docs/BUILD_AND_RUN.md",
                 "docs/evidence.md",
                 "docs/quirks.md",
+                "docs/WORKLIST.md",
                 "CHANGELOG.md"
             ]
         },

@@ -40,12 +40,12 @@ The character set is live data: `ScrollScenery` rotates the scenery characters' 
 
 | Range           | Contents                                                     |
 |:----------------|:-------------------------------------------------------------|
-| `$0400`–`$07FF` | Character set, copied here from colour RAM by `Entry_day_two` |
+| `$0400`–`$07FF` | Advertising boards (`ADDS`), copied down from `$0800`        |
 | `$0800`–`$0BFF` | Colour RAM; the loader first puts `ADDS` (1 KB) here         |
 | `$0C00`–`$0FFF` | Screen                                                       |
-| `$1000`–`$3FFF` | `MAIN`: second character set at `$1000`, sound driver at `$1800`, code and data |
+| `$1000`–`$3FFF` | `MAIN`: character set at `$1000`, sound driver at `$1800`, code and data |
 
-Loading a character set into colour RAM and copying it down is how Day Two fits: `ADDS` arrives at `$0800` and `Entry_day_two` copies `$0800`–`$0BDF` to `$0400`–`$07DF` before the screen's colours are written. A raster split switches TED between the sets at `$0400` and `$1000` part-way down the screen.
+Loading a character set into colour RAM and copying it down is how Day Two fits: `ADDS` arrives at `$0800` and `Entry_day_two` copies `$0800`–`$0BDF` to `$0400`–`$07DF` before the screen's colours are written. `Split06_day_two` points TED at `$0400` for the advertising band and `Split07_day_two` back to `$1000`. In 256-character mode TED takes the set on a 2 KB boundary, so the band shows `$0400`–`$07FF` as characters `$80`–`$FF`: `ADDS` is the board artwork ([graphics](docs/GRAPHICS.md#advertising-boards)).
 
 ---
 

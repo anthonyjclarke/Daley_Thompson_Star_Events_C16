@@ -61,12 +61,48 @@ The world moves; the athlete stays put. `MoveRace` turns `RunSpeed` into whole a
 
 ## Day Two's Character Sets
 
-![Day Two character set at $0400](images/charset_day_two_0400.svg)
-
-Day Two has two sets. The first is loaded into colour RAM at `$0800` by the tape loader and copied down to `$0400` by `Entry_day_two`. The second is at `$1000`, inside `MAIN`. A raster split switches TED between them part-way down the screen.
+Day Two uses two character areas. The tape loader puts `ADDS` (1 KB) in colour RAM at `$0800`, and `Entry_day_two` copies it down to `$0400`. Most of the screen uses the full set at `$1000`, inside `MAIN`; `Split06_day_two` switches TED to `$FF13` = `$04` for the advertising band, with a white background (`$71`), and `Split07_day_two` switches back to `$10`.
 
 ![Day Two character set at $1000](images/charset_day_two_1000.svg)
 
-Day Two's athlete is a 6×6 block of characters counting down from `$C6` (`DrawAthlete_day_two`). The shot and the javelin are drawn as separate small objects (`DrawShotBall`, `DrawJavelinShaft`).
+---
+
+## Advertising Boards
+
+![Day Two advertising boards](images/advert_boards_day_two.svg)
+
+The boards are a strip of 58 characters, `$80`–`$B9` on the top row over `$BA`–`$F3` on the bottom row. TED is in 256-character mode, so with `$FF13` = `$04` it takes the set on a 2 KB boundary and reads characters `$80`–`$FF` from `$0400`–`$07FF`: the copied `ADDS` data. So `ADDS` is the board artwork. The six boards, in the order they scroll in:
+
+| First character | Colour | Board      |
+|:----------------|:-------|:-----------|
+| `$80`           | `$56`  | BARCLAYS   |
+| `$8B`           | `$32`  | Lee Cooper |
+| `$95`           | `$42`  | PEPSI      |
+| `$9D`           | `$26`  | ocean      |
+| `$A6`           | `$46`  | Boots      |
+| `$AE`           | `$30`  | WHSMITH    |
+
+`ScrollAdvertBoards` shifts both rows (screen and colour) one character left and writes the next character, `NextBoardChar`, at the right edge, wrapping from `$BA` to `$80`. When it reaches a board's first character (`BoardStarts`), the board's colour (`BoardColours`) goes into the right-hand colour cell, and the cells shifted left carry it along. The characters are hi-res; the colours are VICE's TED palette.
+
+![Day Two advert characters at $0400](images/charset_day_two_0400.svg)
+
+The same data drawn as a character sheet, in the order it lies in memory.
+
+---
+
+## Day Two's Athlete
+
+![Day Two athlete halves](images/athlete_day_two.svg)
+
+Day Two's athlete is 6×6 characters, `$A3`–`$C6`, laid out in four 3×3 blocks by `DrawAthlete_day_two` (offsets at `$289C`). The characters stay put on screen; `StepRunFrame_day_two` animates him by copying 144 bytes of bitmap into the top half (`$1518`, characters `$A3`–`$B4`) and the bottom half (`$15A8`, `$B5`–`$C6`). The address tables give 15 top frames (`$2E87`) and 9 bottom frames (`$2EA5`):
+
+- Top 0–8 are the run cycle: the table itself plays six drawings forward and back. Top 9 repeats frame 1 and is never selected, because the cycle wraps at 9.
+- Top `$0A` is the carry pose in the shot-put and javelin run-up and `$0B` the throw (`CarryFrame`).
+- Bottom 0–5 are the legs' run cycle.
+- The long jump sets top `$0C` with bottom 6 at take-off, then `$0D`/7 at the top and `$0E`/8 falling (`LongJumpFrames`).
+
+The colours are neutral stand-ins for the multicolour values, as in Day One's sheet.
+
+The shot and the javelin are drawn as separate small objects. `DrawShotBall` redraws an 8-byte ball (`ShotBitmap`) into character `$6A` at the shot's pixel row; `DrawJavelinShaft` writes ten cells whose characters depend on the javelin's phase.
 
 ![Shot-put](images/event_shot_put.png)

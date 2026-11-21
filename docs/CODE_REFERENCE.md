@@ -201,10 +201,13 @@ Block `day_two`, from `original/day_two_unpacked_vice.prg`. Source `src/day_two.
 - `$21C7`–`$21F8` **ScreenRowTable** (WordTable) – Screen address of each of the 25 rows ($0C00 + 40 * row)
 - `$23EE`–`$23FA` **SplitRasters_day_two** (ByteTable) – Raster line of each split (13 entries)
 - `$23FB`–`$2414` **SplitTable_day_two** (AddrTable) – Raster-split handlers, called in turn by the IRQ (13 entries)
+- `$2E87`–`$2EA4` **TopFrameTable** (AddrTable) – Addresses of the athlete's 15 top-half frames, 144 bytes each
+- `$2EA5`–`$2EB6` **BottomFrameTable** (AddrTable) – Addresses of the athlete's 9 bottom-half frames, 144 bytes each
 - `$2F14`–`$2F19` **EventJumpTable_day_two** (AddrTable) – Per-event handler, indexed by $42; patched into the JMP at $2F11 (3 entries)
 
 ### Names
 
+- `$0031` **NextBoardChar** – Next advertising-board character ScrollAdvertBoards writes at the right edge: $80-$B9, with $3A added for the bottom row.
 - `$0032` **RunwayFineScroll** – TED fine scroll (0-7) of the runway band.
 - `$0033` **RunwayScrollStep** – Runway scroll per frame plus 1 (0 stops it); set from TakeOffSpeed in flight.
 - `$0036` **RunwayBandColour** – Background colour Split09_day_two gives the runway band: $32 (red track), $67 (yellow sand) once AdvanceAthlete has carried the jumper below AthleteX $10.
@@ -305,6 +308,8 @@ Block `day_two`, from `original/day_two_unpacked_vice.prg`. Source `src/day_two.
 - `$2478` **StartAttempt_day_two** – Reset the distance and the athlete, draw the screen, wait for the run-up to end.
 - `$2584` **StartGame_day_two** – Reset scores and state, draw the screen, play a tune until fire. TODO(name)
 - `$260E` **ScrollAdvertBoards** – Shift the two advert-board rows ($0DB8, $0DE0) and their colours left one character.
+- `$266F` **BoardStarts** – First character of each of the six advertising boards.
+- `$2675` **BoardColours** – Colour of each board, written when its first character scrolls in.
 - `$267B` **ScrollRunway** – Once a frame: fine-scroll the runway by RunwayScrollStep - 1 pixels; each whole character shifts the runway row and runs RunwayCellStep.
 - `$2702` **RunwayCellStep** – Per runway character: AdvanceAthlete if moving, count RunwayCellCount, AddFlightDistance.
 - `$2724` **AdvanceAthlete** – AthleteX - 2 and redraw the runway, until it is below $10.
@@ -321,6 +326,7 @@ Block `day_two`, from `original/day_two_unpacked_vice.prg`. Source `src/day_two.
 - `$2854` **EraseAthlete_day_two** – Blank the athlete's 36 cells.
 - `$2868` **UpdateFigures** – Move the athlete if $60 is set, then draw the shot (event 1) or the javelin (event 2).
 - `$2881` **MoveAthlete_day_two** – Erase, take the new column/row from $5C/$5D, redraw if changed.
+- `$289C` **AthleteCellOffsets** – Screen offsets of the athlete's 36 cells: four 3x3 blocks.
 - `$28C0` **DrawEventScreen** – Draw the information box, its labels, ShowEventTables and the event's scenery.
 - `$29BF` **PollInput_day_two** – ReadInput, then JoyWaggle_day_two while RunUpActive.
 - `$29C7` **JoyWaggle_day_two** – Record left and right in WaggleSeen_day_two; once both are seen, RunSpeed_day_two + 5 (+2 from $0C) and clear it.

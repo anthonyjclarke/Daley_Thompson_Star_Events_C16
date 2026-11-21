@@ -184,6 +184,8 @@ BLOCKS = [
          ranges=[(0x23EE, 0x23FA, "ByteTable", "SplitRasters_day_two", "Raster line of each split (13 entries)"),
                  (0x21C7, 0x21F8, "WordTable", "ScreenRowTable", "Screen address of each of the 25 rows ($0C00 + 40 * row)"),
                  (0x2F14, 0x2F19, "AddrTable", "EventJumpTable_day_two", "Per-event handler, indexed by $42; patched into the JMP at $2F11 (3 entries)"),
+                 (0x2E87, 0x2EA4, "AddrTable", "TopFrameTable", "Addresses of the athlete's 15 top-half frames, 144 bytes each"),
+                 (0x2EA5, 0x2EB6, "AddrTable", "BottomFrameTable", "Addresses of the athlete's 9 bottom-half frames, 144 bytes each"),
                  (0x23FB, 0x2414, "AddrTable", "SplitTable_day_two", "Raster-split handlers, called in turn by the IRQ (13 entries)")]
          + inline_words(D2_INLINE_CALLS),
          labels={0x2111: ("Entry_day_two", "Entry point of part 2 (the decruncher's final JMP): copy $0800-$0BDF to $0400-$07DF,\n"
@@ -314,6 +316,10 @@ BLOCKS = [
                  0x31F1: ("ShotBitmap", "The shot's 8-byte ball, copied into character $6A at the shot's pixel row."),
                  0x31F9: ("FollowThrough", "Shot and javelin release: walk the athlete left to column 0, lifting the shot by\nAngleClass and the javelin by 1 a step and moving AthleteX - 3, then clear his rows."),
                  0x1350: ("ShotChar", "Character $6A of the $1000 set: DrawShotBall clears it and redraws ShotBitmap at the\nshot's pixel row within the cell."),
+                 0x0031: ("NextBoardChar", "Next advertising-board character ScrollAdvertBoards writes at the right edge: $80-$B9,\nwith $3A added for the bottom row."),
+                 0x266F: ("BoardStarts", "First character of each of the six advertising boards."),
+                 0x2675: ("BoardColours", "Colour of each board, written when its first character scrolls in."),
+                 0x289C: ("AthleteCellOffsets", "Screen offsets of the athlete's 36 cells: four 3x3 blocks."),
                  0x2F11: ("EventJump_day_two", "Self-modified JMP: operand set from EventJumpTable_day_two."),
                  0x0037: ("RunSpeed_day_two", "0-$1F: raised by SpeedUp_day_two, lowered by SpeedDecay_day_two."),
                  0x0040: ("WaggleSeen_day_two", "Bit 0: left seen, bit 1: right seen, since the last speed step."),

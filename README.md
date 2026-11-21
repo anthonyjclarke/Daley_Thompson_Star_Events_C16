@@ -36,7 +36,7 @@ The unpacked images were made by starting each PRG in VICE (`xplus4`, C16 PAL, 1
 | `python3 tools/run_tape.py 1` | Load a side from tape in VICE (`LOAD`, PLAY, `SYS1536`) and screenshot it |
 | `make docs`           | Regenerate the code reference and the HTML handbook          |
 
-`docs/evidence.md` holds the proof for each name, and `docs/quirks.md` the original's oddities and the open items.
+`docs/evidence.md` holds the proof for each name, `docs/quirks.md` the original's oddities and the open items, and `docs/WORKLIST.md` what still needs testing by hand or checking.
 
 ---
 

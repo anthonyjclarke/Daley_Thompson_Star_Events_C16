@@ -67,4 +67,4 @@ The controlled runs change RAM in VICE only, never the build. For example, `Spee
 
 ## Not Yet Done
 
-Manual play, sound and real hardware haven't been tested. Everything here comes from the code and from VICE. The open questions are listed in [the quirks](quirks.md#open-items).
+Manual play, sound and real hardware haven't been tested. Everything here comes from the code and from VICE. The open questions are listed in [the quirks](quirks.md#open-items), and what still needs testing in [the worklist](WORKLIST.md).

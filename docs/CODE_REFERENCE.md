@@ -207,6 +207,7 @@ Block `day_two`, from `original/day_two_unpacked_vice.prg`. Source `src/day_two.
 
 - `$0032` **RunwayFineScroll** – TED fine scroll (0-7) of the runway band.
 - `$0033` **RunwayScrollStep** – Runway scroll per frame plus 1 (0 stops it); set from TakeOffSpeed in flight.
+- `$0036` **RunwayBandColour** – Background colour Split09_day_two gives the runway band: $32 (red track), $67 (yellow sand) once AdvanceAthlete has carried the jumper below AthleteX $10.
 - `$0037` **RunSpeed_day_two** – 0-$1F: raised by SpeedUp_day_two, lowered by SpeedDecay_day_two.
 - `$0038` **AthleteCol** – Screen column of the athlete's 6x6 block (DrawAthlete_day_two).
 - `$0039` **AthleteRow** – Screen row of the athlete's 6x6 block.
@@ -214,20 +215,48 @@ Block `day_two`, from `original/day_two_unpacked_vice.prg`. Source `src/day_two.
 - `$0041` **InputBits** – Bit 7 fire, bit 3 right, bit 2 left (1 = pressed), from the joystick or the keys.
 - `$0042` **EventIndex** – 0-2: the event being run; indexes EventTableOffset and EventJumpTable_day_two.
 - `$004C` **AthleteX** – Athlete's position along the runway; DrawRunway and AdvanceAthlete use it; below $50 at the line is a foul ($2CA1).
-- `$004E` **RunwayCellCount** – Counts runway characters scrolled; RunwayCellStep stops counting distance at $0E.
+- `$004E` **RunwayCellCount** – Counts runway characters scrolled in flight; every 14th ($0E) puts a marker at the right edge and adds no distance.
 - `$004F` **AttemptNumber** – 0-2: the attempt at this event.
 - `$0050` **RunUpActive** – 1 while JoyWaggle_day_two may raise RunSpeed_day_two.
+- `$0051` **RunUpScrolling** – Set during the run-up, when the runway scrolls with RunSpeed_day_two; cleared at take-off, after which each scrolled cell goes to RunwayCellStep.
 - `$0053` **AttemptResult** – 1: the attempt beat the qualifying length; $FF: it did not (or a foul).
 - `$0054` **AttemptResults** – Three bytes, one per attempt: 0 qualified, 1 not, $FF not yet taken.
+- `$005B` **ColumnStepCount** – Counts SpeedUp_day_two calls; every 6th moves the athlete (and shot or javelin) one column right, up to column $0E.
+- `$005C` **NextAthleteCol** – Column MoveAthlete_day_two draws the athlete at next.
+- `$005D` **NextAthleteRow** – Row MoveAthlete_day_two draws the athlete at next; the long jump's height.
+- `$005E` **DrawnAthleteCol** – Column the athlete was last drawn at.
+- `$005F` **DrawnAthleteRow** – Row the athlete was last drawn at.
+- `$0060` **AthleteMoves** – Non-zero: UpdateFigures runs MoveAthlete_day_two each pass.
 - `$0065` **AngleBcd** – Take-off angle in BCD, 20-83, raised while fire is held.
 - `$0066` **Angle** – Take-off angle in binary, 20-83.
 - `$0067` **TakeOffSpeed** – RunSpeed_day_two when the run-up ended.
-- `$0074` **PeakRow** – Highest row the long jumper rises to: lower (higher on screen) for a steeper Angle.
+- `$0068` **JavelinDrawnCol** – Column the javelin was last drawn at.
+- `$0069` **JavelinDrawnY** – Pixel row the javelin was last drawn at.
+- `$006A` **JavelinCol** – Javelin column; follows the athlete during the run-up.
+- `$006B` **JavelinY** – Javelin pixel row: $68 at the start, down to PeakRow in flight, landed at $96.
+- `$006C` **JavelinShown** – Non-zero in the javelin: DrawJavelinShaft draws it.
+- `$006D` **JavelinChar** – DrawJavelinShaft: next character code, counting down from the phase's first.
+- `$006F` **ShotDrawnCol** – Column the shot was last drawn at.
+- `$0070` **ShotDrawnY** – Pixel row the shot was last drawn at.
+- `$0071` **ShotCol** – Shot column; follows the athlete during the run-up.
+- `$0072` **ShotY** – Shot pixel row: $70 at the start, down to PeakRow in flight, landed at $9B.
+- `$0073` **ShotShown** – Non-zero in the shot-put: DrawShotBall draws it.
+- `$0074` **PeakRow** – Top of the flight, lower (higher on screen) for a steeper Angle: a character row for the long jumper, a pixel row for the shot and javelin.
+- `$0075` **FlightStep** – Event handlers: the RunwayScrollStep being built from TakeOffSpeed.
+- `$0076` **ShotFalling** – Shot-put: 0 rising, 1 falling.
+- `$0077` **JavelinPhase** – Javelin: 0 rising, 1 at the top, 2 falling, 3 nose-down from row $8C; picks its characters (JavelinChars).
 - `$0078` **TakeOffDelay** – Runway cells to pass before the distance counts: AthleteX / 4 - $13 at take-off.
 - `$0079` **AngleClass** – 1 below 35 degrees, 2 from 35, 3 from 55; set by ClassifyAngle.
+- `$007B` **CarryFrame** – Shot and javelin: fixed run-up frame $0A, $0B at the throw (bottom half left as is); 0 in the long jump, which runs the full cycle.
+- `$007C` **JavelinHang** – Steps the javelin stays level at the top: (TakeOffSpeed & $1C) / 2 + 6.
 - `$007F` **TitleMode** – 1 on the FIRE TO START screen, 0 in play.
 - `$0082` **HangTime** – Steps the long jumper stays at the top: (TakeOffSpeed & $1C) / 2 + 2.
 - `$0083` **FlightPhase** – Long jump: 0 rising, 1 at the top, 2 falling.
+- `$0084` **FlightTopFrame** – Top-half frame while InFlight.
+- `$0085` **FlightBottomFrame** – Bottom-half frame while InFlight.
+- `$0086` **InFlight** – Set by LongJump: frames come from FlightTopFrame/FlightBottomFrame and each scrolled cell runs AdvanceAthlete.
+- `$0087` **Every7Count** – Countdown for Every7Rising and Every7Falling.
+- `$1350` **ShotChar** – Character $6A of the $1000 set: DrawShotBall clears it and redraws ShotBitmap at the shot's pixel row within the cell.
 - `$1800` **SoundVectors_day_two** – Jump table into the sound driver. TODO(name)
 - `$1803` **SilenceSound** – Jump to SoundSilence_day_two (vector at $1803).
 - `$1806` **PlayEventTune** – PlayTunePair_day_two with the tune at $1A43/$1AAF; called as an event is drawn.
@@ -318,13 +347,21 @@ Block `day_two`, from `original/day_two_unpacked_vice.prg`. Source `src/day_two.
 - `$2F11` **EventJump_day_two** – Self-modified JMP: operand set from EventJumpTable_day_two.
 - `$2F1A` **ClassifyAngle** – Set AngleClass from Angle.
 - `$2F2B` **LongJump** – Long jump flight: height and length from Angle and TakeOffSpeed.
+- `$2F88` **LongJumpLoop** – One step of the long jump: rise, hang or fall, then DelayXY $14.
+- `$2FE0` **LongJumpFrames** – FlightPhase x 2: top and bottom frames (0/0, $0D/$07, $0E/$08).
 - `$2FE6` **Landed** – Stop the runway and judge the attempt.
 - `$2FF4` **Every7Rising** – Carry set every 7th call (rising).
 - `$3000` **Every7Falling** – Carry clear every 7th call (falling).
 - `$300C` **ShotPut** – Shot-put throw: flight from Angle and TakeOffSpeed.
+- `$3055` **ShotPutLoop** – One step of the shot: ShotY up or down by AngleClass, then DelayXY 7.
 - `$308C` **Javelin** – Javelin throw: flight from Angle and TakeOffSpeed.
+- `$30D9` **JavelinLoop** – One step of the javelin: JavelinY up or down by AngleClass, then DelayXY $0A.
 - `$3123` **DrawJavelinShaft** – Event 2: draw the javelin's 10 cells at $68/$69 (cell offsets $3174).
+- `$3174` **JavelinCellOffsets** – Screen offsets of the javelin's 10 cells: five columns, two rows.
+- `$317E` **JavelinChars** – First character of the javelin's picture for each JavelinPhase.
 - `$3182` **DrawShotBall** – Event 1: draw the shot at $6F/$70.
+- `$31F1` **ShotBitmap** – The shot's 8-byte ball, copied into character $6A at the shot's pixel row.
+- `$31F9` **FollowThrough** – Shot and javelin release: walk the athlete left to column 0, lifting the shot by AngleClass and the javelin by 1 a step and moving AthleteX - 3, then clear his rows.
 - `$3236` **AddFlightDistance** – After TakeOffDelay cells, add the event's tenths (DistanceRates) and 0-1 or 0-3 random hundredths (TED timer 1) to AttemptDistance.
 - `$326D` **DistanceRates** – Per event, 3 bytes: tenths per cell, random mask, hundredths base. Long jump 1/1/0, shot-put 2/3/0, javelin 7/3/0.
 - `$3277` **AddDigit** – Add A to digit Y of AngleDigits' block with decimal carry to the left.

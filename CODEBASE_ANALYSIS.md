@@ -196,18 +196,47 @@ The distance isn't calculated from a formula; it's counted while the world scrol
 
 The random part comes from TED timer 1 (`$FF00`), so two identical attempts can differ by a few hundredths. The table is `DistanceRates`.
 
-So the distance is (cells scrolled during the flight) × (the event's rate), and the three inputs each change one factor:
+The counting runs from take-off to landing. During the run-up `RunUpScrolling` is set and `ScrollRunway` sends no cells to `RunwayCellStep`; take-off clears it and zeroes `RunwayCellCount`, and the handler stops the runway at the landing. Every 14th cell (`RunwayCellCount` reaching `$0E`) puts a marker at the right edge of the runway and adds nothing.
 
-- **Take-off speed** sets the scroll rate in flight. `LongJump`, `ShotPut` and `Javelin` set `RunwayScrollStep` from `TakeOffSpeed`, so a faster run-up scrolls more cells per frame.
-- **Angle** sets how long the flight lasts. In the long jump, `PeakRow` is higher for a steeper angle, so the jumper rises further and falls further. `FlightPhase` steps through rising, a pause at the top of `HangTime` steps (longer with more speed) and falling, with `Every7Rising` and `Every7Falling` pacing the moves. An angle of 60° or more (`PeakRow` below 10) halves the take-off speed and fixes the scroll rate instead, so too steep is punished.
-- **Take-off position** sets `TakeOffDelay` from `AthleteX`: the cells that pass before the counting starts. A take-off far before the board wastes cells.
+So the distance is (cells scrolled during the flight) × (the event's rate). The cells scrolled are the flight's length in steps times the scroll rate, and the inputs act on these factors:
 
-The flight ends at `Landed`, which stops the runway and calls `JudgeAttempt`. The shot-put and javelin follow the same pattern with their own rules. The thrown object rises by `AngleClass` rows a step until it reaches `PeakRow`, then falls by the same amount until it lands:
+- **Scroll rate.** All three handlers build `FlightStep` from `TakeOffSpeed`, then copy it to `RunwayScrollStep`. The shifts take bits 4, 2 and 0 of the speed (0–`$1F`) and add 2, giving 2–9, so the rate does not grow steadily with speed: `$1D` and `$1F` give 9, `$1C` and `$1E` give 8, `$18` and `$10` give 6. Wherever the speed counts, `$1D` goes further than `$1E`.
+- **Flight length.** Each handler moves its figure a fixed amount a step, with a fixed `DelayXY` between steps, from the start height up to `PeakRow` and back down. `PeakRow` is higher on screen for a steeper `Angle`.
+- **Take-off position.** `TakeOffDelay` = `AthleteX` / 4 − `$13` cells pass before counting starts.
 
-- **Shot-put.** The scroll rate comes from `TakeOffSpeed` only when the angle is 35°–54° (`AngleClass` 2). Outside that band it drops to a small value from the low bits of the speed, so the shot's sweet spot is 35°–54°.
-- **Javelin.** From 67° up, the scroll rate is fixed at 4. Below that it comes from `TakeOffSpeed`, and a hang count (`$7C`) also grows with speed.
+#### Long Jump
 
-The variables inside these two flight loops keep neutral names. Exactly when counting starts and stops relative to the run-up (`RunwayCellCount` stops it at `$0E`) is also not fully traced. Both are rung 1, from the code only.
+`LongJump` moves the athlete's row (`NextAthleteRow`) up from row 15 to `PeakRow` = ((`Angle` − 20) XOR `$3F`) / 8 + 7, one row a step with every seventh step skipped (`Every7Rising`). It then hangs for `HangTime` = (`TakeOffSpeed` AND `$1C`) / 2 + 2 steps and falls two rows a step (`Every7Falling`) to row 15. While `InFlight`, each scrolled cell also moves the athlete along the runway (`AdvanceAthlete`); once `AthleteX` is below `$10`, the runway band turns from red track to yellow sand (`RunwayBandColour`). The hang doesn't end until that happens, so the jumper can't land before reaching the pit. At 60° and over (`PeakRow` below 10) the handler halves `TakeOffSpeed`, which shortens the hang, and fixes the scroll at 5.
+
+#### Shot-Put
+
+The shot starts at pixel row `$70` (`ShotY`). `FollowThrough` first walks the athlete back to column 0, lifting the shot by `AngleClass` each step, while the runway already scrolls. `ShotPutLoop` then raises `ShotY` by `AngleClass` (1 below 35°, 2 for 35–54°, 3 from 55°) to `PeakRow` = ((`Angle` − 20) XOR `$3F`) + `$33`, and lowers it again to `$9B`. Only at 35–54° does the scroll use `FlightStep`. Outside that band it is (`FlightStep` AND 3) + 1, so speeds `$1C`–`$1F` give a scroll of 1 or 2 and a slow run-up throws further.
+
+#### Javelin
+
+The javelin starts at pixel row `$68` (`JavelinY`) and rises one pixel a step during `FollowThrough`. `JavelinLoop` raises it by `AngleClass` to `PeakRow`, holds it level for `JavelinHang` = (`TakeOffSpeed` AND `$1C`) / 2 + 6 steps, and lowers it by `AngleClass` to `$96`. On the way it turns nose-down from `$8C` (`JavelinPhase` 3), which picks its characters (`JavelinChars`). From 67° (`PeakRow` below `$44`) the scroll is fixed at 4. Below 35° the javelin falls one pixel a step instead of two, so the shallowest angles fly longest.
+
+#### Measured Distances
+
+`tools/flight_probe.py` forces take-offs in VICE RAM. It sets `RunSpeed_day_two`, puts `AthleteX` at `$50` (the line, `TakeOffDelay` 1) and the athlete at column `$0E` as a full run-up leaves him, then sets the angle. The flight code then runs unchanged. Distances in metres; the last digit varies by a few hundredths between runs:
+
+| Angle | LJ `$10` | LJ `$1D` | LJ `$1E` | SP `$10` | SP `$1D` | SP `$1E` | JV `$10` | JV `$1D` | JV `$1E` |
+|:------|:---------|:---------|:---------|:---------|:---------|:---------|:---------|:---------|:---------|
+| 25°   | 3.98     | 8.73     | 7.62     | 4.96     | 2.53     | 1.08     | 69.82    | 122.13   | 106.68   |
+| 35°   | 4.19     | 9.54     | 8.21     | 9.64     | 15.95    | 13.81    | 47.14    | 84.43    | 73.47    |
+| 45°   | 4.94     | 10.53    | 9.38     | 9.46     | 15.76    | 13.75    | 48.70    | 87.23    | 75.87    |
+| 55°   | 5.25     | 11.09    | 9.64     | 3.18     | 1.50     | 0.67     | 45.74    | 82.58    | 72.46    |
+| 59°   | 5.09     | 11.03    | 9.61     | 3.15     | 1.54     | 0.68     | 48.53    | 87.31    | 75.75    |
+| 60°   | 4.62     | 4.58     | 4.54     | 3.20     | 1.54     | 0.65     | 48.60    | 87.02    | 75.74    |
+| 66°   | 4.64     | 4.50     | 4.58     | 3.19     | 1.51     | 0.63     | 51.33    | 92.29    | 79.90    |
+| 67°   | 4.62     | 4.59     | 4.58     | 3.46     | 1.50     | 0.88     | 30.14    | 32.87    | 33.59    |
+| 75°   | 4.63     | 4.61     | 4.56     | 3.87     | 1.66     | 0.86     | 33.61    | 36.46    | 35.66    |
+
+(LJ long jump, SP shot-put, JV javelin; `$10`, `$1D` and `$1E` are the speed at take-off.) Speed `$1F` measures within a few tenths of `$1D` throughout. The best results are about 11.1 m in the long jump at 55–59° (below the 11.87 m world record), 16.0 m in the shot-put at 35–45° (record 17.60 m), and 122 m in the javelin under 35°, past the 101.30 m world record.
+
+Taking off early costs distance in every event, as `TakeOffDelay` predicts. At speed `$1F` and 45°, moving the take-off from `AthleteX` `$50` (the line) to `$9B` (where the board first appears) cuts the long jump from 10.64 m to 9.00 m, the shot-put from 15.66 m to 11.58 m and the javelin from 87.38 m to 73.58 m (`tools/flight_probe.py --position`).
+
+These are rung 3 for the flight code and the counter. The run-up itself was not played: the probe sets the speed and the athlete's column directly.
 
 ### Attempts and Judging
 

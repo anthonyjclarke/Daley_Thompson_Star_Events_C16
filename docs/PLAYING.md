@@ -67,12 +67,20 @@ Day Two is long jump, shot-put and javelin, with three attempts at each. Qualify
 
 **Points.** Each attempt's metres and tenths are added to your score, and the best score stays as the high score on the start screen.
 
-**What makes a long throw or jump.** The distance is counted while the ground scrolls under the flight, so three things matter ([how far](../CODEBASE_ANALYSIS.md#how-far-the-distance-counter)):
+**What makes a long throw or jump.** The distance is counted while the ground scrolls under the flight ([how far](../CODEBASE_ANALYSIS.md#how-far-the-distance-counter)). These figures come from take-offs forced in VICE, not from play by hand:
 
-- **Speed at take-off** sets how fast the ground scrolls during the flight. Waggle hard right up to the line.
-- **The angle** sets how long the flight lasts. A steeper angle flies longer, but in the long jump 60° or more halves your speed, so aim just under 60°.
-- **The shot-put's angle band.** The shot only keeps your run-up speed between 35° and 54°. For the javelin, stay under 67°.
-- **Taking off close to the line** matters. The counting starts only after a delay that grows the earlier you take off; the shortest delay is right at the line, and one step later is a foul.
+| Event     | Best angle | Distance at top speed | Too steep                         |
+|:----------|:-----------|:----------------------|:----------------------------------|
+| Long jump | 55–59°     | about 11.0 m          | 60° or more: about 4.6 m          |
+| Shot-put  | 35–54°     | about 16.0 m          | Outside 35–54°: under 3 m         |
+| Javelin   | under 35°  | about 122 m           | 67° or more: about 33 m           |
+
+- **Speed** sets how fast the ground scrolls in flight, but the game reads only some bits of it, so more speed isn't always further: full speed and two steps short of it are equally good, but one step short throws or jumps about an eighth less.
+- **The shot-put punishes a bad angle hard.** Outside 35–54° a fast run-up gives under 2 m and a slow one about 3 m.
+- **The javelin goes past the world record** (101.30 m) if you release under 35° at full speed.
+- **The long jumper can't land before the sand.** The jump lasts at least until he reaches the pit, so even a slow jump gives about 3.5 m.
+
+- **Take off at the line.** Releasing early wastes ground before the counting starts. At full speed, taking off as the board appears instead of at the line cost 1.6 m in the long jump, 4.1 m in the shot-put and 13.8 m in the javelin.
 
 A few hundredths of each distance are random.
 

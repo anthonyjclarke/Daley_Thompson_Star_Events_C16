@@ -7,6 +7,7 @@
 
 RunwayFineScroll:= $0032
 RunwayScrollStep:= $0033
+RunwayBandColour:= $0036
 RunSpeed_day_two:= $0037
 AthleteCol      := $0038
 AthleteRow      := $0039
@@ -17,17 +18,44 @@ AthleteX        := $004C
 RunwayCellCount := $004E
 AttemptNumber   := $004F
 RunUpActive     := $0050
+RunUpScrolling  := $0051
 AttemptResult   := $0053
 AttemptResults  := $0054
+ColumnStepCount := $005B
+NextAthleteCol  := $005C
+NextAthleteRow  := $005D
+DrawnAthleteCol := $005E
+DrawnAthleteRow := $005F
+AthleteMoves    := $0060
 AngleBcd        := $0065
 Angle           := $0066
 TakeOffSpeed    := $0067
+JavelinDrawnCol := $0068
+JavelinDrawnY   := $0069
+JavelinCol      := $006A
+JavelinY        := $006B
+JavelinShown    := $006C
+JavelinChar     := $006D
+ShotDrawnCol    := $006F
+ShotDrawnY      := $0070
+ShotCol         := $0071
+ShotY           := $0072
+ShotShown       := $0073
 PeakRow         := $0074
+FlightStep      := $0075
+ShotFalling     := $0076
+JavelinPhase    := $0077
 TakeOffDelay    := $0078
 AngleClass      := $0079
+CarryFrame      := $007B
+JavelinHang     := $007C
 TitleMode       := $007F
 HangTime        := $0082
 FlightPhase     := $0083
+FlightTopFrame  := $0084
+FlightBottomFrame:= $0085
+InFlight        := $0086
+Every7Count     := $0087
 CINV            := $0314
 CINV_HI         := $0315
 TED_T1_LO       := $FF00
@@ -451,7 +479,13 @@ L10E0:  .byte   $07,$07,$1F,$1F,$7F,$7F,$FF,$FF; 10E0
         .byte   $00,$00,$00,$00,$00,$00,$00,$00; 1338
         .byte   $00,$00,$00,$00,$00,$00,$00,$00; 1340
         .byte   $00,$00,$00,$00,$00,$00,$00,$00; 1348
-L1350:  .byte   $00,$00,$00,$00,$18,$7E,$7E,$FF; 1350
+
+; --------------------------------------------------------------------------
+; Character $6A of the $1000 set: DrawShotBall clears it and redraws ShotBitmap at the
+; shot's pixel row within the cell.
+; --------------------------------------------------------------------------
+ShotChar:
+        .byte   $00,$00,$00,$00,$18,$7E,$7E,$FF; 1350
         .byte   $FF,$7E,$7E,$18,$00,$00,$00,$00; 1358
         .byte   $00,$AA,$80,$80,$80,$80,$80,$80; 1360
         .byte   $80,$80,$80,$80,$80,$80,$AA,$00; 1368
@@ -1702,7 +1736,7 @@ L22A5:  dex                             ; 22A5
         bpl     L22A5                   ; 22A6
         lda     #$32                    ; 22A8
         sta     TED_BORDER              ; 22AA
-        lda     $36                     ; 22AD
+        lda     RunwayBandColour        ; 22AD
         sta     TED_BG0                 ; 22AF
         jsr     DrawScoreLine           ; 22B2
         rts                             ; 22B5
@@ -1969,7 +2003,7 @@ InitGame_day_two:
         jsr     SilenceSound            ; 243B
         jsr     SetupTed_day_two        ; 243E
         lda     #$32                    ; 2441
-        sta     $36                     ; 2443
+        sta     RunwayBandColour        ; 2443
         jsr     InstallIrq_day_two      ; 2445
         jmp     StartGame_day_two       ; 2448
 
@@ -1990,7 +2024,7 @@ L244F:  sta     AngleDigits,x           ; 244F
         lda     #$04                    ; 245D
         sta     $20                     ; 245F
         lda     #$00                    ; 2461
-        sta     $60                     ; 2463
+        sta     AthleteMoves            ; 2463
         jsr     ClearScreen             ; 2465
         jsr     DrawEventScreen         ; 2468
         jsr     PlayEventTune           ; 246B
@@ -2009,17 +2043,17 @@ L247C:  sta     AngleDigits,x           ; 247C
         dex                             ; 247F
         bpl     L247C                   ; 2480
         lda     #$00                    ; 2482
-        sta     $60                     ; 2484
+        sta     AthleteMoves            ; 2484
         sta     $59                     ; 2486
         sta     $5A                     ; 2488
-        sta     $6C                     ; 248A
-        sta     $73                     ; 248C
+        sta     JavelinShown            ; 248A
+        sta     ShotShown               ; 248C
         sta     $7A                     ; 248E
         sta     $63                     ; 2490
-        sta     $77                     ; 2492
-        sta     $84                     ; 2494
-        sta     $85                     ; 2496
-        sta     $86                     ; 2498
+        sta     JavelinPhase            ; 2492
+        sta     FlightTopFrame          ; 2494
+        sta     FlightBottomFrame       ; 2496
+        sta     InFlight                ; 2498
         jsr     ClearScreen             ; 249A
         lda     #$04                    ; 249D
         sta     $20                     ; 249F
@@ -2031,14 +2065,14 @@ L247C:  sta     AngleDigits,x           ; 247C
         jsr     StepRunFrame_day_two    ; 24AE
         lda     #$02                    ; 24B1
         sta     AthleteCol              ; 24B3
-        sta     $5C                     ; 24B5
+        sta     NextAthleteCol          ; 24B5
         lda     #$0F                    ; 24B7
         sta     AthleteRow              ; 24B9
-        sta     $5D                     ; 24BB
+        sta     NextAthleteRow          ; 24BB
         lda     #$01                    ; 24BD
         sta     $57                     ; 24BF
-        sta     $5B                     ; 24C1
-        sta     $60                     ; 24C3
+        sta     ColumnStepCount         ; 24C1
+        sta     AthleteMoves            ; 24C3
         sta     RunUpActive             ; 24C5
         sta     $58                     ; 24C7
         lda     #$00                    ; 24C9
@@ -2048,7 +2082,7 @@ L247C:  sta     AngleDigits,x           ; 247C
         sta     $4B                     ; 24D1
         sta     $4B                     ; 24D3
         lda     #$01                    ; 24D5
-        sta     $51                     ; 24D7
+        sta     RunUpScrolling          ; 24D7
 L24D9:  bit     InputBits               ; 24D9
         bmi     L24E4                   ; 24DB
         ldy     AttemptResult           ; 24DD
@@ -2064,8 +2098,8 @@ L24EE:  lda     RunSpeed_day_two        ; 24EE
         sta     TakeOffSpeed            ; 24F0
         lda     #$00                    ; 24F2
         sta     RunUpActive             ; 24F4
-        sta     $51                     ; 24F6
-        sta     $60                     ; 24F8
+        sta     RunUpScrolling          ; 24F6
+        sta     AthleteMoves            ; 24F8
         sta     RunSpeed_day_two        ; 24FA
         sta     $2D                     ; 24FC
         sta     $2E                     ; 24FE
@@ -2102,7 +2136,7 @@ L252F:  ldx     #$00                    ; 252F
         jsr     WaitTuneEnd             ; 2546
         jsr     SilenceSound            ; 2549
 L254C:  lda     #$32                    ; 254C
-        sta     $36                     ; 254E
+        sta     RunwayBandColour        ; 254E
         ldx     #$00                    ; 2550
         lda     AttemptResult           ; 2552
         cmp     #$01                    ; 2554
@@ -2147,13 +2181,13 @@ L258B:  sta     AngleDigits,x           ; 258B
         sta     TitleMode               ; 2593
         sta     $58                     ; 2595
         lda     #$32                    ; 2597
-        sta     $36                     ; 2599
+        sta     RunwayBandColour        ; 2599
         jsr     ClearScreen             ; 259B
         lda     #$0F                    ; 259E
         sta     AthleteCol              ; 25A0
         sta     AthleteRow              ; 25A2
         lda     #$01                    ; 25A4
-        sta     $60                     ; 25A6
+        sta     AthleteMoves            ; 25A6
         ldx     #$03                    ; 25A8
         stx     $2E                     ; 25AA
         inx                             ; 25AC
@@ -2175,7 +2209,7 @@ L25C5:  lda     L2012                   ; 25C5
         bpl     L25C5                   ; 25CF
         jsr     ClearZeroPage           ; 25D1
         lda     #$32                    ; 25D4
-        sta     $36                     ; 25D6
+        sta     RunwayBandColour        ; 25D6
         jsr     SilenceSound            ; 25D8
         ldx     #$04                    ; 25DB
         lda     #$30                    ; 25DD
@@ -2302,7 +2336,7 @@ L26A5:  lda     L0F71,x                 ; 26A5
         inx                             ; 26AB
         cpx     #$27                    ; 26AC
         bne     L26A5                   ; 26AE
-        lda     $51                     ; 26B0
+        lda     RunUpScrolling          ; 26B0
         bne     L26B7                   ; 26B2
         jmp     RunwayCellStep          ; 26B4
 
@@ -2355,7 +2389,7 @@ L2700:  cld                             ; 2700
 ; Per runway character: AdvanceAthlete if moving, count RunwayCellCount, AddFlightDistance.
 ; --------------------------------------------------------------------------
 RunwayCellStep:
-        lda     $86                     ; 2702
+        lda     InFlight                ; 2702
         beq     L2709                   ; 2704
         jsr     AdvanceAthlete          ; 2706
 L2709:  inc     RunwayCellCount         ; 2709
@@ -2382,7 +2416,7 @@ AdvanceAthlete:
         cmp     #$10                    ; 2726
         bcs     L272F                   ; 2728
         lda     #$67                    ; 272A
-        sta     $36                     ; 272C
+        sta     RunwayBandColour        ; 272C
         rts                             ; 272E
 
 L272F:  sec                             ; 272F
@@ -2600,7 +2634,7 @@ L285D:  ldy     L289C,x                 ; 285D
 ; Move the athlete if $60 is set, then draw the shot (event 1) or the javelin (event 2).
 ; --------------------------------------------------------------------------
 UpdateFigures:
-        lda     $60                     ; 2868
+        lda     AthleteMoves            ; 2868
         beq     L286F                   ; 286A
         jsr     MoveAthlete_day_two     ; 286C
 L286F:  lda     EventIndex              ; 286F
@@ -2619,16 +2653,16 @@ L2880:  rts                             ; 2880
 ; --------------------------------------------------------------------------
 MoveAthlete_day_two:
         jsr     EraseAthlete_day_two    ; 2881
-        lda     $5C                     ; 2884
-        cmp     $5E                     ; 2886
+        lda     NextAthleteCol          ; 2884
+        cmp     DrawnAthleteCol         ; 2886
         beq     L288E                   ; 2888
         sta     AthleteCol              ; 288A
-        sta     $5E                     ; 288C
-L288E:  lda     $5D                     ; 288E
-        cmp     $5F                     ; 2890
+        sta     DrawnAthleteCol         ; 288C
+L288E:  lda     NextAthleteRow          ; 288E
+        cmp     DrawnAthleteRow         ; 2890
         beq     L2898                   ; 2892
         sta     AthleteRow              ; 2894
-        sta     $5F                     ; 2896
+        sta     DrawnAthleteRow         ; 2896
 L2898:  jsr     DrawAthlete_day_two     ; 2898
         rts                             ; 289B
 
@@ -2781,19 +2815,19 @@ L2A11:  inc     RunSpeed_day_two        ; 2A11
         lda     AthleteCol              ; 2A13
         cmp     #$0E                    ; 2A15
         bcs     L2A30                   ; 2A17
-        dec     $5B                     ; 2A19
+        dec     ColumnStepCount         ; 2A19
         bne     L2A30                   ; 2A1B
         lda     #$06                    ; 2A1D
-        sta     $5B                     ; 2A1F
+        sta     ColumnStepCount         ; 2A1F
         ldx     AthleteCol              ; 2A21
         inx                             ; 2A23
-        stx     $5C                     ; 2A24
-        ldx     $6F                     ; 2A26
+        stx     NextAthleteCol          ; 2A24
+        ldx     ShotDrawnCol            ; 2A26
         inx                             ; 2A28
-        stx     $71                     ; 2A29
-        ldx     $68                     ; 2A2B
+        stx     ShotCol                 ; 2A29
+        ldx     JavelinDrawnCol         ; 2A2B
         inx                             ; 2A2D
-        stx     $6A                     ; 2A2E
+        stx     JavelinCol              ; 2A2E
 L2A30:  rts                             ; 2A30
 
 
@@ -3086,26 +3120,26 @@ InitAthlete_day_two:
         asl     a                       ; 2C36
         tax                             ; 2C37
         lda     L2C7A,x                 ; 2C38
-        sta     $6C                     ; 2C3B
+        sta     JavelinShown            ; 2C3B
         lda     L2C7B,x                 ; 2C3D
-        sta     $73                     ; 2C40
+        sta     ShotShown               ; 2C40
         lda     L2C7C,x                 ; 2C42
-        sta     $68                     ; 2C45
-        sta     $6A                     ; 2C47
-        sta     $6F                     ; 2C49
-        sta     $71                     ; 2C4B
+        sta     JavelinDrawnCol         ; 2C45
+        sta     JavelinCol              ; 2C47
+        sta     ShotDrawnCol            ; 2C49
+        sta     ShotCol                 ; 2C4B
         lda     L2C7D,x                 ; 2C4D
-        sta     $69                     ; 2C50
-        sta     $6B                     ; 2C52
-        sta     $70                     ; 2C54
-        sta     $72                     ; 2C56
+        sta     JavelinDrawnY           ; 2C50
+        sta     JavelinY                ; 2C52
+        sta     ShotDrawnY              ; 2C54
+        sta     ShotY                   ; 2C56
         lda     #$77                    ; 2C58
         sta     RunwayCellCount         ; 2C5A
         lda     EventIndex              ; 2C5C
-        sta     $7B                     ; 2C5E
+        sta     CarryFrame              ; 2C5E
         beq     L2C66                   ; 2C60
         lda     #$0A                    ; 2C62
-        sta     $7B                     ; 2C64
+        sta     CarryFrame              ; 2C64
 L2C66:  ldx     EventIndex              ; 2C66
         lda     L2C74,x                 ; 2C68
         ldx     #$07                    ; 2C6B
@@ -3135,7 +3169,7 @@ L2C8F:  lda     #$00                    ; 2C8F
         sta     AthleteX                ; 2C99
         rts                             ; 2C9B
 
-L2C9C:  lda     $51                     ; 2C9C
+L2C9C:  lda     RunUpScrolling          ; 2C9C
         bne     L2CA1                   ; 2C9E
         rts                             ; 2CA0
 
@@ -3176,7 +3210,7 @@ L2CC3:  tya                             ; 2CC3
         cpx     #$28                    ; 2CD3
         bne     L2CC3                   ; 2CD5
         ldx     $81                     ; 2CD7
-        lda     $86                     ; 2CD9
+        lda     InFlight                ; 2CD9
         bne     L2CE9                   ; 2CDB
         lda     RunSpeed_day_two        ; 2CDD
         beq     L2CE9                   ; 2CDF
@@ -3250,7 +3284,7 @@ L2D3C:  .byte   $06,$00,$06,$00,$18,$00,$18,$00; 2D3C
 ; From RunSpeed_day_two, set the runway scroll step $33 while $51 is set.
 ; --------------------------------------------------------------------------
 SetRunwayScroll:
-        lda     $51                     ; 2DBB
+        lda     RunUpScrolling          ; 2DBB
         bne     L2DC0                   ; 2DBD
         rts                             ; 2DBF
 
@@ -3334,16 +3368,16 @@ StepRunFrame_day_two:
         jsr     PlayFootstep_day_two    ; 2E19
 L2E1C:  lda     EventIndex              ; 2E1C
         beq     L2E24                   ; 2E1E
-        ldx     $7B                     ; 2E20
+        ldx     CarryFrame              ; 2E20
         bne     L2E2D                   ; 2E22
 L2E24:  ldx     $59                     ; 2E24
         inx                             ; 2E26
         cpx     #$09                    ; 2E27
         bcc     L2E2D                   ; 2E29
         ldx     #$00                    ; 2E2B
-L2E2D:  lda     $86                     ; 2E2D
+L2E2D:  lda     InFlight                ; 2E2D
         beq     L2E33                   ; 2E2F
-        ldx     $84                     ; 2E31
+        ldx     FlightTopFrame          ; 2E31
 L2E33:  stx     $59                     ; 2E33
         txa                             ; 2E35
         asl     a                       ; 2E36
@@ -3361,7 +3395,7 @@ L2E48           := * + 2
         inx                             ; 2E4C
         cpx     #$90                    ; 2E4D
         bne     L2E46                   ; 2E4F
-        lda     $7B                     ; 2E51
+        lda     CarryFrame              ; 2E51
         cmp     #$0B                    ; 2E53
         bne     L2E58                   ; 2E55
         rts                             ; 2E57
@@ -3372,9 +3406,9 @@ L2E58:  inc     $5A                     ; 2E58
         bcc     L2E62                   ; 2E5E
         ldx     #$00                    ; 2E60
 L2E62:  stx     $5A                     ; 2E62
-L2E64:  lda     $86                     ; 2E64
+L2E64:  lda     InFlight                ; 2E64
         beq     L2E6A                   ; 2E66
-        ldx     $85                     ; 2E68
+        ldx     FlightBottomFrame       ; 2E68
 L2E6A:  txa                             ; 2E6A
         asl     a                       ; 2E6B
         tax                             ; 2E6C
@@ -3492,14 +3526,14 @@ L2F28:  sty     AngleClass              ; 2F28
 ; --------------------------------------------------------------------------
 LongJump:
         lda     #$01                    ; 2F2B
-        sta     $60                     ; 2F2D
-        sta     $86                     ; 2F2F
+        sta     AthleteMoves            ; 2F2D
+        sta     InFlight                ; 2F2F
         lda     #$00                    ; 2F31
-        sta     $7B                     ; 2F33
+        sta     CarryFrame              ; 2F33
         lda     #$0C                    ; 2F35
-        sta     $84                     ; 2F37
+        sta     FlightTopFrame          ; 2F37
         lda     #$06                    ; 2F39
-        sta     $85                     ; 2F3B
+        sta     FlightBottomFrame       ; 2F3B
         jsr     StepRunFrame_day_two    ; 2F3D
         lda     Angle                   ; 2F40
         sec                             ; 2F42
@@ -3515,65 +3549,70 @@ LongJump:
         bcs     L2F5B                   ; 2F51
         lsr     TakeOffSpeed            ; 2F53
         lda     #$05                    ; 2F55
-        sta     $75                     ; 2F57
+        sta     FlightStep              ; 2F57
         bne     L2F76                   ; 2F59
 L2F5B:  lda     #$00                    ; 2F5B
-        sta     $75                     ; 2F5D
+        sta     FlightStep              ; 2F5D
         lda     TakeOffSpeed            ; 2F5F
         asl     a                       ; 2F61
         asl     a                       ; 2F62
         asl     a                       ; 2F63
         asl     a                       ; 2F64
-        rol     $75                     ; 2F65
+        rol     FlightStep              ; 2F65
         asl     a                       ; 2F67
         asl     a                       ; 2F68
-        rol     $75                     ; 2F69
+        rol     FlightStep              ; 2F69
         asl     a                       ; 2F6B
         asl     a                       ; 2F6C
-        rol     $75                     ; 2F6D
-        lda     $75                     ; 2F6F
+        rol     FlightStep              ; 2F6D
+        lda     FlightStep              ; 2F6F
         clc                             ; 2F71
         adc     #$02                    ; 2F72
-        sta     $75                     ; 2F74
+        sta     FlightStep              ; 2F74
 L2F76:  lda     TakeOffSpeed            ; 2F76
         and     #$1C                    ; 2F78
         lsr     a                       ; 2F7A
         clc                             ; 2F7B
         adc     #$02                    ; 2F7C
         sta     HangTime                ; 2F7E
-        lda     $75                     ; 2F80
+        lda     FlightStep              ; 2F80
         sta     RunwayScrollStep        ; 2F82
         lda     #$00                    ; 2F84
         sta     FlightPhase             ; 2F86
-L2F88:  lda     FlightPhase             ; 2F88
+
+; --------------------------------------------------------------------------
+; One step of the long jump: rise, hang or fall, then DelayXY $14.
+; --------------------------------------------------------------------------
+LongJumpLoop:
+        lda     FlightPhase             ; 2F88
         bne     L2FA3                   ; 2F8A
-        lda     $5D                     ; 2F8C
+        lda     NextAthleteRow          ; 2F8C
         cmp     PeakRow                 ; 2F8E
         bcc     L2FB9                   ; 2F90
         jsr     Every7Rising            ; 2F92
-        lda     $5D                     ; 2F95
+        lda     NextAthleteRow          ; 2F95
         sbc     #$00                    ; 2F97
-        sta     $5D                     ; 2F99
+        sta     NextAthleteRow          ; 2F99
 L2F9B:  ldx     #$14                    ; 2F9B
         jsr     DelayXY                 ; 2F9D
-        jmp     L2F88                   ; 2FA0
+        jmp     LongJumpLoop            ; 2FA0
 
 L2FA3:  cmp     #$01                    ; 2FA3
         beq     L2FED                   ; 2FA5
-        lda     $5D                     ; 2FA7
+        lda     NextAthleteRow          ; 2FA7
         cmp     #$0F                    ; 2FA9
         bcs     Landed                  ; 2FAB
         jsr     Every7Falling           ; 2FAD
-        lda     $5D                     ; 2FB0
+        lda     NextAthleteRow          ; 2FB0
         adc     #$01                    ; 2FB2
-        sta     $5D                     ; 2FB4
+        sta     NextAthleteRow          ; 2FB4
         jmp     L2F9B                   ; 2FB6
 
 L2FB9:  ldx     FlightPhase             ; 2FB9
         inx                             ; 2FBB
         cpx     #$02                    ; 2FBC
         bne     L2FCB                   ; 2FBE
-        lda     $36                     ; 2FC0
+        lda     RunwayBandColour        ; 2FC0
         cmp     #$67                    ; 2FC2
         beq     L2FCB                   ; 2FC4
         lda     #$01                    ; 2FC6
@@ -3583,14 +3622,19 @@ L2FCB:  stx     FlightPhase             ; 2FCB
         txa                             ; 2FCD
         asl     a                       ; 2FCE
         tax                             ; 2FCF
-        lda     L2FE0,x                 ; 2FD0
-        sta     $84                     ; 2FD3
+        lda     LongJumpFrames,x        ; 2FD0
+        sta     FlightTopFrame          ; 2FD3
         lda     L2FE1,x                 ; 2FD5
-        sta     $85                     ; 2FD8
+        sta     FlightBottomFrame       ; 2FD8
         jsr     StepRunFrame_day_two    ; 2FDA
         jmp     L2F9B                   ; 2FDD
 
-L2FE0:  .byte   $00                     ; 2FE0
+
+; --------------------------------------------------------------------------
+; FlightPhase x 2: top and bottom frames (0/0, $0D/$07, $0E/$08).
+; --------------------------------------------------------------------------
+LongJumpFrames:
+        .byte   $00                     ; 2FE0
 L2FE1:  .byte   $00,$0D,$07,$0E,$08     ; 2FE1
 
 ; --------------------------------------------------------------------------
@@ -3609,13 +3653,13 @@ L2FED:  dec     HangTime                ; 2FED
 ; Carry set every 7th call (rising).
 ; --------------------------------------------------------------------------
 Every7Rising:
-        dec     $87                     ; 2FF4
+        dec     Every7Count             ; 2FF4
         beq     L2FFA                   ; 2FF6
         clc                             ; 2FF8
         rts                             ; 2FF9
 
 L2FFA:  lda     #$07                    ; 2FFA
-        sta     $87                     ; 2FFC
+        sta     Every7Count             ; 2FFC
         sec                             ; 2FFE
         rts                             ; 2FFF
 
@@ -3624,13 +3668,13 @@ L2FFA:  lda     #$07                    ; 2FFA
 ; Carry clear every 7th call (falling).
 ; --------------------------------------------------------------------------
 Every7Falling:
-        dec     $87                     ; 3000
+        dec     Every7Count             ; 3000
         beq     L3006                   ; 3002
         sec                             ; 3004
         rts                             ; 3005
 
 L3006:  lda     #$07                    ; 3006
-        sta     $87                     ; 3008
+        sta     Every7Count             ; 3008
         clc                             ; 300A
         rts                             ; 300B
 
@@ -3639,7 +3683,7 @@ L3006:  lda     #$07                    ; 3006
 ; Shot-put throw: flight from Angle and TakeOffSpeed.
 ; --------------------------------------------------------------------------
 ShotPut:lda     #$0B                    ; 300C
-        sta     $7B                     ; 300E
+        sta     CarryFrame              ; 300E
         jsr     StepRunFrame_day_two    ; 3010
         lda     Angle                   ; 3013
         sec                             ; 3015
@@ -3649,23 +3693,23 @@ ShotPut:lda     #$0B                    ; 300C
         adc     #$33                    ; 301B
         sta     PeakRow                 ; 301D
         lda     #$00                    ; 301F
-        sta     $75                     ; 3021
+        sta     FlightStep              ; 3021
         lda     TakeOffSpeed            ; 3023
         asl     a                       ; 3025
         asl     a                       ; 3026
         asl     a                       ; 3027
         asl     a                       ; 3028
-        rol     $75                     ; 3029
+        rol     FlightStep              ; 3029
         asl     a                       ; 302B
         asl     a                       ; 302C
-        rol     $75                     ; 302D
+        rol     FlightStep              ; 302D
         asl     a                       ; 302F
         asl     a                       ; 3030
-        rol     $75                     ; 3031
-        lda     $75                     ; 3033
+        rol     FlightStep              ; 3031
+        lda     FlightStep              ; 3033
         clc                             ; 3035
         adc     #$02                    ; 3036
-        sta     $75                     ; 3038
+        sta     FlightStep              ; 3038
         and     #$03                    ; 303A
         tay                             ; 303C
         iny                             ; 303D
@@ -3674,36 +3718,41 @@ ShotPut:lda     #$0B                    ; 300C
         bcs     L3048                   ; 3042
         cmp     #$23                    ; 3044
         bcs     L304A                   ; 3046
-L3048:  sty     $75                     ; 3048
-L304A:  lda     $75                     ; 304A
+L3048:  sty     FlightStep              ; 3048
+L304A:  lda     FlightStep              ; 304A
         sta     RunwayScrollStep        ; 304C
-        jsr     L31F9                   ; 304E
+        jsr     FollowThrough           ; 304E
         lda     #$00                    ; 3051
-        sta     $76                     ; 3053
-L3055:  lda     $76                     ; 3055
+        sta     ShotFalling             ; 3053
+
+; --------------------------------------------------------------------------
+; One step of the shot: ShotY up or down by AngleClass, then DelayXY 7.
+; --------------------------------------------------------------------------
+ShotPutLoop:
+        lda     ShotFalling             ; 3055
         bne     L306E                   ; 3057
-        lda     $72                     ; 3059
+        lda     ShotY                   ; 3059
         cmp     PeakRow                 ; 305B
         bcc     L307E                   ; 305D
-        lda     $72                     ; 305F
+        lda     ShotY                   ; 305F
         sec                             ; 3061
         sbc     AngleClass              ; 3062
-        sta     $72                     ; 3064
+        sta     ShotY                   ; 3064
 L3066:  ldx     #$07                    ; 3066
         jsr     DelayXY                 ; 3068
-        jmp     L3055                   ; 306B
+        jmp     ShotPutLoop             ; 306B
 
-L306E:  lda     $72                     ; 306E
+L306E:  lda     ShotY                   ; 306E
         cmp     #$9B                    ; 3070
         bcs     L3085                   ; 3072
-        lda     $72                     ; 3074
+        lda     ShotY                   ; 3074
         clc                             ; 3076
         adc     AngleClass              ; 3077
-        sta     $72                     ; 3079
+        sta     ShotY                   ; 3079
         jmp     L3066                   ; 307B
 
 L307E:  lda     #$01                    ; 307E
-        sta     $76                     ; 3080
+        sta     ShotFalling             ; 3080
         jmp     L3066                   ; 3082
 
 L3085:  lda     #$00                    ; 3085
@@ -3715,7 +3764,7 @@ L3085:  lda     #$00                    ; 3085
 ; Javelin throw: flight from Angle and TakeOffSpeed.
 ; --------------------------------------------------------------------------
 Javelin:lda     #$0B                    ; 308C
-        sta     $7B                     ; 308E
+        sta     CarryFrame              ; 308E
         jsr     StepRunFrame_day_two    ; 3090
         lda     Angle                   ; 3093
         sec                             ; 3095
@@ -3727,74 +3776,79 @@ Javelin:lda     #$0B                    ; 308C
         cmp     #$44                    ; 309F
         bcs     L30A9                   ; 30A1
         lda     #$04                    ; 30A3
-        sta     $75                     ; 30A5
+        sta     FlightStep              ; 30A5
         bne     L30C4                   ; 30A7
 L30A9:  lda     #$00                    ; 30A9
-        sta     $75                     ; 30AB
+        sta     FlightStep              ; 30AB
         lda     TakeOffSpeed            ; 30AD
         asl     a                       ; 30AF
         asl     a                       ; 30B0
         asl     a                       ; 30B1
         asl     a                       ; 30B2
-        rol     $75                     ; 30B3
+        rol     FlightStep              ; 30B3
         asl     a                       ; 30B5
         asl     a                       ; 30B6
-        rol     $75                     ; 30B7
+        rol     FlightStep              ; 30B7
         asl     a                       ; 30B9
         asl     a                       ; 30BA
-        rol     $75                     ; 30BB
-        lda     $75                     ; 30BD
+        rol     FlightStep              ; 30BB
+        lda     FlightStep              ; 30BD
         clc                             ; 30BF
         adc     #$02                    ; 30C0
-        sta     $75                     ; 30C2
+        sta     FlightStep              ; 30C2
 L30C4:  lda     TakeOffSpeed            ; 30C4
         and     #$1C                    ; 30C6
         lsr     a                       ; 30C8
         clc                             ; 30C9
         adc     #$06                    ; 30CA
-        sta     $7C                     ; 30CC
-        lda     $75                     ; 30CE
+        sta     JavelinHang             ; 30CC
+        lda     FlightStep              ; 30CE
         sta     RunwayScrollStep        ; 30D0
-        jsr     L31F9                   ; 30D2
+        jsr     FollowThrough           ; 30D2
         lda     #$00                    ; 30D5
-        sta     $77                     ; 30D7
-L30D9:  lda     $77                     ; 30D9
+        sta     JavelinPhase            ; 30D7
+
+; --------------------------------------------------------------------------
+; One step of the javelin: JavelinY up or down by AngleClass, then DelayXY $0A.
+; --------------------------------------------------------------------------
+JavelinLoop:
+        lda     JavelinPhase            ; 30D9
         bne     L30F2                   ; 30DB
-        lda     $6B                     ; 30DD
+        lda     JavelinY                ; 30DD
         cmp     PeakRow                 ; 30DF
         bcc     L3110                   ; 30E1
-        lda     $6B                     ; 30E3
+        lda     JavelinY                ; 30E3
         sec                             ; 30E5
         sbc     AngleClass              ; 30E6
-        sta     $6B                     ; 30E8
+        sta     JavelinY                ; 30E8
 L30EA:  ldx     #$0A                    ; 30EA
         jsr     DelayXY                 ; 30EC
-        jmp     L30D9                   ; 30EF
+        jmp     JavelinLoop             ; 30EF
 
 L30F2:  cmp     #$01                    ; 30F2
         beq     L311C                   ; 30F4
-        lda     $6B                     ; 30F6
+        lda     JavelinY                ; 30F6
         cmp     #$8C                    ; 30F8
         bcc     L3100                   ; 30FA
         lda     #$03                    ; 30FC
-        sta     $77                     ; 30FE
-L3100:  lda     $6B                     ; 3100
+        sta     JavelinPhase            ; 30FE
+L3100:  lda     JavelinY                ; 3100
         cmp     #$96                    ; 3102
         bcs     L3115                   ; 3104
-        lda     $6B                     ; 3106
+        lda     JavelinY                ; 3106
         clc                             ; 3108
         adc     AngleClass              ; 3109
-        sta     $6B                     ; 310B
+        sta     JavelinY                ; 310B
         jmp     L30EA                   ; 310D
 
-L3110:  inc     $77                     ; 3110
+L3110:  inc     JavelinPhase            ; 3110
         jmp     L30EA                   ; 3112
 
 L3115:  lda     #$00                    ; 3115
         sta     RunwayScrollStep        ; 3117
         jmp     JudgeAttempt            ; 3119
 
-L311C:  dec     $7C                     ; 311C
+L311C:  dec     JavelinHang             ; 311C
         beq     L3110                   ; 311E
         jmp     L30EA                   ; 3120
 
@@ -3803,12 +3857,12 @@ L311C:  dec     $7C                     ; 311C
 ; Event 2: draw the javelin's 10 cells at $68/$69 (cell offsets $3174).
 ; --------------------------------------------------------------------------
 DrawJavelinShaft:
-        lda     $6C                     ; 3123
+        lda     JavelinShown            ; 3123
         bne     L3128                   ; 3125
         rts                             ; 3127
 
-L3128:  ldx     $68                     ; 3128
-        lda     $69                     ; 312A
+L3128:  ldx     JavelinDrawnCol         ; 3128
+        lda     JavelinDrawnY           ; 312A
         lsr     a                       ; 312C
         lsr     a                       ; 312D
         lsr     a                       ; 312E
@@ -3816,57 +3870,67 @@ L3128:  ldx     $68                     ; 3128
         jsr     ScreenAddress           ; 3130
         ldx     #$09                    ; 3133
         lda     #$FF                    ; 3135
-L3137:  ldy     L3174,x                 ; 3137
+L3137:  ldy     JavelinCellOffsets,x    ; 3137
         sta     ($21),y                 ; 313A
         dex                             ; 313C
         bpl     L3137                   ; 313D
-        lda     $6B                     ; 313F
-        cmp     $69                     ; 3141
+        lda     JavelinY                ; 313F
+        cmp     JavelinDrawnY           ; 3141
         beq     L3147                   ; 3143
-        sta     $69                     ; 3145
-L3147:  lda     $6A                     ; 3147
-        cmp     $68                     ; 3149
+        sta     JavelinDrawnY           ; 3145
+L3147:  lda     JavelinCol              ; 3147
+        cmp     JavelinDrawnCol         ; 3149
         beq     L314F                   ; 314B
-        sta     $68                     ; 314D
-L314F:  ldx     $68                     ; 314F
-        lda     $69                     ; 3151
+        sta     JavelinDrawnCol         ; 314D
+L314F:  ldx     JavelinDrawnCol         ; 314F
+        lda     JavelinDrawnY           ; 3151
         lsr     a                       ; 3153
         lsr     a                       ; 3154
         lsr     a                       ; 3155
         tay                             ; 3156
         jsr     ScreenAddress           ; 3157
-        ldy     $77                     ; 315A
-        lda     L317E,y                 ; 315C
-        sta     $6D                     ; 315F
+        ldy     JavelinPhase            ; 315A
+        lda     JavelinChars,y          ; 315C
+        sta     JavelinChar             ; 315F
         ldx     #$09                    ; 3161
-L3163:  ldy     L3174,x                 ; 3163
-        lda     $6D                     ; 3166
+L3163:  ldy     JavelinCellOffsets,x    ; 3163
+        lda     JavelinChar             ; 3166
         sta     ($21),y                 ; 3168
         lda     #$70                    ; 316A
         sta     ($23),y                 ; 316C
-        dec     $6D                     ; 316E
+        dec     JavelinChar             ; 316E
         dex                             ; 3170
         bpl     L3163                   ; 3171
         rts                             ; 3173
 
-L3174:  .byte   $00,$28,$01,$29,$02,$2A,$03,$2B; 3174
+
+; --------------------------------------------------------------------------
+; Screen offsets of the javelin's 10 cells: five columns, two rows.
+; --------------------------------------------------------------------------
+JavelinCellOffsets:
+        .byte   $00,$28,$01,$29,$02,$2A,$03,$2B; 3174
         .byte   $04,$2C                 ; 317C
-L317E:  .byte   $7F,$89,$93,$9D         ; 317E
+
+; --------------------------------------------------------------------------
+; First character of the javelin's picture for each JavelinPhase.
+; --------------------------------------------------------------------------
+JavelinChars:
+        .byte   $7F,$89,$93,$9D         ; 317E
 
 ; --------------------------------------------------------------------------
 ; Event 1: draw the shot at $6F/$70.
 ; --------------------------------------------------------------------------
 DrawShotBall:
-        lda     $73                     ; 3182
+        lda     ShotShown               ; 3182
         bne     L3187                   ; 3184
         rts                             ; 3186
 
-L3187:  lda     $70                     ; 3187
+L3187:  lda     ShotDrawnY              ; 3187
         lsr     a                       ; 3189
         lsr     a                       ; 318A
         lsr     a                       ; 318B
         tay                             ; 318C
-        ldx     $6F                     ; 318D
+        ldx     ShotDrawnCol            ; 318D
         jsr     ScreenAddress           ; 318F
         lda     #$20                    ; 3192
         ldy     #$00                    ; 3194
@@ -3879,23 +3943,23 @@ L3187:  lda     $70                     ; 3187
         sta     ($21),y                 ; 31A2
 L31A4:  ldx     #$0F                    ; 31A4
         lda     #$00                    ; 31A6
-L31A8:  sta     L1350,x                 ; 31A8
+L31A8:  sta     ShotChar,x              ; 31A8
         dex                             ; 31AB
         bpl     L31A8                   ; 31AC
-        lda     $72                     ; 31AE
+        lda     ShotY                   ; 31AE
         pha                             ; 31B0
         lsr     a                       ; 31B1
         lsr     a                       ; 31B2
         lsr     a                       ; 31B3
         tay                             ; 31B4
-        ldx     $71                     ; 31B5
+        ldx     ShotCol                 ; 31B5
         jsr     ScreenAddress           ; 31B7
         pla                             ; 31BA
         and     #$07                    ; 31BB
         tay                             ; 31BD
         ldx     #$00                    ; 31BE
-L31C0:  lda     L31F1,x                 ; 31C0
-        sta     L1350,y                 ; 31C3
+L31C0:  lda     ShotBitmap,x            ; 31C0
+        sta     ShotChar,y              ; 31C3
         iny                             ; 31C6
         inx                             ; 31C7
         cpx     #$08                    ; 31C8
@@ -3914,25 +3978,36 @@ L31C0:  lda     L31F1,x                 ; 31C0
 L31E2:  lda     #$70                    ; 31E2
         ldy     #$00                    ; 31E4
         sta     ($23),y                 ; 31E6
-        lda     $71                     ; 31E8
-        sta     $6F                     ; 31EA
-        lda     $72                     ; 31EC
-        sta     $70                     ; 31EE
+        lda     ShotCol                 ; 31E8
+        sta     ShotDrawnCol            ; 31EA
+        lda     ShotY                   ; 31EC
+        sta     ShotDrawnY              ; 31EE
         rts                             ; 31F0
 
-L31F1:  .byte   $18,$7E,$7E,$FF,$FF,$7E,$7E,$18; 31F1
-L31F9:  lda     AthleteCol              ; 31F9
+
+; --------------------------------------------------------------------------
+; The shot's 8-byte ball, copied into character $6A at the shot's pixel row.
+; --------------------------------------------------------------------------
+ShotBitmap:
+        .byte   $18,$7E,$7E,$FF,$FF,$7E,$7E,$18; 31F1
+
+; --------------------------------------------------------------------------
+; Shot and javelin release: walk the athlete left to column 0, lifting the shot by
+; AngleClass and the javelin by 1 a step and moving AthleteX - 3, then clear his rows.
+; --------------------------------------------------------------------------
+FollowThrough:
+        lda     AthleteCol              ; 31F9
         bne     L3203                   ; 31FB
         jsr     EraseAthlete_day_two    ; 31FD
         jmp     L322B                   ; 3200
 
 L3203:  jsr     EraseAthlete_day_two    ; 3203
         dec     AthleteCol              ; 3206
-        lda     $72                     ; 3208
+        lda     ShotY                   ; 3208
         sec                             ; 320A
         sbc     AngleClass              ; 320B
-        sta     $72                     ; 320D
-        dec     $6B                     ; 320F
+        sta     ShotY                   ; 320D
+        dec     JavelinY                ; 320F
         jsr     DrawAthlete_day_two     ; 3211
         lda     AthleteX                ; 3214
         cmp     #$08                    ; 3216
@@ -3944,7 +4019,7 @@ L3203:  jsr     EraseAthlete_day_two    ; 3203
         jsr     DrawRunway              ; 3220
 L3223:  ldx     #$0A                    ; 3223
         jsr     DelayXY                 ; 3225
-        jmp     L31F9                   ; 3228
+        jmp     FollowThrough           ; 3228
 
 L322B:  ldx     #$4F                    ; 322B
         lda     #$20                    ; 322D

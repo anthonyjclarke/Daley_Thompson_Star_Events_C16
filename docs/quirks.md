@@ -22,7 +22,11 @@ What the original does that looks accidental or unfinished, kept as it is in the
 | Both | Footstep pitch comes from reading successive BASIC ROM bytes (`$A000`, `$A063`) | Undocumented coherent: cheap noise source |
 | Part 1 `RaceClock` | `TickRaceClock` runs once a frame (split 1); its last digit counts 0–5 and the next 0–9, so a displayed second is 60 frames: 1.2 real seconds on a PAL C16, and the last digit never shows 6–9 | Uncertain: a 60 Hz assumption, or a deliberate easing of the qualifying times |
 | Part 1 | After the fourth event (200 m hurdles) `EventNumber` returns to 1 and the four events run again with the score kept; there is no hand-over to part 2 | Undocumented coherent: the parts are on separate tape sides |
-
+| Part 2 `FlightStep` | The scroll rate in flight is built from bits 4, 2 and 0 of `TakeOffSpeed`, not its top bits, so speed `$1D` scrolls at 9 and `$1E` at 8; measured in VICE, `$1D` goes about an eighth further than `$1E` in all three events (below 60° in the long jump) | Likely defect: two shifts between `ROL`s where one was meant |
+| Part 2 `ShotPut` | Outside 35–54° the scroll is (`FlightStep` AND 3) + 1, so a fast run-up throws less than a slow one (1.5 m against 3.2 m at 55°, measured) | Uncertain: a deliberate penalty with an accidental twist |
+| Part 2 `Javelin` | Below 35° the javelin falls one pixel a step, and a full-speed throw measures about 122 m, past the 101.30 m WORLD RECORD | Likely defect: angle balance not tested at the shallow end |
+| Part 2 `RunwayCellStep` | Every 14th runway cell in flight places a marker and adds no distance | Undocumented coherent |
+| Part 2 `LongJump` | The hang lasts until the runway band turns to sand (`RunwayBandColour`), so the jumper always reaches the pit; a slow jump still measures about 3.5 m | Undocumented coherent |
 ---
 
 ## Open Items
@@ -33,5 +37,4 @@ What the original does that looks accidental or unfinished, kept as it is in the
 | Part 2 `$2140`–`$2162` | Code-shaped bytes reading TED timers `$FF00`/`$FF02` into `$28`–`$2B`; no reference to `$2140` | Unused random-number routine (remnant); never executed in the coverage runs |
 | Part 2 `$241D`–`$2436` | Bytes after `EventTableOffset` that decode as a routine printing A as two hex digits at `$0F99,X`; no `JSR`, `JMP` or pointer reaches `$241D` | Debug remnant: a hex printer left from development |
 | Part 2 `$2109`–`$2110` | Eight bytes before `Entry_day_two` (`EA 20 58 60 EA …`) | Leftover bytes; not code reached from anywhere |
-| Part 2 | The flight arithmetic inside `LongJump`, `ShotPut` and `Javelin`, and the runway drawing, keep neutral names for their variables | Needs a VICE run with fire and angle input |
 | Part 2 | Keys, read through the C16 keyboard matrix as recalled (not checked in VICE): `SelectInputMode` J → JOY, K → KEY; `ReadKeys` Q left, Y right, SPACE fire | The J/K–JOY/KEY match supports the reading; press the keys in VICE to confirm |

@@ -61,7 +61,7 @@ Names follow the evidence ladder from the restoration skill:
 
 Each role-claiming name has a row in [the evidence](evidence.md) with what was seen and when. The source comment states the conclusion; the proof lives in the evidence. Names still at `Lxxxx` are neutral: nothing yet justifies a role.
 
-The controlled runs change RAM in VICE only, never the build. For example, `SpeedDecay` is patched to `RTS` to hold `RunSpeed` at its maximum, and Day Two's FIRE TO START wait is removed so attempts run without input. `tools/doc_shots.py` reproduces the screenshots used in these documents the same way.
+The controlled runs change RAM in VICE only, never the build. For example, `SpeedDecay` is patched to `RTS` to hold `RunSpeed` at its maximum, and Day Two's FIRE TO START wait is removed so attempts run without input. `tools/doc_shots.py` reproduces the screenshots used in these documents the same way. `tools/flight_probe.py` forces Day Two take-offs: it sets the speed, position and angle at two breakpoints, lets the event's flight code run, and reads the distance.
 
 ---
 

@@ -2,6 +2,22 @@
 
 ---
 
+## [0.7.0] 22-11-2026
+
+### Added
+
+- Names for Day Two's flight code: the shot, javelin and long-jump loops and their variables (`ShotY`, `JavelinY`,
+  `JavelinPhase`, `InFlight`, `FlightStep`, `FollowThrough`, `RunwayBandColour` and others).
+- `tools/flight_probe.py`: forces take-offs in VICE RAM at chosen speeds, angles and positions and reads the
+  distances back.
+
+### Changed
+
+- The distance-counter section of `CODEBASE_ANALYSIS.md` and the Day Two tips in `docs/PLAYING.md`, now from
+  measured distances.
+
+---
+
 ## [0.6.0] 21-11-2026
 
 ### Added

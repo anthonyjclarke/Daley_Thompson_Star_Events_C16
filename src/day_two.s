@@ -5,14 +5,29 @@
 
         .setcpu "6502"
 
+RunwayFineScroll:= $0032
+RunwayScrollStep:= $0033
 RunSpeed_day_two:= $0037
+AthleteCol      := $0038
+AthleteRow      := $0039
 WaggleSeen_day_two:= $0040
 InputBits       := $0041
 EventIndex      := $0042
+AthleteX        := $004C
+RunwayCellCount := $004E
 AttemptNumber   := $004F
 RunUpActive     := $0050
 AttemptResult   := $0053
 AttemptResults  := $0054
+AngleBcd        := $0065
+Angle           := $0066
+TakeOffSpeed    := $0067
+PeakRow         := $0074
+TakeOffDelay    := $0078
+AngleClass      := $0079
+TitleMode       := $007F
+HangTime        := $0082
+FlightPhase     := $0083
 CINV            := $0314
 CINV_HI         := $0315
 TED_T1_LO       := $FF00
@@ -593,31 +608,65 @@ L17F8:  .byte   $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF; 17F8
 SoundVectors_day_two:
         jmp     SoundStep_day_two       ; 1800
 
-L1803:  jmp     SoundSilence_day_two    ; 1803
 
-L1806:  jsr     PlayTunePair_day_two    ; 1806
+; --------------------------------------------------------------------------
+; Jump to SoundSilence_day_two (vector at $1803).
+; --------------------------------------------------------------------------
+SilenceSound:
+        jmp     SoundSilence_day_two    ; 1803
+
+
+; --------------------------------------------------------------------------
+; PlayTunePair_day_two with the tune at $1A43/$1AAF; called as an event is drawn.
+; --------------------------------------------------------------------------
+PlayEventTune:
+        jsr     PlayTunePair_day_two    ; 1806
         .word   $1A43,$1AAF             ; 1809
         rts                             ; 180D
 
-L180E:  jsr     PlayTunePair_day_two    ; 180E
+
+; --------------------------------------------------------------------------
+; PlayTunePair_day_two with $1925/$19D6; repeated on the FIRE TO START screen.
+; --------------------------------------------------------------------------
+PlayTitleTune:
+        jsr     PlayTunePair_day_two    ; 180E
         .word   $1925,$19D6             ; 1811
         rts                             ; 1815
 
-L1816:  jsr     PlayTunePair_day_two    ; 1816
+
+; --------------------------------------------------------------------------
+; PlayTunePair_day_two with $1B05/$1B41; called after a qualified attempt.
+; --------------------------------------------------------------------------
+PlayQualifiedTune:
+        jsr     PlayTunePair_day_two    ; 1816
         .word   $1B05,$1B41             ; 1819
         rts                             ; 181D
 
-L181E:  ldx     #$42                    ; 181E
+
+; --------------------------------------------------------------------------
+; StartSoundEffect_day_two with the record at $1842; called when AttemptResult is not $FF.
+; --------------------------------------------------------------------------
+SoundEffectA_day_two:
+        ldx     #$42                    ; 181E
         ldy     #$18                    ; 1820
-        jsr     L1BB7                   ; 1822
+        jsr     StartSoundEffect_day_two; 1822
         rts                             ; 1825
 
-L1826:  ldx     #$59                    ; 1826
+
+; --------------------------------------------------------------------------
+; StartSoundEffect_day_two; called when AttemptResult is $FF, with ShowFailMessage.
+; --------------------------------------------------------------------------
+SoundEffectB_day_two:
+        ldx     #$59                    ; 1826
         ldy     #$18                    ; 1828
-        jsr     L1BB7                   ; 182A
+        jsr     StartSoundEffect_day_two; 182A
         rts                             ; 182D
 
-L182E:
+
+; --------------------------------------------------------------------------
+; StartSoundEffect_day_two with a pitch byte from the BASIC ROM (self-modified pointer from $A063).
+; --------------------------------------------------------------------------
+PlayFootstep_day_two:
 L182F           := * + 1
         lda     $A063                   ; 182E
         and     #$0F                    ; 1831
@@ -626,7 +675,7 @@ L182F           := * + 1
         inc     L182F                   ; 1838
         ldx     #$70                    ; 183B
         ldy     #$18                    ; 183D
-        jmp     L1BB7                   ; 183F
+        jmp     StartSoundEffect_day_two; 183F
 
         .byte   $00,$00,$00,$00,$00,$00,$00,$00; 1842
         .byte   $00,$00,$00,$00,$20,$03,$03,$08; 184A
@@ -780,7 +829,12 @@ L1BB3:  .byte   $54                     ; 1BB3
 L1BB4:  .byte   $02                     ; 1BB4
 L1BB5:  .byte   $FE                     ; 1BB5
 L1BB6:  .byte   $04                     ; 1BB6
-L1BB7:  php                             ; 1BB7
+
+; --------------------------------------------------------------------------
+; Copy the 23-byte effect record at Y:X into the driver; byte $16 picks the voice.
+; --------------------------------------------------------------------------
+StartSoundEffect_day_two:
+        php                             ; 1BB7
         stx     $10                     ; 1BB8
         sty     $11                     ; 1BBA
         ldy     #$16                    ; 1BBC
@@ -1072,7 +1126,7 @@ L1E2A:  lda     ($12),y                 ; 1E2A
         sta     L2007                   ; 1E3E
         ldx     #$FB                    ; 1E41
         ldy     #$1F                    ; 1E43
-        jsr     L1BB7                   ; 1E45
+        jsr     StartSoundEffect_day_two; 1E45
 L1E48:  ldy     #$01                    ; 1E48
         lda     ($12),y                 ; 1E4A
         tax                             ; 1E4C
@@ -1185,7 +1239,7 @@ L1F0F:  lda     ($14),y                 ; 1F0F
         sty     L2052                   ; 1F23
         ldx     #$45                    ; 1F26
         ldy     #$20                    ; 1F28
-        jsr     L1BB7                   ; 1F2A
+        jsr     StartSoundEffect_day_two; 1F2A
 L1F2D:  ldy     #$01                    ; 1F2D
         lda     ($14),y                 ; 1F2F
         tax                             ; 1F31
@@ -1496,7 +1550,12 @@ ScreenRowTable:
         .word   $0E80,$0EA8,$0ED0,$0EF8 ; 21E7
         .word   $0F20,$0F48,$0F70,$0F98 ; 21EF
         .word   $0FC0                   ; 21F7
-L21F9:  pha                             ; 21F9
+
+; --------------------------------------------------------------------------
+; A (BCD) to two ASCII digits: X tens, Y units.
+; --------------------------------------------------------------------------
+BcdToAscii:
+        pha                             ; 21F9
         and     #$F0                    ; 21FA
         lsr     a                       ; 21FC
         lsr     a                       ; 21FD
@@ -1510,12 +1569,22 @@ L21F9:  pha                             ; 21F9
         tay                             ; 2208
         rts                             ; 2209
 
-L220A:  lda     L2012                   ; 220A
+
+; --------------------------------------------------------------------------
+; Wait until both voices' tune pointers ($2012, $205C) are 0.
+; --------------------------------------------------------------------------
+WaitTuneEnd:
+        lda     L2012                   ; 220A
         ora     L205C                   ; 220D
-        bne     L220A                   ; 2210
+        bne     WaitTuneEnd             ; 2210
         rts                             ; 2212
 
-L2213:  ldx     #$24                    ; 2213
+
+; --------------------------------------------------------------------------
+; Fine scroll from $2D, colours, PollInput_day_two.
+; --------------------------------------------------------------------------
+Split01_day_two:
+        ldx     #$24                    ; 2213
 L2215:  dex                             ; 2215
         bpl     L2215                   ; 2216
         lda     TED_CTRL2               ; 2218
@@ -1533,37 +1602,67 @@ L2215:  dex                             ; 2215
         sta     TED_BG2                 ; 2236
         rts                             ; 2239
 
-L223A:  lda     #$3E                    ; 223A
+
+; --------------------------------------------------------------------------
+; Raster split: colours or scroll for the next band.
+; --------------------------------------------------------------------------
+Split02_day_two:
+        lda     #$3E                    ; 223A
         sta     TED_BG0                 ; 223C
         sta     TED_BORDER              ; 223F
         rts                             ; 2242
 
-L2243:  nop                             ; 2243
+
+; --------------------------------------------------------------------------
+; Raster split: colours or scroll for the next band.
+; --------------------------------------------------------------------------
+Split03_day_two:
+        nop                             ; 2243
         lda     #$5E                    ; 2244
         sta     TED_BG0                 ; 2246
         sta     TED_BORDER              ; 2249
         rts                             ; 224C
 
-L224D:  nop                             ; 224D
+
+; --------------------------------------------------------------------------
+; Raster split: colours or scroll for the next band.
+; --------------------------------------------------------------------------
+Split04_day_two:
+        nop                             ; 224D
         lda     #$6E                    ; 224E
         sta     TED_BG0                 ; 2250
         sta     TED_BORDER              ; 2253
         rts                             ; 2256
 
-L2257:  nop                             ; 2257
+
+; --------------------------------------------------------------------------
+; Raster split: colours or scroll for the next band.
+; --------------------------------------------------------------------------
+Split05_day_two:
+        nop                             ; 2257
         lda     #$25                    ; 2258
         sta     TED_BG0                 ; 225A
         sta     TED_BORDER              ; 225D
         rts                             ; 2260
 
-L2261:  lda     $20                     ; 2261
+
+; --------------------------------------------------------------------------
+; Raster split: colours or scroll for the next band.
+; --------------------------------------------------------------------------
+Split06_day_two:
+        lda     $20                     ; 2261
         sta     TED_CHARSET             ; 2263
         lda     #$71                    ; 2266
         sta     TED_BG0                 ; 2268
         jsr     PollInput_day_two       ; 226B
         rts                             ; 226E
 
-L226F:  ldx     #$06                    ; 226F
+
+; --------------------------------------------------------------------------
+; Raster split: colours or scroll for the next band.
+; --------------------------------------------------------------------------
+Split07_day_two:
+        ldx     #$06                    ; 226F
 L2271:  dex                             ; 2271
         bpl     L2271                   ; 2272
         lda     #$10                    ; 2274
@@ -1577,7 +1676,12 @@ L2271:  dex                             ; 2271
         jsr     L25E8                   ; 2289
         rts                             ; 228C
 
-L228D:  ldx     #$01                    ; 228D
+
+; --------------------------------------------------------------------------
+; Raster split: colours or scroll for the next band.
+; --------------------------------------------------------------------------
+Split08_day_two:
+        ldx     #$01                    ; 228D
 L228F:  dex                             ; 228F
         bpl     L228F                   ; 2290
         lda     #$32                    ; 2292
@@ -1585,7 +1689,12 @@ L228F:  dex                             ; 228F
         sta     TED_BORDER              ; 2297
         rts                             ; 229A
 
-L229B:  lda     #$71                    ; 229B
+
+; --------------------------------------------------------------------------
+; Raster split: colours or scroll for the next band.
+; --------------------------------------------------------------------------
+Split09_day_two:
+        lda     #$71                    ; 229B
         sta     TED_BG0                 ; 229D
         sta     TED_BORDER              ; 22A0
         ldx     #$0E                    ; 22A3
@@ -1595,10 +1704,15 @@ L22A5:  dex                             ; 22A5
         sta     TED_BORDER              ; 22AA
         lda     $36                     ; 22AD
         sta     TED_BG0                 ; 22AF
-        jsr     L2758                   ; 22B2
+        jsr     DrawScoreLine           ; 22B2
         rts                             ; 22B5
 
-L22B6:  ldx     #$10                    ; 22B6
+
+; --------------------------------------------------------------------------
+; Raster split: colours or scroll for the next band.
+; --------------------------------------------------------------------------
+Split10_day_two:
+        ldx     #$10                    ; 22B6
 L22B8:  dex                             ; 22B8
         bpl     L22B8                   ; 22B9
         lda     #$71                    ; 22BB
@@ -1612,9 +1726,14 @@ L22C5:  dex                             ; 22C5
         sta     TED_BORDER              ; 22CD
         rts                             ; 22D0
 
-L22D1:  lda     TED_CTRL2               ; 22D1
+
+; --------------------------------------------------------------------------
+; Raster split: colours or scroll for the next band.
+; --------------------------------------------------------------------------
+Split11_day_two:
+        lda     TED_CTRL2               ; 22D1
         and     #$F8                    ; 22D4
-        ora     $32                     ; 22D6
+        ora     RunwayFineScroll        ; 22D6
         sta     TED_CTRL2               ; 22D8
         lda     #$41                    ; 22DB
         sta     TED_BG0                 ; 22DD
@@ -1624,7 +1743,12 @@ L22D1:  lda     TED_CTRL2               ; 22D1
         sta     TED_BG2                 ; 22E8
         rts                             ; 22EB
 
-L22EC:  ldx     #$03                    ; 22EC
+
+; --------------------------------------------------------------------------
+; Raster split: colours or scroll for the next band.
+; --------------------------------------------------------------------------
+Split12_day_two:
+        ldx     #$03                    ; 22EC
 L22EE:  dex                             ; 22EE
         bpl     L22EE                   ; 22EF
         lda     TED_CTRL2               ; 22F1
@@ -1635,19 +1759,24 @@ L22EE:  dex                             ; 22EE
         sta     TED_BORDER              ; 22FE
         rts                             ; 2301
 
-L2302:  lda     TED_CTRL2               ; 2302
+
+; --------------------------------------------------------------------------
+; Raster split: colours or scroll for the next band.
+; --------------------------------------------------------------------------
+Split13_day_two:
+        lda     TED_CTRL2               ; 2302
         and     #$EF                    ; 2305
         sta     TED_CTRL2               ; 2307
-        jsr     L267B                   ; 230A
-        jsr     L2868                   ; 230D
-        jsr     L2B28                   ; 2310
-        jsr     L2B96                   ; 2313
-        jsr     L2DBB                   ; 2316
+        jsr     ScrollRunway            ; 230A
+        jsr     UpdateFigures           ; 230D
+        jsr     CycleTitleColours       ; 2310
+        jsr     PulseTitleColour        ; 2313
+        jsr     SetRunwayScroll         ; 2316
         jsr     L2C86                   ; 2319
-        jsr     L2DD9                   ; 231C
+        jsr     ShowAttemptMarks        ; 231C
         jsr     SpeedDecay_day_two      ; 231F
-        jsr     L27A6                   ; 2322
-        jsr     L2DF8                   ; 2325
+        jsr     DrawSpeedMeter_day_two  ; 2322
+        jsr     RunFrameTimer           ; 2325
         jsr     SoundVectors_day_two    ; 2328
         jsr     SelectInputMode         ; 232B
         lda     #$FF                    ; 232E
@@ -1700,7 +1829,7 @@ IrqHandler_day_two:
         sta     L2375                   ; 2370
 IrqSplitCall_day_two:= * + 1
 L2375           := * + 2
-        jsr     L2213                   ; 2373
+        jsr     Split01_day_two         ; 2373
         inc     $27                     ; 2376
         ldx     $27                     ; 2378
         lda     SplitRasters_day_two,x  ; 237A
@@ -1736,7 +1865,7 @@ L239D:  lda     #$FD                    ; 239D
         eor     #$FF                    ; 23A5
         and     #$8C                    ; 23A7
         sta     InputBits               ; 23A9
-L23AB:  lda     $7F                     ; 23AB
+L23AB:  lda     TitleMode               ; 23AB
         bne     L23B9                   ; 23AD
         lda     $4B                     ; 23AF
         bne     L23B9                   ; 23B1
@@ -1806,19 +1935,19 @@ SplitRasters_day_two:
 ; Raster-split handlers, called in turn by the IRQ (13 entries)
 ; --------------------------------------------------------------------------
 SplitTable_day_two:
-        .addr   L2213                   ; 23FB
-        .addr   L223A                   ; 23FD
-        .addr   L2243                   ; 23FF
-        .addr   L224D                   ; 2401
-        .addr   L2257                   ; 2403
-        .addr   L2261                   ; 2405
-        .addr   L226F                   ; 2407
-        .addr   L228D                   ; 2409
-        .addr   L229B                   ; 240B
-        .addr   L22B6                   ; 240D
-        .addr   L22D1                   ; 240F
-        .addr   L22EC                   ; 2411
-        .addr   L2302                   ; 2413
+        .addr   Split01_day_two         ; 23FB
+        .addr   Split02_day_two         ; 23FD
+        .addr   Split03_day_two         ; 23FF
+        .addr   Split04_day_two         ; 2401
+        .addr   Split05_day_two         ; 2403
+        .addr   Split06_day_two         ; 2405
+        .addr   Split07_day_two         ; 2407
+        .addr   Split08_day_two         ; 2409
+        .addr   Split09_day_two         ; 240B
+        .addr   Split10_day_two         ; 240D
+        .addr   Split11_day_two         ; 240F
+        .addr   Split12_day_two         ; 2411
+        .addr   Split13_day_two         ; 2413
 L2415:  .byte   $00,$28,$50,$78,$A0     ; 2415
 
 ; --------------------------------------------------------------------------
@@ -1837,8 +1966,8 @@ EventTableOffset:
 InitGame_day_two:
         sei                             ; 2437
         jsr     ClearZeroPage           ; 2438
-        jsr     L1803                   ; 243B
-        jsr     L2739                   ; 243E
+        jsr     SilenceSound            ; 243B
+        jsr     SetupTed_day_two        ; 243E
         lda     #$32                    ; 2441
         sta     $36                     ; 2443
         jsr     InstallIrq_day_two      ; 2445
@@ -1851,7 +1980,7 @@ InitGame_day_two:
 StartEvent_day_two:
         ldx     #$06                    ; 244B
         lda     #$30                    ; 244D
-L244F:  sta     DistanceDigits,x        ; 244F
+L244F:  sta     AngleDigits,x           ; 244F
         dex                             ; 2452
         bpl     L244F                   ; 2453
         lda     #$FF                    ; 2455
@@ -1863,10 +1992,10 @@ L244F:  sta     DistanceDigits,x        ; 244F
         lda     #$00                    ; 2461
         sta     $60                     ; 2463
         jsr     ClearScreen             ; 2465
-        jsr     L28C0                   ; 2468
-        jsr     L1806                   ; 246B
-        jsr     L220A                   ; 246E
-        jsr     L1803                   ; 2471
+        jsr     DrawEventScreen         ; 2468
+        jsr     PlayEventTune           ; 246B
+        jsr     WaitTuneEnd             ; 246E
+        jsr     SilenceSound            ; 2471
         lda     #$00                    ; 2474
         sta     AttemptNumber           ; 2476
 
@@ -1876,7 +2005,7 @@ L244F:  sta     DistanceDigits,x        ; 244F
 StartAttempt_day_two:
         ldx     #$06                    ; 2478
         lda     #$30                    ; 247A
-L247C:  sta     DistanceDigits,x        ; 247C
+L247C:  sta     AngleDigits,x           ; 247C
         dex                             ; 247F
         bpl     L247C                   ; 2480
         lda     #$00                    ; 2482
@@ -1896,15 +2025,15 @@ L247C:  sta     DistanceDigits,x        ; 247C
         sta     $20                     ; 249F
         lda     #$80                    ; 24A1
         sta     $31                     ; 24A3
-        jsr     L28C0                   ; 24A5
-        jsr     L3318                   ; 24A8
-        jsr     L2C2D                   ; 24AB
-        jsr     L2E02                   ; 24AE
+        jsr     DrawEventScreen         ; 24A5
+        jsr     FlashAttemptMessage     ; 24A8
+        jsr     InitAthlete_day_two     ; 24AB
+        jsr     StepRunFrame_day_two    ; 24AE
         lda     #$02                    ; 24B1
-        sta     $38                     ; 24B3
+        sta     AthleteCol              ; 24B3
         sta     $5C                     ; 24B5
         lda     #$0F                    ; 24B7
-        sta     $39                     ; 24B9
+        sta     AthleteRow              ; 24B9
         sta     $5D                     ; 24BB
         lda     #$01                    ; 24BD
         sta     $57                     ; 24BF
@@ -1932,7 +2061,7 @@ L24E4:  lda     EventIndex              ; 24E4
         cmp     #$0F                    ; 24EA
         bcc     L24D9                   ; 24EC
 L24EE:  lda     RunSpeed_day_two        ; 24EE
-        sta     $67                     ; 24F0
+        sta     TakeOffSpeed            ; 24F0
         lda     #$00                    ; 24F2
         sta     RunUpActive             ; 24F4
         sta     $51                     ; 24F6
@@ -1940,38 +2069,38 @@ L24EE:  lda     RunSpeed_day_two        ; 24EE
         sta     RunSpeed_day_two        ; 24FA
         sta     $2D                     ; 24FC
         sta     $2E                     ; 24FE
-        sta     $33                     ; 2500
+        sta     RunwayScrollStep        ; 2500
         lda     #$FF                    ; 2502
         sta     $7D                     ; 2504
         bit     InputBits               ; 2506
         bpl     L250D                   ; 2508
-        jmp     L2EB7                   ; 250A
+        jmp     SetTakeOffAngle         ; 250A
 
 L250D:  ldx     #$50                    ; 250D
-        jsr     L2CAC                   ; 250F
+        jsr     DrawRunway              ; 250F
         ldx     #$02                    ; 2512
         jsr     L2E64                   ; 2514
 L2517:  jsr     ShowEventTables         ; 2517
-        jsr     L3354                   ; 251A
+        jsr     AddDistanceToScore      ; 251A
         lda     AttemptResult           ; 251D
         cmp     #$FF                    ; 251F
         bne     L252C                   ; 2521
-        jsr     L32FF                   ; 2523
-        jsr     L1826                   ; 2526
+        jsr     ShowFailMessage         ; 2523
+        jsr     SoundEffectB_day_two    ; 2526
         jmp     L252F                   ; 2529
 
-L252C:  jsr     L181E                   ; 252C
+L252C:  jsr     SoundEffectA_day_two    ; 252C
 L252F:  ldx     #$00                    ; 252F
         jsr     DelayXY                 ; 2531
         jsr     DelayXY                 ; 2534
         jsr     DelayXY                 ; 2537
-        jsr     L1803                   ; 253A
+        jsr     SilenceSound            ; 253A
         lda     $7D                     ; 253D
         cmp     #$FF                    ; 253F
         beq     L254C                   ; 2541
-        jsr     L1816                   ; 2543
-        jsr     L220A                   ; 2546
-        jsr     L1803                   ; 2549
+        jsr     PlayQualifiedTune       ; 2543
+        jsr     WaitTuneEnd             ; 2546
+        jsr     SilenceSound            ; 2549
 L254C:  lda     #$32                    ; 254C
         sta     $36                     ; 254E
         ldx     #$00                    ; 2550
@@ -2011,24 +2140,24 @@ StartGame_day_two:
         jsr     ClearZeroPage           ; 2584
         ldx     #$0C                    ; 2587
         lda     #$30                    ; 2589
-L258B:  sta     DistanceDigits,x        ; 258B
+L258B:  sta     AngleDigits,x           ; 258B
         dex                             ; 258E
         bpl     L258B                   ; 258F
         lda     #$01                    ; 2591
-        sta     $7F                     ; 2593
+        sta     TitleMode               ; 2593
         sta     $58                     ; 2595
         lda     #$32                    ; 2597
         sta     $36                     ; 2599
         jsr     ClearScreen             ; 259B
         lda     #$0F                    ; 259E
-        sta     $38                     ; 25A0
-        sta     $39                     ; 25A2
+        sta     AthleteCol              ; 25A0
+        sta     AthleteRow              ; 25A2
         lda     #$01                    ; 25A4
         sta     $60                     ; 25A6
         ldx     #$03                    ; 25A8
         stx     $2E                     ; 25AA
         inx                             ; 25AC
-        stx     $33                     ; 25AD
+        stx     RunwayScrollStep        ; 25AD
         lda     #$16                    ; 25AF
         sta     RunSpeed_day_two        ; 25B1
         lda     #$04                    ; 25B3
@@ -2037,8 +2166,8 @@ L258B:  sta     DistanceDigits,x        ; 258B
         sta     $31                     ; 25B9
         lda     #$02                    ; 25BB
         sta     EventIndex              ; 25BD
-        jsr     L28C0                   ; 25BF
-L25C2:  jsr     L180E                   ; 25C2
+        jsr     DrawEventScreen         ; 25BF
+L25C2:  jsr     PlayTitleTune           ; 25C2
 L25C5:  lda     L2012                   ; 25C5
         ora     L205C                   ; 25C8
         beq     L25C2                   ; 25CB
@@ -2047,7 +2176,7 @@ L25C5:  lda     L2012                   ; 25C5
         jsr     ClearZeroPage           ; 25D1
         lda     #$32                    ; 25D4
         sta     $36                     ; 25D6
-        jsr     L1803                   ; 25D8
+        jsr     SilenceSound            ; 25D8
         ldx     #$04                    ; 25DB
         lda     #$30                    ; 25DD
 L25DF:  sta     L277A,x                 ; 25DF
@@ -2078,10 +2207,15 @@ L25FB:  dex                             ; 25FB
         sta     $2D                     ; 2606
         tya                             ; 2608
         and     #$08                    ; 2609
-        bne     L260E                   ; 260B
+        bne     ScrollAdvertBoards      ; 260B
         rts                             ; 260D
 
-L260E:  ldx     #$00                    ; 260E
+
+; --------------------------------------------------------------------------
+; Shift the two advert-board rows ($0DB8, $0DE0) and their colours left one character.
+; --------------------------------------------------------------------------
+ScrollAdvertBoards:
+        ldx     #$00                    ; 260E
 L2610:  lda     L0DB9,x                 ; 2610
         sta     L0DB8,x                 ; 2613
         lda     L0DE1,x                 ; 2616
@@ -2129,7 +2263,13 @@ L266C:  inc     $31                     ; 266C
 
 L266F:  .byte   $80,$8B,$95,$9D,$A6,$AE ; 266F
 L2675:  .byte   $56,$32,$42,$26,$46,$30 ; 2675
-L267B:  ldx     $33                     ; 267B
+
+; --------------------------------------------------------------------------
+; Once a frame: fine-scroll the runway by RunwayScrollStep - 1 pixels; each whole character
+; shifts the runway row and runs RunwayCellStep.
+; --------------------------------------------------------------------------
+ScrollRunway:
+        ldx     RunwayScrollStep        ; 267B
         bne     L2680                   ; 267D
         rts                             ; 267F
 
@@ -2145,12 +2285,12 @@ L2680:  cpx     #$01                    ; 2680
 
 L2690:  dex                             ; 2690
         stx     $34                     ; 2691
-        lda     $32                     ; 2693
+        lda     RunwayFineScroll        ; 2693
         sec                             ; 2695
         sbc     $34                     ; 2696
         tay                             ; 2698
         and     #$07                    ; 2699
-        sta     $32                     ; 269B
+        sta     RunwayFineScroll        ; 269B
         tya                             ; 269D
         and     #$08                    ; 269E
         bne     L26A3                   ; 26A0
@@ -2164,14 +2304,14 @@ L26A5:  lda     L0F71,x                 ; 26A5
         bne     L26A5                   ; 26AE
         lda     $51                     ; 26B0
         bne     L26B7                   ; 26B2
-        jmp     L2702                   ; 26B4
+        jmp     RunwayCellStep          ; 26B4
 
 L26B7:  lda     $4B                     ; 26B7
         beq     L26BC                   ; 26B9
         rts                             ; 26BB
 
-L26BC:  inc     $4E                     ; 26BC
-        lda     $4E                     ; 26BE
+L26BC:  inc     RunwayCellCount         ; 26BC
+        lda     RunwayCellCount         ; 26BE
         cmp     #$78                    ; 26C0
         beq     L26D8                   ; 26C2
         cmp     #$28                    ; 26C4
@@ -2187,7 +2327,7 @@ L26D2:  lda     #$1D                    ; 26D2
         rts                             ; 26D7
 
 L26D8:  lda     #$00                    ; 26D8
-        sta     $4E                     ; 26DA
+        sta     RunwayCellCount         ; 26DA
         lda     $49                     ; 26DC
         bne     L26E5                   ; 26DE
         lda     #$01                    ; 26E0
@@ -2196,7 +2336,7 @@ L26D8:  lda     #$00                    ; 26D8
 
 L26E5:  sed                             ; 26E5
         lda     $49                     ; 26E6
-        jsr     L21F9                   ; 26E8
+        jsr     BcdToAscii              ; 26E8
         stx     L0F96                   ; 26EB
         sty     L0F97                   ; 26EE
         lda     $49                     ; 26F1
@@ -2210,25 +2350,35 @@ L26E5:  sed                             ; 26E5
 L2700:  cld                             ; 2700
         rts                             ; 2701
 
-L2702:  lda     $86                     ; 2702
+
+; --------------------------------------------------------------------------
+; Per runway character: AdvanceAthlete if moving, count RunwayCellCount, AddFlightDistance.
+; --------------------------------------------------------------------------
+RunwayCellStep:
+        lda     $86                     ; 2702
         beq     L2709                   ; 2704
-        jsr     L2724                   ; 2706
-L2709:  inc     $4E                     ; 2709
-        lda     $4E                     ; 270B
+        jsr     AdvanceAthlete          ; 2706
+L2709:  inc     RunwayCellCount         ; 2709
+        lda     RunwayCellCount         ; 270B
         cmp     #$0E                    ; 270D
         beq     L271A                   ; 270F
-        jsr     L3236                   ; 2711
+        jsr     AddFlightDistance       ; 2711
         lda     #$20                    ; 2714
         sta     L0F97                   ; 2716
         rts                             ; 2719
 
 L271A:  lda     #$00                    ; 271A
-        sta     $4E                     ; 271C
+        sta     RunwayCellCount         ; 271C
         lda     #$1D                    ; 271E
         sta     L0F97                   ; 2720
         rts                             ; 2723
 
-L2724:  lda     $4C                     ; 2724
+
+; --------------------------------------------------------------------------
+; AthleteX - 2 and redraw the runway, until it is below $10.
+; --------------------------------------------------------------------------
+AdvanceAthlete:
+        lda     AthleteX                ; 2724
         cmp     #$10                    ; 2726
         bcs     L272F                   ; 2728
         lda     #$67                    ; 272A
@@ -2237,12 +2387,17 @@ L2724:  lda     $4C                     ; 2724
 
 L272F:  sec                             ; 272F
         sbc     #$02                    ; 2730
-        sta     $4C                     ; 2732
+        sta     AthleteX                ; 2732
         tax                             ; 2734
-        jsr     L2CAC                   ; 2735
+        jsr     DrawRunway              ; 2735
         rts                             ; 2738
 
-L2739:  lda     #$C0                    ; 2739
+
+; --------------------------------------------------------------------------
+; Character set, multicolour and the first raster line for part 2.
+; --------------------------------------------------------------------------
+SetupTed_day_two:
+        lda     #$C0                    ; 2739
         sta     TED_BITMAP_V1HI         ; 273B
         lda     #$10                    ; 273E
         sta     TED_CHARSET             ; 2740
@@ -2257,8 +2412,13 @@ L274F:  lda     TED_RASTER_CMP          ; 274F
         bpl     L274F                   ; 2755
         rts                             ; 2757
 
-L2758:  ldx     #$0C                    ; 2758
-L275A:  lda     DistanceDigits,x        ; 275A
+
+; --------------------------------------------------------------------------
+; Draw the 13 AngleDigits as two-row large digits (characters $40 + 2n) on rows 23-24.
+; --------------------------------------------------------------------------
+DrawScoreLine:
+        ldx     #$0C                    ; 2758
+L275A:  lda     AngleDigits,x           ; 275A
         and     #$0F                    ; 275D
         asl     a                       ; 275F
         adc     #$40                    ; 2760
@@ -2273,20 +2433,36 @@ L275A:  lda     DistanceDigits,x        ; 275A
 
 
 ; --------------------------------------------------------------------------
-; ASCII digits; $2774-$2778 hold the attempt's distance, compared by JudgeAttempt.
+; Two ASCII digits of the take-off angle, then AttemptDistance and Score_day_two:
+; 13 digits drawn by DrawScoreLine.
 ; --------------------------------------------------------------------------
-DistanceDigits:
+AngleDigits:
         .byte   $30                     ; 2772
 L2773:  .byte   $30                     ; 2773
-L2774:  .byte   $30                     ; 2774
+
+; --------------------------------------------------------------------------
+; Five ASCII digits, metres to hundredths (shown 000:00).
+; --------------------------------------------------------------------------
+AttemptDistance:
+        .byte   $30                     ; 2774
 L2775:  .byte   $30                     ; 2775
 L2776:  .byte   $30                     ; 2776
 L2777:  .byte   $30,$30                 ; 2777
-L2779:  .byte   $30                     ; 2779
+
+; --------------------------------------------------------------------------
+; Six ASCII digits; AddDistanceToScore adds the distance to it.
+; --------------------------------------------------------------------------
+Score_day_two:
+        .byte   $30                     ; 2779
 L277A:  .byte   $30,$30,$30,$30,$30     ; 277A
 L277F:  .byte   $10,$11,$14,$15,$16,$18,$19,$22; 277F
         .byte   $23,$24,$25,$26,$27     ; 2787
-L278C:  ldx     #$08                    ; 278C
+
+; --------------------------------------------------------------------------
+; Characters $6C/$6D and colours from $27DF for the 9 meter cells on rows 23-24.
+; --------------------------------------------------------------------------
+DrawSpeedMeterFrame:
+        ldx     #$08                    ; 278C
 L278E:  lda     #$6C                    ; 278E
         sta     L0F9E,x                 ; 2790
         clc                             ; 2793
@@ -2299,7 +2475,12 @@ L278E:  lda     #$6C                    ; 278E
         bpl     L278E                   ; 27A3
         rts                             ; 27A5
 
-L27A6:  ldx     #$00                    ; 27A6
+
+; --------------------------------------------------------------------------
+; Eight meter cells from RunSpeed_day_two: full cells for each 4, then the remainder.
+; --------------------------------------------------------------------------
+DrawSpeedMeter_day_two:
+        ldx     #$00                    ; 27A6
         lda     RunSpeed_day_two        ; 27A8
         cmp     #$04                    ; 27AA
         bcc     L27BC                   ; 27AC
@@ -2308,23 +2489,28 @@ L27A6:  ldx     #$00                    ; 27A6
         lsr     a                       ; 27B1
         tay                             ; 27B2
 L27B3:  lda     #$03                    ; 27B3
-        jsr     L27D1                   ; 27B5
+        jsr     SetSpeedCell            ; 27B5
         inx                             ; 27B8
         dey                             ; 27B9
         bne     L27B3                   ; 27BA
 L27BC:  lda     RunSpeed_day_two        ; 27BC
         and     #$03                    ; 27BE
-        jsr     L27D1                   ; 27C0
+        jsr     SetSpeedCell            ; 27C0
 L27C3:  inx                             ; 27C3
         cpx     #$08                    ; 27C4
         bcs     L27D0                   ; 27C6
         lda     #$00                    ; 27C8
-        jsr     L27D1                   ; 27CA
+        jsr     SetSpeedCell            ; 27CA
         jmp     L27C3                   ; 27CD
 
 L27D0:  rts                             ; 27D0
 
-L27D1:  asl     a                       ; 27D1
+
+; --------------------------------------------------------------------------
+; Set meter cell X to fill level A (0-3).
+; --------------------------------------------------------------------------
+SetSpeedCell:
+        asl     a                       ; 27D1
         clc                             ; 27D2
         adc     #$6C                    ; 27D3
         sta     L0F9E,x                 ; 27D5
@@ -2335,8 +2521,13 @@ L27D1:  asl     a                       ; 27D1
 
 L27DF:  .byte   $0C,$1C,$2C,$3C,$4C,$5C,$6C,$7C; 27DF
         .byte   $7C                     ; 27E7
-L27E8:  jsr     L2758                   ; 27E8
-        jsr     L278C                   ; 27EB
+
+; --------------------------------------------------------------------------
+; Print SCORE and SPEED and the fixed marks, then DrawScoreLine and the meter.
+; --------------------------------------------------------------------------
+DrawScoreLabels:
+        jsr     DrawScoreLine           ; 27E8
+        jsr     DrawSpeedMeterFrame     ; 27EB
         lda     #$56                    ; 27EE
         sta     L0FD9                   ; 27F0
         lda     #$57                    ; 27F3
@@ -2366,8 +2557,14 @@ L280E:  lda     L282C,x                 ; 280E
 
 L282C:  .byte   $53,$43,$4F,$52,$45     ; 282C
 L2831:  .byte   $53,$50,$45,$45,$44     ; 2831
-L2836:  ldx     $38                     ; 2836
-        ldy     $39                     ; 2838
+
+; --------------------------------------------------------------------------
+; Draw the athlete's 36 characters ($C6 down) at AthleteCol/AthleteRow, colour 8,
+; using the cell offsets at $289C.
+; --------------------------------------------------------------------------
+DrawAthlete_day_two:
+        ldx     AthleteCol              ; 2836
+        ldy     AthleteRow              ; 2838
         jsr     ScreenAddress           ; 283A
         ldx     #$23                    ; 283D
         lda     #$C6                    ; 283F
@@ -2382,8 +2579,13 @@ L2843:  ldy     L289C,x                 ; 2843
         bpl     L2843                   ; 2851
         rts                             ; 2853
 
-L2854:  ldx     $38                     ; 2854
-        ldy     $39                     ; 2856
+
+; --------------------------------------------------------------------------
+; Blank the athlete's 36 cells.
+; --------------------------------------------------------------------------
+EraseAthlete_day_two:
+        ldx     AthleteCol              ; 2854
+        ldy     AthleteRow              ; 2856
         jsr     ScreenAddress           ; 2858
         ldx     #$23                    ; 285B
 L285D:  ldy     L289C,x                 ; 285D
@@ -2393,31 +2595,41 @@ L285D:  ldy     L289C,x                 ; 285D
         bpl     L285D                   ; 2865
         rts                             ; 2867
 
-L2868:  lda     $60                     ; 2868
+
+; --------------------------------------------------------------------------
+; Move the athlete if $60 is set, then draw the shot (event 1) or the javelin (event 2).
+; --------------------------------------------------------------------------
+UpdateFigures:
+        lda     $60                     ; 2868
         beq     L286F                   ; 286A
-        jsr     L2881                   ; 286C
+        jsr     MoveAthlete_day_two     ; 286C
 L286F:  lda     EventIndex              ; 286F
         beq     L2880                   ; 2871
         cmp     #$01                    ; 2873
         beq     L287D                   ; 2875
-        jsr     L3123                   ; 2877
+        jsr     DrawJavelinShaft        ; 2877
         jmp     L2880                   ; 287A
 
-L287D:  jsr     L3182                   ; 287D
+L287D:  jsr     DrawShotBall            ; 287D
 L2880:  rts                             ; 2880
 
-L2881:  jsr     L2854                   ; 2881
+
+; --------------------------------------------------------------------------
+; Erase, take the new column/row from $5C/$5D, redraw if changed.
+; --------------------------------------------------------------------------
+MoveAthlete_day_two:
+        jsr     EraseAthlete_day_two    ; 2881
         lda     $5C                     ; 2884
         cmp     $5E                     ; 2886
         beq     L288E                   ; 2888
-        sta     $38                     ; 288A
+        sta     AthleteCol              ; 288A
         sta     $5E                     ; 288C
 L288E:  lda     $5D                     ; 288E
         cmp     $5F                     ; 2890
         beq     L2898                   ; 2892
-        sta     $39                     ; 2894
+        sta     AthleteRow              ; 2894
         sta     $5F                     ; 2896
-L2898:  jsr     L2836                   ; 2898
+L2898:  jsr     DrawAthlete_day_two     ; 2898
         rts                             ; 289B
 
 L289C:  .byte   $00,$01,$02,$28,$29,$2A,$50,$51; 289C
@@ -2425,7 +2637,12 @@ L289C:  .byte   $00,$01,$02,$28,$29,$2A,$50,$51; 289C
         .byte   $54,$55,$78,$79,$7A,$A0,$A1,$A2; 28AC
         .byte   $C8,$C9,$CA,$7B,$7C,$7D,$A3,$A4; 28B4
         .byte   $A5,$CB,$CC,$CD         ; 28BC
-L28C0:  jsr     L27E8                   ; 28C0
+
+; --------------------------------------------------------------------------
+; Draw the information box, its labels, ShowEventTables and the event's scenery.
+; --------------------------------------------------------------------------
+DrawEventScreen:
+        jsr     DrawScoreLabels         ; 28C0
         ldx     #$23                    ; 28C3
         lda     #$C8                    ; 28C5
 L28C7:  sta     L0C02,x                 ; 28C7
@@ -2460,10 +2677,10 @@ L28F6:  lda     L2935,x                 ; 28F6
         dex                             ; 290E
         bpl     L28F6                   ; 290F
         jsr     ShowEventTables         ; 2911
-        jsr     L2BB4                   ; 2914
+        jsr     ColourTitleRows         ; 2914
         ldx     #$9E                    ; 2917
         ldy     #$29                    ; 2919
-        jsr     L2BFB                   ; 291B
+        jsr     DrawPieceList           ; 291B
         lda     $2E                     ; 291E
         pha                             ; 2920
         lda     #$00                    ; 2921
@@ -2471,7 +2688,7 @@ L28F6:  lda     L2935,x                 ; 28F6
         ldx     #$26                    ; 2925
 L2927:  txa                             ; 2927
         pha                             ; 2928
-        jsr     L260E                   ; 2929
+        jsr     ScrollAdvertBoards      ; 2929
         pla                             ; 292C
         tax                             ; 292D
         dex                             ; 292E
@@ -2561,14 +2778,14 @@ SpeedUp_day_two:
         rts                             ; 2A10
 
 L2A11:  inc     RunSpeed_day_two        ; 2A11
-        lda     $38                     ; 2A13
+        lda     AthleteCol              ; 2A13
         cmp     #$0E                    ; 2A15
         bcs     L2A30                   ; 2A17
         dec     $5B                     ; 2A19
         bne     L2A30                   ; 2A1B
         lda     #$06                    ; 2A1D
         sta     $5B                     ; 2A1F
-        ldx     $38                     ; 2A21
+        ldx     AthleteCol              ; 2A21
         inx                             ; 2A23
         stx     $5C                     ; 2A24
         ldx     $6F                     ; 2A26
@@ -2584,7 +2801,7 @@ L2A30:  rts                             ; 2A30
 ; Every 2 (joystick) or 3 (keys) calls, RunSpeed_day_two - 1 down to 0.
 ; --------------------------------------------------------------------------
 SpeedDecay_day_two:
-        lda     $7F                     ; 2A31
+        lda     TitleMode               ; 2A31
         bne     L2A39                   ; 2A33
         dec     $57                     ; 2A35
         beq     L2A3A                   ; 2A37
@@ -2625,7 +2842,12 @@ L2A69:  .byte   $30                     ; 2A69
 BestTable:
         .byte   $30,$30,$30,$30,$30,$30,$30,$30; 2A6A
         .byte   $30,$30,$30,$30,$30,$30 ; 2A72
-L2A78:  .byte   $30                     ; 2A78
+
+; --------------------------------------------------------------------------
+; Six ASCII digits; replaced by Score_day_two when that is higher.
+; --------------------------------------------------------------------------
+HighScore:
+        .byte   $30                     ; 2A78
 L2A79:  .byte   $30,$30,$30,$30,$30     ; 2A79
 
 ; --------------------------------------------------------------------------
@@ -2653,13 +2875,13 @@ L2AA4:  cpx     #$06                    ; 2AA4
         bne     L2A85                   ; 2AA6
         lda     EventIndex              ; 2AA8
         clc                             ; 2AAA
-        adc     $7F                     ; 2AAB
+        adc     TitleMode               ; 2AAB
         tax                             ; 2AAD
-        ldy     L2B24,x                 ; 2AAE
-        lda     L2AF7,y                 ; 2AB1
+        ldy     TitleOffsets,x          ; 2AAE
+        lda     TitleGlyphs,y           ; 2AB1
         tax                             ; 2AB4
         iny                             ; 2AB5
-L2AB6:  lda     L2AF7,y                 ; 2AB6
+L2AB6:  lda     TitleGlyphs,y           ; 2AB6
         beq     L2ACC                   ; 2AB9
         cmp     #$FF                    ; 2ABB
         beq     L2AD1                   ; 2ABD
@@ -2674,7 +2896,7 @@ L2ACC:  inx                             ; 2ACC
         inx                             ; 2ACD
         iny                             ; 2ACE
         bne     L2AB6                   ; 2ACF
-L2AD1:  lda     $7F                     ; 2AD1
+L2AD1:  lda     TitleMode               ; 2AD1
         beq     L2AF2                   ; 2AD3
         ldx     #$04                    ; 2AD5
 L2AD7:  lda     L2A79,x                 ; 2AD7
@@ -2692,14 +2914,30 @@ L2AE2:  lda     L2AF3,x                 ; 2AE2
 L2AF2:  rts                             ; 2AF2
 
 L2AF3:  .byte   $48,$49,$47,$48         ; 2AF3
-L2AF7:  .byte   $09,$01,$02,$03,$04,$00,$05,$06; 2AF7
+
+; --------------------------------------------------------------------------
+; Big-font titles as glyph numbers: a start column, then glyphs, $00 a space, $FF the end.
+; LONG JUMP, SHOT PUT, JAVELIN, FIRE TO START.
+; --------------------------------------------------------------------------
+TitleGlyphs:
+        .byte   $09,$01,$02,$03,$04,$00,$05,$06; 2AF7
         .byte   $07,$08,$FF,$0A,$0D,$0E,$02,$0F; 2AFF
         .byte   $00,$08,$06,$0F,$FF,$0B,$05,$09; 2B07
         .byte   $0A,$0B,$01,$0C,$03,$FF,$05,$C7; 2B0F
         .byte   $0C,$C8,$0B,$00,$0F,$02,$00,$0D; 2B17
         .byte   $0F,$09,$C8,$0F,$FF     ; 2B1F
-L2B24:  .byte   $00,$0B,$15,$1E         ; 2B24
-L2B28:  lda     $7F                     ; 2B28
+
+; --------------------------------------------------------------------------
+; Offset in TitleGlyphs of each title: 0, 11, 21, 30 (EventIndex + TitleMode).
+; --------------------------------------------------------------------------
+TitleOffsets:
+        .byte   $00,$0B,$15,$1E         ; 2B24
+
+; --------------------------------------------------------------------------
+; On the FIRE TO START screen, rotate the colours of the title rows.
+; --------------------------------------------------------------------------
+CycleTitleColours:
+        lda     TitleMode               ; 2B28
         bne     L2B2D                   ; 2B2A
         rts                             ; 2B2C
 
@@ -2752,7 +2990,12 @@ L2B79:  ldx     #$01                    ; 2B79
         sta     L08A1                   ; 2B92
         rts                             ; 2B95
 
-L2B96:  inc     $48                     ; 2B96
+
+; --------------------------------------------------------------------------
+; Step the luminance of row 1's colours through the table at $2BEB.
+; --------------------------------------------------------------------------
+PulseTitleColour:
+        inc     $48                     ; 2B96
         lda     $48                     ; 2B98
         and     #$0F                    ; 2B9A
         sta     $48                     ; 2B9C
@@ -2768,7 +3011,12 @@ L2BA6:  lda     L082A,x                 ; 2BA6
         bpl     L2BA6                   ; 2BB1
         rts                             ; 2BB3
 
-L2BB4:  lda     $7F                     ; 2BB4
+
+; --------------------------------------------------------------------------
+; On the FIRE TO START screen, set the title rows' colours from $2BCB.
+; --------------------------------------------------------------------------
+ColourTitleRows:
+        lda     TitleMode               ; 2BB4
         bne     L2BB9                   ; 2BB6
         rts                             ; 2BB8
 
@@ -2789,7 +3037,12 @@ L2BCB:  .byte   $02,$12,$22,$32,$42,$52,$62,$72; 2BCB
         .byte   $00,$10,$20,$30,$40,$50,$60,$70; 2BE3
 L2BEB:  .byte   $00,$10,$20,$30,$40,$50,$60,$70; 2BEB
         .byte   $70,$60,$50,$40,$30,$20,$10,$00; 2BF3
-L2BFB:  stx     $25                     ; 2BFB
+
+; --------------------------------------------------------------------------
+; Draw a list of (screen address, character, ...) entries from Y:X until $FF.
+; --------------------------------------------------------------------------
+DrawPieceList:
+        stx     $25                     ; 2BFB
         sty     $26                     ; 2BFD
 L2BFF:  ldy     #$00                    ; 2BFF
         lda     ($25),y                 ; 2C01
@@ -2820,7 +3073,12 @@ L2C17:  sta     ($23),y                 ; 2C17
 
 L2C2C:  rts                             ; 2C2C
 
-L2C2D:  ldx     EventIndex              ; 2C2D
+
+; --------------------------------------------------------------------------
+; Set the athlete's frames and position for EventIndex from the tables at $2C77.
+; --------------------------------------------------------------------------
+InitAthlete_day_two:
+        ldx     EventIndex              ; 2C2D
         lda     L2C77,x                 ; 2C2F
         sta     $49                     ; 2C32
         txa                             ; 2C34
@@ -2842,7 +3100,7 @@ L2C2D:  ldx     EventIndex              ; 2C2D
         sta     $70                     ; 2C54
         sta     $72                     ; 2C56
         lda     #$77                    ; 2C58
-        sta     $4E                     ; 2C5A
+        sta     RunwayCellCount         ; 2C5A
         lda     EventIndex              ; 2C5C
         sta     $7B                     ; 2C5E
         beq     L2C66                   ; 2C60
@@ -2874,21 +3132,26 @@ L2C8F:  lda     #$00                    ; 2C8F
         lda     #$01                    ; 2C93
         sta     $4B                     ; 2C95
         lda     #$9B                    ; 2C97
-        sta     $4C                     ; 2C99
+        sta     AthleteX                ; 2C99
         rts                             ; 2C9B
 
 L2C9C:  lda     $51                     ; 2C9C
         bne     L2CA1                   ; 2C9E
         rts                             ; 2CA0
 
-L2CA1:  ldx     $4C                     ; 2CA1
+L2CA1:  ldx     AthleteX                ; 2CA1
         cpx     #$50                    ; 2CA3
-        bcs     L2CAC                   ; 2CA5
+        bcs     DrawRunway              ; 2CA5
         lda     #$FF                    ; 2CA7
         sta     AttemptResult           ; 2CA9
         rts                             ; 2CAB
 
-L2CAC:  txa                             ; 2CAC
+
+; --------------------------------------------------------------------------
+; Draw the athlete's position marker / runway cells on rows 22-23 for X (= $4C).
+; --------------------------------------------------------------------------
+DrawRunway:
+        txa                             ; 2CAC
         pha                             ; 2CAD
         and     #$03                    ; 2CAE
         sta     $4D                     ; 2CB0
@@ -2919,8 +3182,8 @@ L2CC3:  tya                             ; 2CC3
         beq     L2CE9                   ; 2CDF
         cmp     #$0F                    ; 2CE1
         bcc     L2CE7                   ; 2CE3
-        dec     $4C                     ; 2CE5
-L2CE7:  dec     $4C                     ; 2CE7
+        dec     AthleteX                ; 2CE5
+L2CE7:  dec     AthleteX                ; 2CE7
 L2CE9:  lda     #$1B                    ; 2CE9
         sta     L0EF8,x                 ; 2CEB
         sta     L0F1F,x                 ; 2CEE
@@ -2982,7 +3245,12 @@ L2D3C:  .byte   $06,$00,$06,$00,$18,$00,$18,$00; 2D3C
         .byte   $FF,$07,$FF,$1F,$FF,$1F,$FF,$01; 2DA4
         .byte   $FF,$01,$FF,$07,$FF,$07,$FF,$1F; 2DAC
         .byte   $FF,$1F,$FF,$7F,$FF,$7F,$FF; 2DB4
-L2DBB:  lda     $51                     ; 2DBB
+
+; --------------------------------------------------------------------------
+; From RunSpeed_day_two, set the runway scroll step $33 while $51 is set.
+; --------------------------------------------------------------------------
+SetRunwayScroll:
+        lda     $51                     ; 2DBB
         bne     L2DC0                   ; 2DBD
         rts                             ; 2DBF
 
@@ -2993,7 +3261,7 @@ L2DC0:  lda     RunSpeed_day_two        ; 2DC0
         pha                             ; 2DC6
         clc                             ; 2DC7
         adc     #$01                    ; 2DC8
-        sta     $33                     ; 2DCA
+        sta     RunwayScrollStep        ; 2DCA
         pla                             ; 2DCC
         lsr     a                       ; 2DCD
         clc                             ; 2DCE
@@ -3001,11 +3269,16 @@ L2DC0:  lda     RunSpeed_day_two        ; 2DC0
         sta     $2E                     ; 2DD1
         rts                             ; 2DD3
 
-L2DD4:  sta     $33                     ; 2DD4
+L2DD4:  sta     RunwayScrollStep        ; 2DD4
         sta     $2E                     ; 2DD6
         rts                             ; 2DD8
 
-L2DD9:  ldx     #$02                    ; 2DD9
+
+; --------------------------------------------------------------------------
+; Colour the three attempt marks: colour $71 qualified, $42 failed; untaken left.
+; --------------------------------------------------------------------------
+ShowAttemptMarks:
+        ldx     #$02                    ; 2DD9
 L2DDB:  lda     #$71                    ; 2DDB
         ldy     AttemptResults,x        ; 2DDD
         cpy     #$FF                    ; 2DDF
@@ -3026,15 +3299,26 @@ L2DF4:  dex                             ; 2DF4
         bpl     L2DDB                   ; 2DF5
         rts                             ; 2DF7
 
-L2DF8:  lda     RunSpeed_day_two        ; 2DF8
+
+; --------------------------------------------------------------------------
+; While moving, count $58 down and step the run cycle at 0.
+; --------------------------------------------------------------------------
+RunFrameTimer:
+        lda     RunSpeed_day_two        ; 2DF8
         bne     L2DFD                   ; 2DFA
         rts                             ; 2DFC
 
 L2DFD:  dec     $58                     ; 2DFD
-        beq     L2E02                   ; 2DFF
+        beq     StepRunFrame_day_two    ; 2DFF
         rts                             ; 2E01
 
-L2E02:  lda     RunSpeed_day_two        ; 2E02
+
+; --------------------------------------------------------------------------
+; Set the frame delay from RunSpeed_day_two and step the run cycle (9 frames for the
+; long jump); footstep sound on the first frame.
+; --------------------------------------------------------------------------
+StepRunFrame_day_two:
+        lda     RunSpeed_day_two        ; 2E02
         lsr     a                       ; 2E04
         lsr     a                       ; 2E05
         eor     #$07                    ; 2E06
@@ -3045,9 +3329,9 @@ L2E02:  lda     RunSpeed_day_two        ; 2E02
         lda     $5A                     ; 2E0F
         cmp     #$01                    ; 2E11
         bne     L2E1C                   ; 2E13
-        lda     $7F                     ; 2E15
+        lda     TitleMode               ; 2E15
         bne     L2E1C                   ; 2E17
-        jsr     L182E                   ; 2E19
+        jsr     PlayFootstep_day_two    ; 2E19
 L2E1C:  lda     EventIndex              ; 2E1C
         beq     L2E24                   ; 2E1E
         ldx     $7B                     ; 2E20
@@ -3118,7 +3402,13 @@ L2EA5:  .byte   $60                     ; 2EA5
 L2EA6:  .byte   $3B,$F0,$3B,$80,$3C,$10,$3D,$A0; 2EA6
         .byte   $3D,$30,$3E,$30,$35,$50,$36,$70; 2EAE
         .byte   $37                     ; 2EB6
-L2EB7:  lda     #$10                    ; 2EB7
+
+; --------------------------------------------------------------------------
+; At the line: count the angle up from 20 while fire is held (max 83), showing it,
+; then jump to this event's handler through EventJump_day_two.
+; --------------------------------------------------------------------------
+SetTakeOffAngle:
+        lda     #$10                    ; 2EB7
         sta     $20                     ; 2EB9
         ldx     #$4F                    ; 2EBB
         lda     #$20                    ; 2EBD
@@ -3126,25 +3416,25 @@ L2EBF:  sta     L0DB8,x                 ; 2EBF
         dex                             ; 2EC2
         bpl     L2EBF                   ; 2EC3
         lda     #$00                    ; 2EC5
-        sta     $4E                     ; 2EC7
+        sta     RunwayCellCount         ; 2EC7
         lda     #$14                    ; 2EC9
-        sta     $66                     ; 2ECB
+        sta     Angle                   ; 2ECB
         lda     #$20                    ; 2ECD
-        sta     $65                     ; 2ECF
+        sta     AngleBcd                ; 2ECF
 L2ED1:  ldx     #$03                    ; 2ED1
         jsr     DelayXY                 ; 2ED3
         sed                             ; 2ED6
-        lda     $65                     ; 2ED7
+        lda     AngleBcd                ; 2ED7
         cmp     #$83                    ; 2ED9
         beq     L2EF4                   ; 2EDB
         clc                             ; 2EDD
         adc     #$01                    ; 2EDE
-        sta     $65                     ; 2EE0
-        inc     $66                     ; 2EE2
+        sta     AngleBcd                ; 2EE0
+        inc     Angle                   ; 2EE2
         cld                             ; 2EE4
-        lda     $65                     ; 2EE5
-        jsr     L21F9                   ; 2EE7
-        stx     DistanceDigits          ; 2EEA
+        lda     AngleBcd                ; 2EE5
+        jsr     BcdToAscii              ; 2EE7
+        stx     AngleDigits             ; 2EEA
         sty     L2773                   ; 2EED
         bit     InputBits               ; 2EF0
         bmi     L2ED1                   ; 2EF2
@@ -3156,13 +3446,13 @@ L2EF4:  cld                             ; 2EF4
         sta     L2F12                   ; 2EFC
         lda     EventJumpTable_day_two+1,x; 2EFF
         sta     L2F13                   ; 2F02
-        lda     $4C                     ; 2F05
+        lda     AthleteX                ; 2F05
         lsr     a                       ; 2F07
         lsr     a                       ; 2F08
         sec                             ; 2F09
         sbc     #$13                    ; 2F0A
-        sta     $78                     ; 2F0C
-        jsr     L2F1A                   ; 2F0E
+        sta     TakeOffDelay            ; 2F0C
+        jsr     ClassifyAngle           ; 2F0E
 
 ; --------------------------------------------------------------------------
 ; Self-modified JMP: operand set from EventJumpTable_day_two.
@@ -3170,28 +3460,38 @@ L2EF4:  cld                             ; 2EF4
 EventJump_day_two:
 L2F12           := * + 1
 L2F13           := * + 2
-        jmp     L2F2B                   ; 2F11
+        jmp     LongJump                ; 2F11
 
 
 ; --------------------------------------------------------------------------
 ; Per-event handler, indexed by $42; patched into the JMP at $2F11 (3 entries)
 ; --------------------------------------------------------------------------
 EventJumpTable_day_two:
-        .addr   L2F2B                   ; 2F14
-        .addr   L300C                   ; 2F16
-        .addr   L308C                   ; 2F18
-L2F1A:  ldy     #$03                    ; 2F1A
-        lda     $66                     ; 2F1C
+        .addr   LongJump                ; 2F14
+        .addr   ShotPut                 ; 2F16
+        .addr   Javelin                 ; 2F18
+
+; --------------------------------------------------------------------------
+; Set AngleClass from Angle.
+; --------------------------------------------------------------------------
+ClassifyAngle:
+        ldy     #$03                    ; 2F1A
+        lda     Angle                   ; 2F1C
         cmp     #$37                    ; 2F1E
         bcs     L2F28                   ; 2F20
         dey                             ; 2F22
         cmp     #$23                    ; 2F23
         bcs     L2F28                   ; 2F25
         dey                             ; 2F27
-L2F28:  sty     $79                     ; 2F28
+L2F28:  sty     AngleClass              ; 2F28
         rts                             ; 2F2A
 
-L2F2B:  lda     #$01                    ; 2F2B
+
+; --------------------------------------------------------------------------
+; Long jump flight: height and length from Angle and TakeOffSpeed.
+; --------------------------------------------------------------------------
+LongJump:
+        lda     #$01                    ; 2F2B
         sta     $60                     ; 2F2D
         sta     $86                     ; 2F2F
         lda     #$00                    ; 2F31
@@ -3200,8 +3500,8 @@ L2F2B:  lda     #$01                    ; 2F2B
         sta     $84                     ; 2F37
         lda     #$06                    ; 2F39
         sta     $85                     ; 2F3B
-        jsr     L2E02                   ; 2F3D
-        lda     $66                     ; 2F40
+        jsr     StepRunFrame_day_two    ; 2F3D
+        lda     Angle                   ; 2F40
         sec                             ; 2F42
         sbc     #$14                    ; 2F43
         eor     #$3F                    ; 2F45
@@ -3210,16 +3510,16 @@ L2F2B:  lda     #$01                    ; 2F2B
         lsr     a                       ; 2F49
         clc                             ; 2F4A
         adc     #$07                    ; 2F4B
-        sta     $74                     ; 2F4D
+        sta     PeakRow                 ; 2F4D
         cmp     #$0A                    ; 2F4F
         bcs     L2F5B                   ; 2F51
-        lsr     $67                     ; 2F53
+        lsr     TakeOffSpeed            ; 2F53
         lda     #$05                    ; 2F55
         sta     $75                     ; 2F57
         bne     L2F76                   ; 2F59
 L2F5B:  lda     #$00                    ; 2F5B
         sta     $75                     ; 2F5D
-        lda     $67                     ; 2F5F
+        lda     TakeOffSpeed            ; 2F5F
         asl     a                       ; 2F61
         asl     a                       ; 2F62
         asl     a                       ; 2F63
@@ -3235,22 +3535,22 @@ L2F5B:  lda     #$00                    ; 2F5B
         clc                             ; 2F71
         adc     #$02                    ; 2F72
         sta     $75                     ; 2F74
-L2F76:  lda     $67                     ; 2F76
+L2F76:  lda     TakeOffSpeed            ; 2F76
         and     #$1C                    ; 2F78
         lsr     a                       ; 2F7A
         clc                             ; 2F7B
         adc     #$02                    ; 2F7C
-        sta     $82                     ; 2F7E
+        sta     HangTime                ; 2F7E
         lda     $75                     ; 2F80
-        sta     $33                     ; 2F82
+        sta     RunwayScrollStep        ; 2F82
         lda     #$00                    ; 2F84
-        sta     $83                     ; 2F86
-L2F88:  lda     $83                     ; 2F88
+        sta     FlightPhase             ; 2F86
+L2F88:  lda     FlightPhase             ; 2F88
         bne     L2FA3                   ; 2F8A
         lda     $5D                     ; 2F8C
-        cmp     $74                     ; 2F8E
+        cmp     PeakRow                 ; 2F8E
         bcc     L2FB9                   ; 2F90
-        jsr     L2FF4                   ; 2F92
+        jsr     Every7Rising            ; 2F92
         lda     $5D                     ; 2F95
         sbc     #$00                    ; 2F97
         sta     $5D                     ; 2F99
@@ -3262,14 +3562,14 @@ L2FA3:  cmp     #$01                    ; 2FA3
         beq     L2FED                   ; 2FA5
         lda     $5D                     ; 2FA7
         cmp     #$0F                    ; 2FA9
-        bcs     L2FE6                   ; 2FAB
-        jsr     L3000                   ; 2FAD
+        bcs     Landed                  ; 2FAB
+        jsr     Every7Falling           ; 2FAD
         lda     $5D                     ; 2FB0
         adc     #$01                    ; 2FB2
         sta     $5D                     ; 2FB4
         jmp     L2F9B                   ; 2FB6
 
-L2FB9:  ldx     $83                     ; 2FB9
+L2FB9:  ldx     FlightPhase             ; 2FB9
         inx                             ; 2FBB
         cpx     #$02                    ; 2FBC
         bne     L2FCB                   ; 2FBE
@@ -3277,9 +3577,9 @@ L2FB9:  ldx     $83                     ; 2FB9
         cmp     #$67                    ; 2FC2
         beq     L2FCB                   ; 2FC4
         lda     #$01                    ; 2FC6
-        sta     $82                     ; 2FC8
+        sta     HangTime                ; 2FC8
         dex                             ; 2FCA
-L2FCB:  stx     $83                     ; 2FCB
+L2FCB:  stx     FlightPhase             ; 2FCB
         txa                             ; 2FCD
         asl     a                       ; 2FCE
         tax                             ; 2FCF
@@ -3287,20 +3587,29 @@ L2FCB:  stx     $83                     ; 2FCB
         sta     $84                     ; 2FD3
         lda     L2FE1,x                 ; 2FD5
         sta     $85                     ; 2FD8
-        jsr     L2E02                   ; 2FDA
+        jsr     StepRunFrame_day_two    ; 2FDA
         jmp     L2F9B                   ; 2FDD
 
 L2FE0:  .byte   $00                     ; 2FE0
 L2FE1:  .byte   $00,$0D,$07,$0E,$08     ; 2FE1
-L2FE6:  lda     #$00                    ; 2FE6
-        sta     $33                     ; 2FE8
+
+; --------------------------------------------------------------------------
+; Stop the runway and judge the attempt.
+; --------------------------------------------------------------------------
+Landed: lda     #$00                    ; 2FE6
+        sta     RunwayScrollStep        ; 2FE8
         jmp     JudgeAttempt            ; 2FEA
 
-L2FED:  dec     $82                     ; 2FED
+L2FED:  dec     HangTime                ; 2FED
         beq     L2FB9                   ; 2FEF
         jmp     L2F9B                   ; 2FF1
 
-L2FF4:  dec     $87                     ; 2FF4
+
+; --------------------------------------------------------------------------
+; Carry set every 7th call (rising).
+; --------------------------------------------------------------------------
+Every7Rising:
+        dec     $87                     ; 2FF4
         beq     L2FFA                   ; 2FF6
         clc                             ; 2FF8
         rts                             ; 2FF9
@@ -3310,7 +3619,12 @@ L2FFA:  lda     #$07                    ; 2FFA
         sec                             ; 2FFE
         rts                             ; 2FFF
 
-L3000:  dec     $87                     ; 3000
+
+; --------------------------------------------------------------------------
+; Carry clear every 7th call (falling).
+; --------------------------------------------------------------------------
+Every7Falling:
+        dec     $87                     ; 3000
         beq     L3006                   ; 3002
         sec                             ; 3004
         rts                             ; 3005
@@ -3320,19 +3634,23 @@ L3006:  lda     #$07                    ; 3006
         clc                             ; 300A
         rts                             ; 300B
 
-L300C:  lda     #$0B                    ; 300C
+
+; --------------------------------------------------------------------------
+; Shot-put throw: flight from Angle and TakeOffSpeed.
+; --------------------------------------------------------------------------
+ShotPut:lda     #$0B                    ; 300C
         sta     $7B                     ; 300E
-        jsr     L2E02                   ; 3010
-        lda     $66                     ; 3013
+        jsr     StepRunFrame_day_two    ; 3010
+        lda     Angle                   ; 3013
         sec                             ; 3015
         sbc     #$14                    ; 3016
         eor     #$3F                    ; 3018
         clc                             ; 301A
         adc     #$33                    ; 301B
-        sta     $74                     ; 301D
+        sta     PeakRow                 ; 301D
         lda     #$00                    ; 301F
         sta     $75                     ; 3021
-        lda     $67                     ; 3023
+        lda     TakeOffSpeed            ; 3023
         asl     a                       ; 3025
         asl     a                       ; 3026
         asl     a                       ; 3027
@@ -3351,25 +3669,25 @@ L300C:  lda     #$0B                    ; 300C
         and     #$03                    ; 303A
         tay                             ; 303C
         iny                             ; 303D
-        lda     $66                     ; 303E
+        lda     Angle                   ; 303E
         cmp     #$37                    ; 3040
         bcs     L3048                   ; 3042
         cmp     #$23                    ; 3044
         bcs     L304A                   ; 3046
 L3048:  sty     $75                     ; 3048
 L304A:  lda     $75                     ; 304A
-        sta     $33                     ; 304C
+        sta     RunwayScrollStep        ; 304C
         jsr     L31F9                   ; 304E
         lda     #$00                    ; 3051
         sta     $76                     ; 3053
 L3055:  lda     $76                     ; 3055
         bne     L306E                   ; 3057
         lda     $72                     ; 3059
-        cmp     $74                     ; 305B
+        cmp     PeakRow                 ; 305B
         bcc     L307E                   ; 305D
         lda     $72                     ; 305F
         sec                             ; 3061
-        sbc     $79                     ; 3062
+        sbc     AngleClass              ; 3062
         sta     $72                     ; 3064
 L3066:  ldx     #$07                    ; 3066
         jsr     DelayXY                 ; 3068
@@ -3380,7 +3698,7 @@ L306E:  lda     $72                     ; 306E
         bcs     L3085                   ; 3072
         lda     $72                     ; 3074
         clc                             ; 3076
-        adc     $79                     ; 3077
+        adc     AngleClass              ; 3077
         sta     $72                     ; 3079
         jmp     L3066                   ; 307B
 
@@ -3389,19 +3707,23 @@ L307E:  lda     #$01                    ; 307E
         jmp     L3066                   ; 3082
 
 L3085:  lda     #$00                    ; 3085
-        sta     $33                     ; 3087
+        sta     RunwayScrollStep        ; 3087
         jmp     JudgeAttempt            ; 3089
 
-L308C:  lda     #$0B                    ; 308C
+
+; --------------------------------------------------------------------------
+; Javelin throw: flight from Angle and TakeOffSpeed.
+; --------------------------------------------------------------------------
+Javelin:lda     #$0B                    ; 308C
         sta     $7B                     ; 308E
-        jsr     L2E02                   ; 3090
-        lda     $66                     ; 3093
+        jsr     StepRunFrame_day_two    ; 3090
+        lda     Angle                   ; 3093
         sec                             ; 3095
         sbc     #$14                    ; 3096
         eor     #$3F                    ; 3098
         clc                             ; 309A
         adc     #$33                    ; 309B
-        sta     $74                     ; 309D
+        sta     PeakRow                 ; 309D
         cmp     #$44                    ; 309F
         bcs     L30A9                   ; 30A1
         lda     #$04                    ; 30A3
@@ -3409,7 +3731,7 @@ L308C:  lda     #$0B                    ; 308C
         bne     L30C4                   ; 30A7
 L30A9:  lda     #$00                    ; 30A9
         sta     $75                     ; 30AB
-        lda     $67                     ; 30AD
+        lda     TakeOffSpeed            ; 30AD
         asl     a                       ; 30AF
         asl     a                       ; 30B0
         asl     a                       ; 30B1
@@ -3425,25 +3747,25 @@ L30A9:  lda     #$00                    ; 30A9
         clc                             ; 30BF
         adc     #$02                    ; 30C0
         sta     $75                     ; 30C2
-L30C4:  lda     $67                     ; 30C4
+L30C4:  lda     TakeOffSpeed            ; 30C4
         and     #$1C                    ; 30C6
         lsr     a                       ; 30C8
         clc                             ; 30C9
         adc     #$06                    ; 30CA
         sta     $7C                     ; 30CC
         lda     $75                     ; 30CE
-        sta     $33                     ; 30D0
+        sta     RunwayScrollStep        ; 30D0
         jsr     L31F9                   ; 30D2
         lda     #$00                    ; 30D5
         sta     $77                     ; 30D7
 L30D9:  lda     $77                     ; 30D9
         bne     L30F2                   ; 30DB
         lda     $6B                     ; 30DD
-        cmp     $74                     ; 30DF
+        cmp     PeakRow                 ; 30DF
         bcc     L3110                   ; 30E1
         lda     $6B                     ; 30E3
         sec                             ; 30E5
-        sbc     $79                     ; 30E6
+        sbc     AngleClass              ; 30E6
         sta     $6B                     ; 30E8
 L30EA:  ldx     #$0A                    ; 30EA
         jsr     DelayXY                 ; 30EC
@@ -3461,7 +3783,7 @@ L3100:  lda     $6B                     ; 3100
         bcs     L3115                   ; 3104
         lda     $6B                     ; 3106
         clc                             ; 3108
-        adc     $79                     ; 3109
+        adc     AngleClass              ; 3109
         sta     $6B                     ; 310B
         jmp     L30EA                   ; 310D
 
@@ -3469,14 +3791,19 @@ L3110:  inc     $77                     ; 3110
         jmp     L30EA                   ; 3112
 
 L3115:  lda     #$00                    ; 3115
-        sta     $33                     ; 3117
+        sta     RunwayScrollStep        ; 3117
         jmp     JudgeAttempt            ; 3119
 
 L311C:  dec     $7C                     ; 311C
         beq     L3110                   ; 311E
         jmp     L30EA                   ; 3120
 
-L3123:  lda     $6C                     ; 3123
+
+; --------------------------------------------------------------------------
+; Event 2: draw the javelin's 10 cells at $68/$69 (cell offsets $3174).
+; --------------------------------------------------------------------------
+DrawJavelinShaft:
+        lda     $6C                     ; 3123
         bne     L3128                   ; 3125
         rts                             ; 3127
 
@@ -3525,7 +3852,12 @@ L3163:  ldy     L3174,x                 ; 3163
 L3174:  .byte   $00,$28,$01,$29,$02,$2A,$03,$2B; 3174
         .byte   $04,$2C                 ; 317C
 L317E:  .byte   $7F,$89,$93,$9D         ; 317E
-L3182:  lda     $73                     ; 3182
+
+; --------------------------------------------------------------------------
+; Event 1: draw the shot at $6F/$70.
+; --------------------------------------------------------------------------
+DrawShotBall:
+        lda     $73                     ; 3182
         bne     L3187                   ; 3184
         rts                             ; 3186
 
@@ -3589,27 +3921,27 @@ L31E2:  lda     #$70                    ; 31E2
         rts                             ; 31F0
 
 L31F1:  .byte   $18,$7E,$7E,$FF,$FF,$7E,$7E,$18; 31F1
-L31F9:  lda     $38                     ; 31F9
+L31F9:  lda     AthleteCol              ; 31F9
         bne     L3203                   ; 31FB
-        jsr     L2854                   ; 31FD
+        jsr     EraseAthlete_day_two    ; 31FD
         jmp     L322B                   ; 3200
 
-L3203:  jsr     L2854                   ; 3203
-        dec     $38                     ; 3206
+L3203:  jsr     EraseAthlete_day_two    ; 3203
+        dec     AthleteCol              ; 3206
         lda     $72                     ; 3208
         sec                             ; 320A
-        sbc     $79                     ; 320B
+        sbc     AngleClass              ; 320B
         sta     $72                     ; 320D
         dec     $6B                     ; 320F
-        jsr     L2836                   ; 3211
-        lda     $4C                     ; 3214
+        jsr     DrawAthlete_day_two     ; 3211
+        lda     AthleteX                ; 3214
         cmp     #$08                    ; 3216
         bcc     L3223                   ; 3218
         sec                             ; 321A
         sbc     #$03                    ; 321B
-        sta     $4C                     ; 321D
+        sta     AthleteX                ; 321D
         tax                             ; 321F
-        jsr     L2CAC                   ; 3220
+        jsr     DrawRunway              ; 3220
 L3223:  ldx     #$0A                    ; 3223
         jsr     DelayXY                 ; 3225
         jmp     L31F9                   ; 3228
@@ -3621,13 +3953,19 @@ L322F:  sta     L0EF8,x                 ; 322F
         bpl     L322F                   ; 3233
         rts                             ; 3235
 
-L3236:  lda     $7F                     ; 3236
+
+; --------------------------------------------------------------------------
+; After TakeOffDelay cells, add the event's tenths (DistanceRates) and 0-1 or 0-3 random
+; hundredths (TED timer 1) to AttemptDistance.
+; --------------------------------------------------------------------------
+AddFlightDistance:
+        lda     TitleMode               ; 3236
         beq     L323B                   ; 3238
         rts                             ; 323A
 
-L323B:  lda     $78                     ; 323B
+L323B:  lda     TakeOffDelay            ; 323B
         beq     L3242                   ; 323D
-        dec     $78                     ; 323F
+        dec     TakeOffDelay            ; 323F
         rts                             ; 3241
 
 L3242:  lda     EventIndex              ; 3242
@@ -3635,7 +3973,7 @@ L3242:  lda     EventIndex              ; 3242
         clc                             ; 3245
         adc     EventIndex              ; 3246
         tax                             ; 3248
-        lda     L326D,x                 ; 3249
+        lda     DistanceRates,x         ; 3249
         pha                             ; 324C
         lda     L326E,x                 ; 324D
         sta     L325D                   ; 3250
@@ -3648,28 +3986,39 @@ L325D           := * + 1
 L3260           := * + 1
         adc     #$00                    ; 325F
         ldy     #$06                    ; 3261
-        jsr     L3277                   ; 3263
+        jsr     AddDigit                ; 3263
         pla                             ; 3266
         ldy     #$05                    ; 3267
-        jsr     L3277                   ; 3269
+        jsr     AddDigit                ; 3269
         rts                             ; 326C
 
-L326D:  .byte   $01                     ; 326D
+
+; --------------------------------------------------------------------------
+; Per event, 3 bytes: tenths per cell, random mask, hundredths base. Long jump 1/1/0,
+; shot-put 2/3/0, javelin 7/3/0.
+; --------------------------------------------------------------------------
+DistanceRates:
+        .byte   $01                     ; 326D
 L326E:  .byte   $01                     ; 326E
 L326F:  .byte   $00,$02,$03,$00,$07,$03,$00,$60; 326F
-L3277:  sta     L3294                   ; 3277
-        lda     DistanceDigits,y        ; 327A
+
+; --------------------------------------------------------------------------
+; Add A to digit Y of AngleDigits' block with decimal carry to the left.
+; --------------------------------------------------------------------------
+AddDigit:
+        sta     L3294                   ; 3277
+        lda     AngleDigits,y           ; 327A
         clc                             ; 327D
         adc     L3294                   ; 327E
         cmp     #$3A                    ; 3281
         bmi     L3290                   ; 3283
         sec                             ; 3285
         sbc     #$0A                    ; 3286
-        sta     DistanceDigits,y        ; 3288
+        sta     AngleDigits,y           ; 3288
         lda     #$01                    ; 328B
         dey                             ; 328D
-        bpl     L3277                   ; 328E
-L3290:  sta     DistanceDigits,y        ; 3290
+        bpl     AddDigit                ; 328E
+L3290:  sta     AngleDigits,y           ; 3290
         rts                             ; 3293
 
 L3294:  .byte   $00                     ; 3294
@@ -3713,7 +4062,7 @@ L32CB:  lda     $7E                     ; 32CB
         sbc     #$05                    ; 32CE
         tax                             ; 32D0
         ldy     #$00                    ; 32D1
-L32D3:  lda     L2774,y                 ; 32D3
+L32D3:  lda     AttemptDistance,y       ; 32D3
         sta     BestTable,x             ; 32D6
         inx                             ; 32D9
         iny                             ; 32DA
@@ -3736,7 +4085,12 @@ L32EA:  lda     L2A4B,x                 ; 32EA
 L32FA:  sty     $7D                     ; 32FA
 L32FC:  jmp     L2517                   ; 32FC
 
-L32FF:  ldx     #$07                    ; 32FF
+
+; --------------------------------------------------------------------------
+; Print the 8-character message at $3310 at $0E42 (custom characters).
+; --------------------------------------------------------------------------
+ShowFailMessage:
+        ldx     #$07                    ; 32FF
 L3301:  lda     L3310,x                 ; 3301
         sta     L0E42,x                 ; 3304
         lda     #$71                    ; 3307
@@ -3746,7 +4100,12 @@ L3301:  lda     L3310,x                 ; 3301
         rts                             ; 330F
 
 L3310:  .byte   $59,$5A,$CF,$D0,$D7,$D8,$CD,$CE; 3310
-L3318:  ldx     #$09                    ; 3318
+
+; --------------------------------------------------------------------------
+; Show the 10-character message at $334A at $0E3F, flash its colour 100 times, then erase it.
+; --------------------------------------------------------------------------
+FlashAttemptMessage:
+        ldx     #$09                    ; 3318
 L331A:  lda     L334A,x                 ; 331A
         sta     L0E3F,x                 ; 331D
         dex                             ; 3320
@@ -3773,22 +4132,28 @@ L3343:  sta     L0E3F,x                 ; 3343
 
 L334A:  .byte   $E5,$E6,$E9,$EA,$DD,$DE,$5B,$5C; 334A
         .byte   $E9,$EA                 ; 3352
-L3354:  lda     L2777                   ; 3354
+
+; --------------------------------------------------------------------------
+; Add the distance's first four digits to Score_day_two (metres x 10 points),
+; then copy the score to HighScore if higher.
+; --------------------------------------------------------------------------
+AddDistanceToScore:
+        lda     L2777                   ; 3354
         ldy     #$0C                    ; 3357
-        jsr     L3390                   ; 3359
+        jsr     AddScoreDigit           ; 3359
         lda     L2776                   ; 335C
         ldy     #$0B                    ; 335F
-        jsr     L3390                   ; 3361
+        jsr     AddScoreDigit           ; 3361
         lda     L2775                   ; 3364
         ldy     #$0A                    ; 3367
-        jsr     L3390                   ; 3369
-        lda     L2774                   ; 336C
+        jsr     AddScoreDigit           ; 3369
+        lda     AttemptDistance         ; 336C
         ldy     #$09                    ; 336F
-        jsr     L3390                   ; 3371
+        jsr     AddScoreDigit           ; 3371
         ldx     #$05                    ; 3374
         sec                             ; 3376
-L3377:  lda     L2A78,x                 ; 3377
-        sbc     L2779,x                 ; 337A
+L3377:  lda     HighScore,x             ; 3377
+        sbc     Score_day_two,x         ; 337A
         dex                             ; 337D
         bne     L3377                   ; 337E
         bcc     L3383                   ; 3380
@@ -3802,8 +4167,13 @@ L3385:  lda     L277A,x                 ; 3385
         rts                             ; 338E
 
         .byte   $60                     ; 338F
-L3390:  and     #$0F                    ; 3390
-        jmp     L3277                   ; 3392
+
+; --------------------------------------------------------------------------
+; Add the low nibble of A to digit Y (AddDigit).
+; --------------------------------------------------------------------------
+AddScoreDigit:
+        and     #$0F                    ; 3390
+        jmp     AddDigit                ; 3392
 
 
 ; --------------------------------------------------------------------------

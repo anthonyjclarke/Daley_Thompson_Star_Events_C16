@@ -15,6 +15,12 @@ What the original does that looks accidental or unfinished, kept as it is in the
 | Tape side 2 | `ADDS` was saved from `$1400` (its header) but the loader loads it at `$0800` | Undocumented coherent: saved from where it lived during development |
 | Tape side 2 | The loader's file names are `MAIN*` and `ADDS*`, used with length 4, so the `*` is never read | Remnant |
 | Part 2 | After the third event `EventIndex` returns to 0; three unqualified attempts at any event return to the start screen | Undocumented coherent |
+| Part 1 `$22F6` | A third `JSR PlayTunePair_day_one` with two words (`$25E5`, `$2621`) and `RTS`; nothing calls it | Unfinished or remnant: a tune that lost its caller |
+| Part 1 | Hitting a hurdle only changes its picture; it costs no speed or time | Uncertain: a simplification or an omission |
+| Part 1 `RecordTimes` | The RECORDS box never takes the player's time | Undocumented coherent |
+| Part 2 `WorldRecordTable` | WORLD RECORD for the long jump is 11.87 m (the real record in 1985 was 8.90 m); shot-put 17.60 m, javelin 101.30 m | Uncertain: placeholder or deliberate |
+| Both | Footstep pitch comes from reading successive BASIC ROM bytes (`$A000`, `$A063`) | Undocumented coherent: cheap noise source |
+| Part 1 `RaceClock` | `TickRaceClock` runs once a frame (split 1); its last digit counts 0–5 and the next 0–9, so a displayed second is 60 frames: 1.2 real seconds on a PAL C16, and the last digit never shows 6–9 | Uncertain: a 60 Hz assumption, or a deliberate easing of the qualifying times |
 | Part 1 | After the fourth event (200 m hurdles) `EventNumber` returns to 1 and the four events run again with the score kept; there is no hand-over to part 2 | Undocumented coherent: the parts are on separate tape sides |
 
 ---
@@ -23,9 +29,9 @@ What the original does that looks accidental or unfinished, kept as it is in the
 
 | Where | What | Leading hypothesis |
 |:------|:-----|:-------------------|
-| Part 1 `$170C`–`$1725` | Code-shaped bytes (increment six screen digits at `$0C2F`); no `JSR`, `JMP`, table or lo/hi pair reaches `$170C` | Unused score routine (remnant); check with a VICE breakpoint during play |
-| Part 2 `$2140`–`$2162` | Code-shaped bytes reading TED timers `$FF00`/`$FF02` into `$28`–`$2B`; no reference to `$2140` | Unused random-number routine (remnant); same check |
+| Part 1 `$170C`–`$1725` | Code-shaped bytes (increment six screen digits at `$0C2F`); no `JSR`, `JMP`, table or lo/hi pair reaches `$170C` | Unused score routine (remnant); never executed in the coverage runs |
+| Part 2 `$2140`–`$2162` | Code-shaped bytes reading TED timers `$FF00`/`$FF02` into `$28`–`$2B`; no reference to `$2140` | Unused random-number routine (remnant); never executed in the coverage runs |
 | Part 2 `$241D`–`$2436` | Bytes after `EventTableOffset` that decode as a routine printing A as two hex digits at `$0F99,X`; no `JSR`, `JMP` or pointer reaches `$241D` | Debug remnant: a hex printer left from development |
 | Part 2 `$2109`–`$2110` | Eight bytes before `Entry_day_two` (`EA 20 58 60 EA …`) | Leftover bytes; not code reached from anywhere |
-| Part 1 `RaceClock` | The last digit counts 0–5 and the one before it 0–9, so the clock is not true hundredths; how often `TickRaceClock` runs per frame is not yet measured | A frame counter shown as a time; measure ticks per second in VICE |
-| Both | Most variables and routines below the main loops are still neutral names | Later slices of stage 4 |
+| Part 2 | The flight arithmetic inside `LongJump`, `ShotPut` and `Javelin`, and the runway drawing, keep neutral names for their variables | Needs a VICE run with fire and angle input |
+| Part 2 | Keys, read through the C16 keyboard matrix as recalled (not checked in VICE): `SelectInputMode` J → JOY, K → KEY; `ReadKeys` Q left, Y right, SPACE fire | The J/K–JOY/KEY match supports the reading; press the keys in VICE to confirm |

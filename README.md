@@ -34,5 +34,25 @@ The unpacked images were made by starting each PRG in VICE (`xplus4`, C16 PAL, 1
 | `make run-unpacked`   | Rebuilt unpacked image, started at its entry                |
 | `python3 tools/shots.py` | Scripted start-up screenshots of all three, compared    |
 | `python3 tools/run_tape.py 1` | Load a side from tape in VICE (`LOAD`, PLAY, `SYS1536`) and screenshot it |
+| `make docs`           | Regenerate the code reference and the HTML handbook          |
 
 `docs/evidence.md` holds the proof for each name, and `docs/quirks.md` the original's oddities and the open items.
+
+---
+
+## Documentation
+
+The [complete handbook](docs/DALEY_THOMPSON.html) is one offline HTML file with every chapter, the screenshots and diagrams. Open it in a browser. Its chapters are the Markdown files here:
+
+| Chapter                                              | What it covers                                     |
+|:-----------------------------------------------------|:---------------------------------------------------|
+| [History and credits](docs/HISTORY_AND_CREDITS.md)   | Who wrote it, recollections, the surviving copies  |
+| [Playing the game](docs/PLAYING.md)                  | Controls, events, qualifying and scoring           |
+| [Artifacts](docs/ARTIFACTS.md)                       | The tapes, the loader and the crunched PRGs        |
+| [Codebase analysis](CODEBASE_ANALYSIS.md)            | How both parts work                                |
+| [Graphics](docs/GRAPHICS.md)                         | Character sets, the athlete, moving without sprites |
+| [Source and validation](docs/SOURCE_AND_VALIDATION.md) | How the disassembly is made and checked          |
+| [Build and run](docs/BUILD_AND_RUN.md)               | Make targets and scripts                           |
+| [Code reference](docs/CODE_REFERENCE.md)             | Every name, generated from `tools/symbols.py`      |
+
+`make docs` regenerates the code reference and the HTML; see [maintaining the HTML](docs/HTML_DOCUMENTATION.md).

@@ -2,6 +2,29 @@
 
 ---
 
+## [0.6.0] 21-11-2026
+
+### Added
+
+- Names for the rest of both main loops: Day One's athlete, track marks, scenery scroll, hurdles, finish line,
+  distance, records box, sounds and the 13 raster splits; Day Two's events (`LongJump`, `ShotPut`, `Javelin`),
+  take-off angle, runway scroll, distance counter, score line, high score, title and its 13 splits.
+- VICE execution-map coverage of three runs: every executed instruction is in the traced code.
+- `CODEBASE_ANALYSIS.md` and the chapters `HISTORY_AND_CREDITS`, `PLAYING`, `ARTIFACTS`, `GRAPHICS`,
+  `SOURCE_AND_VALIDATION`, `BUILD_AND_RUN`, `HTML_DOCUMENTATION` and the generated `CODE_REFERENCE`.
+- The offline handbook `docs/DALEY_THOMPSON.html` (`make docs`, `make docs-check`), with the shared C16 generator
+  in `scripts/`.
+- `tools/doc_shots.py` (event screenshots), `tools/render_graphics.py` (character sets, athlete frames as SVG)
+  and `tools/code_reference.py`.
+
+### Changed
+
+- `$2772` renamed `AngleDigits`: its first two digits are the take-off angle, not the distance.
+- Quirks: the race clock runs once a frame, so a displayed second is 1.2 s on PAL; the keys decode to J/K for
+  JOY/KEY and Q, Y, SPACE for play (matrix as recalled, not checked in VICE).
+
+---
+
 ## [0.5.0] 21-11-2026
 
 ### Added

@@ -33,7 +33,18 @@ run-unpacked: disasm
 run-original:
 	$(PY) tools/run_vice.py original/daley_thompsons_star_events_day_$(PART).prg
 
+# Documentation: the generated code reference and the offline HTML handbook (needs Node 20+).
+NODE ?= node
+
+docs:
+	$(PY) tools/code_reference.py
+	$(NODE) scripts/build_docs.mjs
+
+docs-check:
+	$(PY) tools/code_reference.py --check
+	$(NODE) scripts/build_docs.mjs --check
+
 clean:
 	rm -rf build
 
-.PHONY: all disasm verify info run run-unpacked run-original clean
+.PHONY: all disasm verify info run run-unpacked run-original docs docs-check clean

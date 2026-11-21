@@ -1,0 +1,43 @@
+{
+    "output": "docs/DALEY_THOMPSON.html",
+    "title": "Daley Thompson's Star Events",
+    "brand": [
+        "DALEY THOMPSON'S",
+        "STAR EVENTS"
+    ],
+    "description": "Daley Thompson's Star Events (C16, 1985) decomposition: history, the 1985 tapes, how to play, how the game works, validation, evidence and the full code reference.",
+    "includes": "the cassette and advert, event screenshots, diagrams and the code reference",
+    "groups": [
+        {
+            "id": "guide",
+            "label": "The game",
+            "sources": [
+                "README.md",
+                "docs/HISTORY_AND_CREDITS.md",
+                "docs/PLAYING.md",
+                "docs/ARTIFACTS.md",
+                "CODEBASE_ANALYSIS.md",
+                "docs/GRAPHICS.md"
+            ]
+        },
+        {
+            "id": "project",
+            "label": "The decomposition",
+            "sources": [
+                "docs/SOURCE_AND_VALIDATION.md",
+                "docs/BUILD_AND_RUN.md",
+                "docs/evidence.md",
+                "docs/quirks.md",
+                "CHANGELOG.md"
+            ]
+        },
+        {
+            "id": "reference",
+            "label": "Reference",
+            "sources": [
+                "docs/CODE_REFERENCE.md",
+                "docs/HTML_DOCUMENTATION.md"
+            ]
+        }
+    ]
+}

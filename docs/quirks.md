@@ -15,7 +15,7 @@ What the original does that looks accidental or unfinished, kept as it is in the
 | Tape side 2 | `ADDS` was saved from `$1400` (its header) but the loader loads it at `$0800` | Undocumented coherent: saved from where it lived during development |
 | Tape side 2 | The loader's file names are `MAIN*` and `ADDS*`, used with length 4, so the `*` is never read | Remnant |
 | Part 2 | After the third event `EventIndex` returns to 0; three unqualified attempts at any event return to the start screen | Undocumented coherent |
-| Part 1 `$22F6` | A third `JSR PlayTunePair_day_one` with two words (`$25E5`, `$2621`) and `RTS`; nothing calls it | Unfinished or remnant: a tune that lost its caller |
+| Part 1 `$22F6` | A third `JSR PlayTunePair_day_one` with two words (`$25E5`, `$2621`) and `RTS`; nothing calls it. Decoded, it is note for note Day Two's qualified tune; Day One plays a short effect for QUALIFIED instead | Remnant: a tune that lost its caller |
 | Part 1 | Hitting a hurdle only changes its picture; it costs no speed or time | Uncertain: a simplification or an omission |
 | Part 1 `RecordTimes` | The RECORDS box never takes the player's time: no store, indexed store or pointer in part 1 reaches `$18D7`–`$192A` | Undocumented coherent |
 | Part 2 `WorldRecordTable` | WORLD RECORD for the long jump is 11.87 m (the real record in 1985 was 8.90 m); shot-put 17.60 m, javelin 101.30 m | Uncertain: placeholder or deliberate |
@@ -34,6 +34,8 @@ What the original does that looks accidental or unfinished, kept as it is in the
 | Part 2 `$2140`–`$2162` | Code-shaped bytes reading TED timers `$FF00`/`$FF02` into `$28`–`$2B`; nothing reaches `$2140` | Remnant: an unused random-number routine |
 | Part 2 `$241D`–`$2436` | Bytes after `EventTableOffset` that decode as a routine printing A as two hex digits at `$0F99,X`; nothing reaches `$241D` | Remnant: a hex printer left from development |
 | Part 2 `$2109`–`$2110` | Eight bytes before `Entry_day_two` (`EA 20 58 60 EA …`); nothing reaches them | Remnant: leftover bytes |
+| Part 2 flight on NTSC | Flight steps are paced by `DelayXY` (CPU cycles) while distance is added each frame, so on an NTSC C16 a step lasts about 7.8 frames against 4.5 on PAL and every distance comes out about 1.5 times longer (javelin up to 182.5 m) | Undocumented coherent: written and tuned for PAL |
+| Both tune players | A misplaced tune command (`$FF` inside a call, `$FE` at depth 0, calls nested past 16) executes `BRK` with a code in X (1–3), dropping into the KERNAL's monitor | Undocumented coherent: a development trap left in |
 | Part 2 `TopFrameTable` | Entry 9 (`$3890`) repeats frame 1 and is never selected: the run cycle wraps at 9 | Remnant: purpose unknown |
 
 ---

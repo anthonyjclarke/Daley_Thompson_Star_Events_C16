@@ -240,6 +240,8 @@ The javelin starts at pixel row `$68` (`JavelinY`) and rises one pixel a step du
 
 Taking off early costs distance in every event, as `TakeOffDelay` predicts. At speed `$1F` and 45°, moving the take-off from `AthleteX` `$50` (the line) to `$9B` (where the board first appears) cuts the long jump from 10.64 m to 9.00 m, the shot-put from 15.66 m to 11.58 m and the javelin from 87.38 m to 73.58 m (`tools/flight_probe.py --position`).
 
+On an NTSC C16 the same attempts go about 1.5 times as far (`tools/flight_probe.py --ntsc`): 16.89 m instead of 10.53 m in the long jump at 45° and speed `$1D`, and up to 182.5 m in the javelin. Each flight step is paced by `DelayXY`, a loop counted in CPU cycles, while the distance grows once a frame; measured in VICE, a long-jump step lasts 4.5 frames on PAL and 7.8 on NTSC. The distances, records and qualifying lengths only fit together on PAL.
+
 These are rung 3 for the flight code and the counter. The run-up itself was not played: the probe sets the speed and the athlete's column directly.
 
 ### Attempts and Judging
@@ -278,6 +280,20 @@ The advert boards (Barclays, Lee Cooper, Pepsi, Ocean, Boots, WH Smith) were cop
 Both parts carry the same sound driver at different addresses (part 1 around `$22E0`–`$2BFF`, part 2 at `$1800`), entered through a small jump table (`SoundVectors_day_one`, `SoundVectors_day_two`). `SoundStep_day_one` runs once a frame from raster split 7. Tunes start through `PlayTunePair_day_one` / `PlayTunePair_day_two`, which take two inline words after the `JSR` (one per voice) and return past them. Short effects start through `StartSoundEffect` with a 23-byte record.
 
 The footstep effect gets its pitch from successive bytes of the BASIC ROM (`PlayFootstep` reads `$A000` onward, `PlayFootstep_day_two` `$A063` onward), a cheap source of noise. Sound has not yet been compared with real hardware.
+
+### The Tunes
+
+The tune player is the same code in both parts, `$AE2` bytes apart. Each voice reads byte pairs. A byte below `$30` is a note, an index into `NoteFreqLo`/`NoteFreqHi`; a byte of `$30` is a rest; the byte after either picks one of 16 note lengths, counted in frames. Commands `$FA`–`$FD` load the length table or the voice's instrument (its 23-byte effect record), `$FE` returns from a call and `$FF` ends the voice. Any other command calls a sub-tune in voice 1; in voice 2 `$F9` calls and the rest jump. A command in the wrong place (`$FF` inside a call, `$FE` with nothing to return to, calls nested too deep) executes `BRK`.
+
+The 35 notes run a semitone apart from A2 to G5: note 0 is `$007`, which TED plays at 111860.78 / (1024 − 7) = 110.0 Hz. `tools/decode_tunes.py` follows these rules and prints every tune as notes and lengths.
+
+| Tune                  | Day One                       | Day Two                       | Length on PAL               |
+|:----------------------|:------------------------------|:------------------------------|:----------------------------|
+| Race / event fanfare  | Each race start (`$2523`)     | Each event screen (`$1A43`)   | 14.9 s                      |
+| *Chariots of Fire*    | GAME OVER (`$2405`)           | Title screen (`$1925`)        | Melody 130 s; bass loops    |
+| Qualified             | Never played (`$25E5`)        | After a qualified attempt     | 4.6 s                       |
+
+The three tunes are identical in both parts, note for note. The title and GAME OVER melody follows the interval pattern of the opening of Vangelis's *Chariots of Fire* theme, transposed to G, over a bass of repeated quavers that jumps back to its start after 66 seconds and never ends. Day One's unused tune call at `$22F6` is the qualified tune: Day One plays a short effect for QUALIFIED instead.
 
 ---
 

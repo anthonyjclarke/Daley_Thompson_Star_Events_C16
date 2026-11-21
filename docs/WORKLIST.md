@@ -23,6 +23,8 @@ What still needs testing or checking, and how. Items done in VICE are listed onc
 | Day One `RecordTimes`          | Every store checked; nothing writes it       | evidence, part 1        |
 | NTSC race clock                | `c16ntsc` in VICE: 1.00 s a displayed second | evidence, part 1        |
 | Day One GAME OVER R marker     | Code read; screen redraw run in `cpu6502.py` | quirks                  |
+| Tunes decoded                  | `tools/decode_tunes.py`; title timed in VICE | analysis, The Tunes     |
+| Day Two on NTSC                | 189 forced attempts with `--ntsc`            | analysis, How Far       |
 
 ---
 
@@ -54,12 +56,23 @@ These need hands, ears or real hardware; the monitor can't do them.
 
 These can be done from the disassembly and VICE without a player.
 
-| Item            | Question                                   |
-|:----------------|:-------------------------------------------|
-| Neutral names   | Name the remaining `Lxxxx` labels          |
-| Sound data      | Decode the tunes into notes and lengths    |
-| Decruncher      | Compare with a real Exomizer build         |
-| Day Two on NTSC | Flight and tunes at 60 Hz: anything break? |
+| Item       | Question                           |
+|:-----------|:-----------------------------------|
+| Data names | 244 `Lxxxx` data labels: see below |
+| Decruncher | Compare with a real Exomizer build |
+
+
+### Names Still Neutral
+
+On 22-11-2026 the six unnamed subroutines, all 22 patched operands, the tune player and the effect voice blocks of both parts, and Day Two's board-scroll and run-up variables were named (932 `Lxxxx` labels down to 770). What is left:
+
+| Kind                                      | Day One | Day Two | Why it is open                               |
+|:------------------------------------------|:--------|:--------|:---------------------------------------------|
+| Branch targets inside named routines      | 250     | 276     | Local jump points; the routine is described  |
+| Screen and colour cells (`$08xx`–`$0Fxx`) | –       | 87      | Fixed screen positions written directly      |
+| Other data labels                         | 102     | 55      | Bytes inside tables and graphics; next slice |
+
+The branch targets stay neutral by choice: each sits inside a routine with a name and a block comment. The data labels are the next naming slice.
 
 ---
 

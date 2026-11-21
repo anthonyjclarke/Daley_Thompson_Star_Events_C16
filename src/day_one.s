@@ -42,37 +42,37 @@ L1019:  .byte   $00,$08,$00,$00,$00,$00,$00,$00; 1019
 ; Load the byte at the packed-screen pointer (the LDA operand at $1025/$1026 is the pointer).
 ; --------------------------------------------------------------------------
 FetchPackedByte:
-L1025           := * + 1
-L1026           := * + 2
+PackedPtr       := * + 1
+PackedPtrHi     := * + 2
         lda     L1013                   ; 1024
         rts                             ; 1027
 
 L1028:  jsr     AdvancePackedPtr        ; 1028
         jsr     FetchPackedByte         ; 102B
         tax                             ; 102E
-        lda     L109F                   ; 102F
-        sta     L104E                   ; 1032
-        lda     L10A5                   ; 1035
-        sta     L1054                   ; 1038
-        lda     L10A0                   ; 103B
-        sta     L104F                   ; 103E
-        lda     L10A6                   ; 1041
-        sta     L1055                   ; 1044
+        lda     ScreenPtr               ; 102F
+        sta     RunScreenPtr            ; 1032
+        lda     ColourPtr               ; 1035
+        sta     RunColourPtr            ; 1038
+        lda     ScreenPtrHi             ; 103B
+        sta     RunScreenPtrHi          ; 103E
+        lda     ColourPtrHi             ; 1041
+        sta     RunColourPtrHi          ; 1044
         jsr     AdvancePackedPtr        ; 1047
 L104A:  jsr     FetchPackedByte         ; 104A
-L104E           := * + 1
-L104F           := * + 2
+RunScreenPtr    := * + 1
+RunScreenPtrHi  := * + 2
         sta     L1016,y                 ; 104D
         lda     L1117                   ; 1050
-L1054           := * + 1
-L1055           := * + 2
+RunColourPtr    := * + 1
+RunColourPtrHi  := * + 2
         sta     L1019,y                 ; 1053
         iny                             ; 1056
         bne     L1065                   ; 1057
-        inc     L104F                   ; 1059
-        inc     L1055                   ; 105C
-        inc     L10A0                   ; 105F
-        inc     L10A6                   ; 1062
+        inc     RunScreenPtrHi          ; 1059
+        inc     RunColourPtrHi          ; 105C
+        inc     ScreenPtrHi             ; 105F
+        inc     ColourPtrHi             ; 1062
 L1065:  dex                             ; 1065
         bne     L104A                   ; 1066
         jsr     AdvancePackedPtr        ; 1068
@@ -83,9 +83,9 @@ L1065:  dex                             ; 1065
 ; Step the packed-screen pointer by one.
 ; --------------------------------------------------------------------------
 AdvancePackedPtr:
-        inc     L1025                   ; 106E
+        inc     PackedPtr               ; 106E
         bne     L1076                   ; 1071
-        inc     L1026                   ; 1073
+        inc     PackedPtrHi             ; 1073
 L1076:  rts                             ; 1076
 
 
@@ -97,9 +97,9 @@ DrawPackedScreen:
         ldy     #$00                    ; 1077
         ldx     #$00                    ; 1079
         lda     #$00                    ; 107B
-        sta     L1025                   ; 107D
+        sta     PackedPtr               ; 107D
         lda     #$30                    ; 1080
-        sta     L1026                   ; 1082
+        sta     PackedPtrHi             ; 1082
 L1085:  jsr     FetchPackedByte         ; 1085
         cmp     #$FB                    ; 1088
         bcc     L109E                   ; 108A
@@ -113,58 +113,58 @@ L1085:  jsr     FetchPackedByte         ; 1085
         cmp     #$FF                    ; 109A
         beq     L10E5                   ; 109C
 L109E:
-L109F           := * + 1
-L10A0           := * + 2
+ScreenPtr       := * + 1
+ScreenPtrHi     := * + 2
         sta     L1016,y                 ; 109E
         lda     L1117                   ; 10A1
-L10A5           := * + 1
-L10A6           := * + 2
+ColourPtr       := * + 1
+ColourPtrHi     := * + 2
         sta     L1019,y                 ; 10A4
         iny                             ; 10A7
         bne     L10F4                   ; 10A8
-        inc     L10A0                   ; 10AA
-        inc     L10A6                   ; 10AD
+        inc     ScreenPtrHi             ; 10AA
+        inc     ColourPtrHi             ; 10AD
         jmp     L10F4                   ; 10B0
 
-L10B3:  inc     L1025                   ; 10B3
+L10B3:  inc     PackedPtr               ; 10B3
         bne     L10BB                   ; 10B6
-        inc     L1026                   ; 10B8
+        inc     PackedPtrHi             ; 10B8
 L10BB:  jsr     FetchPackedByte         ; 10BB
-        sta     L109F                   ; 10BE
+        sta     ScreenPtr               ; 10BE
         sta     L1116                   ; 10C1
-        sta     L10A5                   ; 10C4
-        inc     L1025                   ; 10C7
+        sta     ColourPtr               ; 10C4
+        inc     PackedPtr               ; 10C7
         bne     L10CF                   ; 10CA
-        inc     L1026                   ; 10CC
+        inc     PackedPtrHi             ; 10CC
 L10CF:  jsr     FetchPackedByte         ; 10CF
-        sta     L10A0                   ; 10D2
+        sta     ScreenPtrHi             ; 10D2
         eor     #$04                    ; 10D5
-        sta     L10A6                   ; 10D7
-        inc     L1025                   ; 10DA
+        sta     ColourPtrHi             ; 10D7
+        inc     PackedPtr               ; 10DA
         bne     L10E2                   ; 10DD
-        inc     L1026                   ; 10DF
+        inc     PackedPtrHi             ; 10DF
 L10E2:  jmp     L1085                   ; 10E2
 
 L10E5:  rts                             ; 10E5
 
-L10E6:  inc     L1025                   ; 10E6
+L10E6:  inc     PackedPtr               ; 10E6
         bne     L10EE                   ; 10E9
-        inc     L1026                   ; 10EB
+        inc     PackedPtrHi             ; 10EB
 L10EE:  jsr     FetchPackedByte         ; 10EE
         sta     L1117                   ; 10F1
-L10F4:  inc     L1025                   ; 10F4
+L10F4:  inc     PackedPtr               ; 10F4
         bne     L10FC                   ; 10F7
-        inc     L1026                   ; 10F9
+        inc     PackedPtrHi             ; 10F9
 L10FC:  jmp     L1085                   ; 10FC
 
 L10FF:  lda     L1116                   ; 10FF
         clc                             ; 1102
         adc     #$28                    ; 1103
-        sta     L109F                   ; 1105
-        sta     L10A5                   ; 1108
+        sta     ScreenPtr               ; 1105
+        sta     ColourPtr               ; 1108
         bcc     L1113                   ; 110B
-        inc     L10A0                   ; 110D
-        inc     L10A6                   ; 1110
+        inc     ScreenPtrHi             ; 110D
+        inc     ColourPtrHi             ; 1110
 L1113:  jmp     L10F4                   ; 1113
 
 L1116:  .byte   $00                     ; 1116
@@ -260,8 +260,8 @@ L11B3:  lda     TED_VLINE_LO            ; 11B3
         sta     FinishLineShown         ; 11D5
         jsr     EraseAthlete            ; 11D8
         jsr     DrawAthlete             ; 11DB
-        lda     L2AF4                   ; 11DE
-        ora     L2B3E                   ; 11E1
+        lda     TunePlaying1_day_one    ; 11DE
+        ora     TunePlaying2_day_one    ; 11E1
         bne     L11B3                   ; 11E4
         jmp     L11B0                   ; 11E6
 
@@ -738,7 +738,7 @@ IrqHandler_day_one:
         lda     #$02                    ; 1584
         sta     TED_IRQ_FLAGS           ; 1586
 IrqSplitCall_day_one:= * + 1
-L158B           := * + 2
+IrqSplitCallHi_day_one:= * + 2
         jsr     Split01_day_one         ; 1589
         inc     $0F                     ; 158C
         lda     $0F                     ; 158E
@@ -751,7 +751,7 @@ L1598:  asl     a                       ; 1598
         lda     SplitTable_day_one,x    ; 159A
         sta     IrqSplitCall_day_one    ; 159D
         lda     SplitTable_day_one+1,x  ; 15A0
-        sta     L158B                   ; 15A3
+        sta     IrqSplitCallHi_day_one  ; 15A3
         pla                             ; 15A6
         tay                             ; 15A7
         pla                             ; 15A8
@@ -1465,8 +1465,8 @@ L1A14:  lda     OnYourMarksText,y       ; 1A14
         iny                             ; 1A1F
         cpy     #$0D                    ; 1A20
         bne     L1A14                   ; 1A22
-L1A24:  lda     L2AF4                   ; 1A24
-        ora     L2B3E                   ; 1A27
+L1A24:  lda     TunePlaying1_day_one    ; 1A24
+        ora     TunePlaying2_day_one    ; 1A27
         bne     L1A24                   ; 1A2A
         jsr     ClearMessage            ; 1A2C
         ldy     #$00                    ; 1A2F
@@ -2563,12 +2563,12 @@ PlayFailedSound:
 ; the BASIC ROM (self-modified pointer from $A000).
 ; --------------------------------------------------------------------------
 PlayFootstep:
-L230F           := * + 1
+FootstepRomPtr  := * + 1
         lda     $A000                   ; 230E
         and     #$0F                    ; 2311
         ora     #$F0                    ; 2313
         sta     L235C                   ; 2315
-        inc     L230F                   ; 2318
+        inc     FootstepRomPtr          ; 2318
         ldx     #$50                    ; 231B
         ldy     #$23                    ; 231D
         jmp     StartSoundEffect        ; 231F
@@ -2677,54 +2677,194 @@ L235C:  .byte   $00,$03,$08,$08,$08,$00,$08,$03; 235C
         .byte   $16,$02,$18,$02,$1A,$04,$1A,$01; 2644
         .byte   $1A,$01,$18,$02,$1A,$02,$18,$02; 264C
         .byte   $16,$0C,$FF             ; 2654
-L2657:  .byte   $00                     ; 2657
-L2658:  .byte   $00                     ; 2658
-L2659:  .byte   $00                     ; 2659
-L265A:  .byte   $00                     ; 265A
-L265B:  .byte   $00                     ; 265B
-L265C:  .byte   $00                     ; 265C
-L265D:  .byte   $00                     ; 265D
-L265E:  .byte   $00,$00,$00,$00,$00     ; 265E
-L2663:  .byte   $00                     ; 2663
-L2664:  .byte   $00                     ; 2664
-L2665:  .byte   $00                     ; 2665
-L2666:  .byte   $00                     ; 2666
-L2667:  .byte   $00                     ; 2667
-L2668:  .byte   $00                     ; 2668
-L2669:  .byte   $00                     ; 2669
-L266A:  .byte   $00                     ; 266A
-L266B:  .byte   $00                     ; 266B
-L266C:  .byte   $00                     ; 266C
-L266D:  .byte   $00                     ; 266D
-L266E:  .byte   $00                     ; 266E
-L266F:  .byte   $00                     ; 266F
-L2670:  .byte   $00                     ; 2670
-L2671:  .byte   $00                     ; 2671
-L2672:  .byte   $00                     ; 2672
-L2673:  .byte   $00                     ; 2673
-L2674:  .byte   $00                     ; 2674
-L2675:  .byte   $00                     ; 2675
-L2676:  .byte   $00                     ; 2676
-L2677:  .byte   $00                     ; 2677
-L2678:  .byte   $00                     ; 2678
-L2679:  .byte   $00                     ; 2679
-L267A:  .byte   $00                     ; 267A
-L267B:  .byte   $00                     ; 267B
-L267C:  .byte   $00                     ; 267C
-L267D:  .byte   $00                     ; 267D
-L267E:  .byte   $00,$00,$00,$00,$00     ; 267E
-L2683:  .byte   $00                     ; 2683
-L2684:  .byte   $00,$00,$00,$00,$00,$00,$00,$00; 2684
+
+; --------------------------------------------------------------------------
+; Steps in each of the three pitch-sweep segments
+; --------------------------------------------------------------------------
+Fx1SweepLen_day_one:
+        .byte   $00                     ; 2657
+Fx1SweepLenB_day_one:
+        .byte   $00                     ; 2658
+Fx1SweepLenC_day_one:
+        .byte   $00                     ; 2659
+
+; --------------------------------------------------------------------------
+; Frames before the sweep starts
+; --------------------------------------------------------------------------
+Fx1StartDelay_day_one:
+        .byte   $00                     ; 265A
+
+; --------------------------------------------------------------------------
+; Frames between sweep steps
+; --------------------------------------------------------------------------
+Fx1SweepRate_day_one:
+        .byte   $00                     ; 265B
+
+; --------------------------------------------------------------------------
+; After the three segments: 0 stop, positive repeat, negative restart from StartFreq
+; --------------------------------------------------------------------------
+Fx1SweepMode_day_one:
+        .byte   $00                     ; 265C
+
+; --------------------------------------------------------------------------
+; Three signed words added to Freq, one per segment
+; --------------------------------------------------------------------------
+Fx1SweepStepLo_day_one:
+        .byte   $00                     ; 265D
+Fx1SweepStepHi_day_one:
+        .byte   $00,$00,$00,$00,$00     ; 265E
+
+; --------------------------------------------------------------------------
+; Starting TED frequency (a tune note's NoteFreqLo/Hi)
+; --------------------------------------------------------------------------
+Fx1StartFreqLo_day_one:
+        .byte   $00                     ; 2663
+Fx1StartFreqHi_day_one:
+        .byte   $00                     ; 2664
+
+; --------------------------------------------------------------------------
+; Level added per envelope tick until PeakLevel
+; --------------------------------------------------------------------------
+Fx1AttackStep_day_one:
+        .byte   $00                     ; 2665
+Fx1PeakLevel_day_one:
+        .byte   $00                     ; 2666
+
+; --------------------------------------------------------------------------
+; Level taken per tick down to SustainLevel
+; --------------------------------------------------------------------------
+Fx1DecayStep_day_one:
+        .byte   $00                     ; 2667
+Fx1SustainLevel_day_one:
+        .byte   $00                     ; 2668
+
+; --------------------------------------------------------------------------
+; Level taken per tick in the release
+; --------------------------------------------------------------------------
+Fx1ReleaseStep_day_one:
+        .byte   $00                     ; 2669
+
+; --------------------------------------------------------------------------
+; Envelope ticks before the release
+; --------------------------------------------------------------------------
+Fx1NoteTicks_day_one:
+        .byte   $00                     ; 266A
+
+; --------------------------------------------------------------------------
+; Ticks the release lasts
+; --------------------------------------------------------------------------
+Fx1ReleaseTicks_day_one:
+        .byte   $00                     ; 266B
+
+; --------------------------------------------------------------------------
+; Frames per envelope tick
+; --------------------------------------------------------------------------
+Fx1EnvRate_day_one:
+        .byte   $00                     ; 266C
+
+; --------------------------------------------------------------------------
+; Record byte $16 AND $F0: the voice/waveform bits ORed into $FF11
+; --------------------------------------------------------------------------
+Fx1VoiceBits_day_one:
+        .byte   $00                     ; 266D
+
+; --------------------------------------------------------------------------
+; Steps left in each segment
+; --------------------------------------------------------------------------
+Fx1SweepCount_day_one:
+        .byte   $00                     ; 266E
+Fx1SweepCountB_day_one:
+        .byte   $00                     ; 266F
+Fx1SweepCountC_day_one:
+        .byte   $00                     ; 2670
+
+; --------------------------------------------------------------------------
+; Frames to the next envelope tick
+; --------------------------------------------------------------------------
+Fx1EnvTimer_day_one:
+        .byte   $00                     ; 2671
+
+; --------------------------------------------------------------------------
+; Frames to the next sweep step
+; --------------------------------------------------------------------------
+Fx1SweepTimer_day_one:
+        .byte   $00                     ; 2672
+
+; --------------------------------------------------------------------------
+; Current TED frequency
+; --------------------------------------------------------------------------
+Fx1FreqLo_day_one:
+        .byte   $00                     ; 2673
+Fx1FreqHi_day_one:
+        .byte   $00                     ; 2674
+
+; --------------------------------------------------------------------------
+; $FC attack, $FD decay, $FE hold, $FF release, 0 off
+; --------------------------------------------------------------------------
+Fx1EnvPhase_day_one:
+        .byte   $00                     ; 2675
+
+; --------------------------------------------------------------------------
+; Current volume (0-15), the louder voice's goes to $FF11
+; --------------------------------------------------------------------------
+Fx1Level_day_one:
+        .byte   $00                     ; 2676
+Fx2SweepLen_day_one:
+        .byte   $00                     ; 2677
+Fx2SweepLenB_day_one:
+        .byte   $00                     ; 2678
+Fx2SweepLenC_day_one:
+        .byte   $00                     ; 2679
+Fx2StartDelay_day_one:
+        .byte   $00                     ; 267A
+Fx2SweepRate_day_one:
+        .byte   $00                     ; 267B
+Fx2SweepMode_day_one:
+        .byte   $00                     ; 267C
+Fx2SweepStepLo_day_one:
+        .byte   $00                     ; 267D
+Fx2SweepStepHi_day_one:
+        .byte   $00,$00,$00,$00,$00     ; 267E
+Fx2StartFreqLo_day_one:
+        .byte   $00                     ; 2683
+Fx2StartFreqHi_day_one:
+        .byte   $00                     ; 2684
+Fx2AttackStep_day_one:
+        .byte   $00                     ; 2685
+Fx2PeakLevel_day_one:
+        .byte   $00                     ; 2686
+Fx2DecayStep_day_one:
+        .byte   $00                     ; 2687
+Fx2SustainLevel_day_one:
+        .byte   $00                     ; 2688
+Fx2ReleaseStep_day_one:
+        .byte   $00                     ; 2689
+Fx2NoteTicks_day_one:
+        .byte   $00                     ; 268A
+Fx2ReleaseTicks_day_one:
+        .byte   $00                     ; 268B
+Fx2EnvRate_day_one:
         .byte   $00                     ; 268C
-L268D:  .byte   $00                     ; 268D
-L268E:  .byte   $00                     ; 268E
-L268F:  .byte   $00                     ; 268F
-L2690:  .byte   $00,$00                 ; 2690
-L2692:  .byte   $00                     ; 2692
-L2693:  .byte   $00                     ; 2693
-L2694:  .byte   $00                     ; 2694
-L2695:  .byte   $00                     ; 2695
-L2696:  .byte   $00                     ; 2696
+Fx2VoiceBits_day_one:
+        .byte   $00                     ; 268D
+Fx2SweepCount_day_one:
+        .byte   $00                     ; 268E
+Fx2SweepCountB_day_one:
+        .byte   $00                     ; 268F
+Fx2SweepCountC_day_one:
+        .byte   $00                     ; 2690
+Fx2EnvTimer_day_one:
+        .byte   $00                     ; 2691
+Fx2SweepTimer_day_one:
+        .byte   $00                     ; 2692
+Fx2FreqLo_day_one:
+        .byte   $00                     ; 2693
+Fx2FreqHi_day_one:
+        .byte   $00                     ; 2694
+Fx2EnvPhase_day_one:
+        .byte   $00                     ; 2695
+Fx2Level_day_one:
+        .byte   $00                     ; 2696
 
 ; --------------------------------------------------------------------------
 ; Copy the 23-byte effect record at Y:X into the driver; byte $16 picks the voice.
@@ -2742,99 +2882,105 @@ StartSoundEffect:
         cmp     #$10                    ; 26A7
         beq     L26AD                   ; 26A9
         ldx     #$20                    ; 26AB
-L26AD:  sta     L266D,x                 ; 26AD
+L26AD:  sta     Fx1VoiceBits_day_one,x  ; 26AD
         lda     #$FC                    ; 26B0
-        sta     L2675,x                 ; 26B2
+        sta     Fx1EnvPhase_day_one,x   ; 26B2
         lda     $A1                     ; 26B5
         and     #$0F                    ; 26B7
-        sta     L2676,x                 ; 26B9
+        sta     Fx1Level_day_one,x      ; 26B9
         dey                             ; 26BC
         cpx     #$20                    ; 26BD
         beq     L26F1                   ; 26BF
 L26C1:  lda     ($10),y                 ; 26C1
-        sta     L2657,y                 ; 26C3
+        sta     Fx1SweepLen_day_one,y   ; 26C3
         dey                             ; 26C6
         bpl     L26C1                   ; 26C7
-L26C9:  lda     L2657,x                 ; 26C9
-        sta     L266E,x                 ; 26CC
-        lda     L2658,x                 ; 26CF
-        sta     L266F,x                 ; 26D2
-        lda     L2659,x                 ; 26D5
-        sta     L2670,x                 ; 26D8
+L26C9:  lda     Fx1SweepLen_day_one,x   ; 26C9
+        sta     Fx1SweepCount_day_one,x ; 26CC
+        lda     Fx1SweepLenB_day_one,x  ; 26CF
+        sta     Fx1SweepCountB_day_one,x; 26D2
+        lda     Fx1SweepLenC_day_one,x  ; 26D5
+        sta     Fx1SweepCountC_day_one,x; 26D8
         lda     #$00                    ; 26DB
-        sta     L2671,x                 ; 26DD
-        sta     L2672,x                 ; 26E0
-        lda     L2663,x                 ; 26E3
-        sta     L2673,x                 ; 26E6
-        lda     L2664,x                 ; 26E9
-        sta     L2674,x                 ; 26EC
+        sta     Fx1EnvTimer_day_one,x   ; 26DD
+        sta     Fx1SweepTimer_day_one,x ; 26E0
+        lda     Fx1StartFreqLo_day_one,x; 26E3
+        sta     Fx1FreqLo_day_one,x     ; 26E6
+        lda     Fx1StartFreqHi_day_one,x; 26E9
+        sta     Fx1FreqHi_day_one,x     ; 26EC
         plp                             ; 26EF
         rts                             ; 26F0
 
 L26F1:  lda     ($10),y                 ; 26F1
-        sta     L2677,y                 ; 26F3
+        sta     Fx2SweepLen_day_one,y   ; 26F3
         dey                             ; 26F6
         bpl     L26F1                   ; 26F7
         bmi     L26C9                   ; 26F9
-L26FB:  lda     L2671,x                 ; 26FB
+
+; --------------------------------------------------------------------------
+; Step one voice's volume envelope (X = 0 voice 1, $20 voice 2): rise by the attack step to
+; the peak, fall by the decay step to the sustain level, hold, then release to 0.
+; --------------------------------------------------------------------------
+StepEnvelope_day_one:
+        lda     Fx1EnvTimer_day_one,x   ; 26FB
         beq     L2704                   ; 26FE
-        dec     L2671,x                 ; 2700
+        dec     Fx1EnvTimer_day_one,x   ; 2700
         rts                             ; 2703
 
-L2704:  lda     L266C,x                 ; 2704
-        sta     L2671,x                 ; 2707
-        ldy     L2675,x                 ; 270A
+L2704:  lda     Fx1EnvRate_day_one,x    ; 2704
+        sta     Fx1EnvTimer_day_one,x   ; 2707
+        ldy     Fx1EnvPhase_day_one,x   ; 270A
         iny                             ; 270D
         beq     L2742                   ; 270E
         iny                             ; 2710
         beq     L2761                   ; 2711
         iny                             ; 2713
         beq     L276A                   ; 2714
-        lda     L2676,x                 ; 2716
-        cmp     L2666,x                 ; 2719
+        lda     Fx1Level_day_one,x      ; 2716
+        cmp     Fx1PeakLevel_day_one,x  ; 2719
         beq     L272A                   ; 271C
         clc                             ; 271E
-        adc     L2665,x                 ; 271F
-        cmp     L2666,x                 ; 2722
+        adc     Fx1AttackStep_day_one,x ; 271F
+        cmp     Fx1PeakLevel_day_one,x  ; 2722
         bcc     L272D                   ; 2725
-        lda     L2666,x                 ; 2727
-L272A:  inc     L2675,x                 ; 272A
-L272D:  sta     L2676,x                 ; 272D
-        dec     L266A,x                 ; 2730
+        lda     Fx1PeakLevel_day_one,x  ; 2727
+L272A:  inc     Fx1EnvPhase_day_one,x   ; 272A
+L272D:  sta     Fx1Level_day_one,x      ; 272D
+        dec     Fx1NoteTicks_day_one,x  ; 2730
         bne     L2782                   ; 2733
-        lda     L2668,x                 ; 2735
-        sta     L2676,x                 ; 2738
+        lda     Fx1SustainLevel_day_one,x; 2735
+        sta     Fx1Level_day_one,x      ; 2738
         lda     #$FF                    ; 273B
-        sta     L2675,x                 ; 273D
+        sta     Fx1EnvPhase_day_one,x   ; 273D
         bne     L2782                   ; 2740
 L2742:  sec                             ; 2742
-        lda     L2676,x                 ; 2743
-        sbc     L2669,x                 ; 2746
+        lda     Fx1Level_day_one,x      ; 2743
+        sbc     Fx1ReleaseStep_day_one,x; 2746
         bcc     L2755                   ; 2749
         beq     L2757                   ; 274B
-        sta     L2676,x                 ; 274D
-        dec     L266B,x                 ; 2750
+        sta     Fx1Level_day_one,x      ; 274D
+        dec     Fx1ReleaseTicks_day_one,x; 2750
         bne     L2782                   ; 2753
 L2755:  lda     #$00                    ; 2755
-L2757:  sta     L2675,x                 ; 2757
-        sta     L2676,x                 ; 275A
-        sta     L266D,x                 ; 275D
+L2757:  sta     Fx1EnvPhase_day_one,x   ; 2757
+        sta     Fx1Level_day_one,x      ; 275A
+        sta     Fx1VoiceBits_day_one,x  ; 275D
         rts                             ; 2760
 
-L2761:  dec     L266A,x                 ; 2761
+L2761:  dec     Fx1NoteTicks_day_one,x  ; 2761
         bne     L2782                   ; 2764
-        inc     L2675,x                 ; 2766
+        inc     Fx1EnvPhase_day_one,x   ; 2766
         rts                             ; 2769
 
-L276A:  lda     L2676,x                 ; 276A
+L276A:  lda     Fx1Level_day_one,x      ; 276A
         sec                             ; 276D
-        sbc     L2667,x                 ; 276E
+        sbc     Fx1DecayStep_day_one,x  ; 276E
         bcs     L2777                   ; 2771
         lda     #$00                    ; 2773
         beq     L272A                   ; 2775
-L2777:  cmp     L2668,x                 ; 2777
+L2777:  cmp     Fx1SustainLevel_day_one,x; 2777
         bcs     L272D                   ; 277A
-        lda     L2668,x                 ; 277C
+        lda     Fx1SustainLevel_day_one,x; 277C
         jmp     L272A                   ; 277F
 
 L2782:  rts                             ; 2782
@@ -2849,25 +2995,25 @@ SoundSilence_day_one:
         sei                             ; 2784
         ldx     #$49                    ; 2785
         lda     #$00                    ; 2787
-L2789:  sta     L2ADD,x                 ; 2789
-        sta     L2B27,x                 ; 278C
+L2789:  sta     TuneInstrument1_day_one,x; 2789
+        sta     TuneInstrument2_day_one,x; 278C
         cpx     #$20                    ; 278F
         bcs     L2799                   ; 2791
-        sta     L2657,x                 ; 2793
-        sta     L2677,x                 ; 2796
+        sta     Fx1SweepLen_day_one,x   ; 2793
+        sta     Fx2SweepLen_day_one,x   ; 2796
 L2799:  dex                             ; 2799
         bpl     L2789                   ; 279A
         ldx     #$03                    ; 279C
 L279E:  sta     TED_V1_FREQ_LO,x        ; 279E
         dex                             ; 27A1
         bpl     L279E                   ; 27A2
-        sta     L266D                   ; 27A4
-        sta     L268D                   ; 27A7
-        sta     L2675                   ; 27AA
-        sta     L2695                   ; 27AD
-        sta     L2676                   ; 27B0
-        sta     L2696                   ; 27B3
-        sta     L2AF4                   ; 27B6
+        sta     Fx1VoiceBits_day_one    ; 27A4
+        sta     Fx2VoiceBits_day_one    ; 27A7
+        sta     Fx1EnvPhase_day_one     ; 27AA
+        sta     Fx2EnvPhase_day_one     ; 27AD
+        sta     Fx1Level_day_one        ; 27B0
+        sta     Fx2Level_day_one        ; 27B3
+        sta     TunePlaying1_day_one    ; 27B6
         lda     TED_BITMAP_V1HI         ; 27B9
         and     #$FC                    ; 27BC
         sta     TED_BITMAP_V1HI         ; 27BE
@@ -2881,56 +3027,56 @@ L27C3:  jmp     L2857                   ; 27C3
 ; Sound driver step, called from the raster split at $1631. TODO(name)
 ; --------------------------------------------------------------------------
 SoundStep_day_one:
-        lda     L2675                   ; 27C6
+        lda     Fx1EnvPhase_day_one     ; 27C6
         beq     L27C3                   ; 27C9
         cld                             ; 27CB
-        lda     L2673                   ; 27CC
-        ora     L2674                   ; 27CF
+        lda     Fx1FreqLo_day_one       ; 27CC
+        ora     Fx1FreqHi_day_one       ; 27CF
         beq     L283B                   ; 27D2
-        lda     L265A                   ; 27D4
+        lda     Fx1StartDelay_day_one   ; 27D4
         beq     L27DF                   ; 27D7
-        dec     L265A                   ; 27D9
+        dec     Fx1StartDelay_day_one   ; 27D9
         jmp     L283B                   ; 27DC
 
-L27DF:  lda     L2672                   ; 27DF
+L27DF:  lda     Fx1SweepTimer_day_one   ; 27DF
         beq     L27EA                   ; 27E2
-        dec     L2672                   ; 27E4
+        dec     Fx1SweepTimer_day_one   ; 27E4
         jmp     L2852                   ; 27E7
 
 L27EA:  ldy     #$04                    ; 27EA
         ldx     #$02                    ; 27EC
-        lda     L265B                   ; 27EE
-        sta     L2672                   ; 27F1
-L27F4:  lda     L266E,x                 ; 27F4
+        lda     Fx1SweepRate_day_one    ; 27EE
+        sta     Fx1SweepTimer_day_one   ; 27F1
+L27F4:  lda     Fx1SweepCount_day_one,x ; 27F4
         beq     L2811                   ; 27F7
-        lda     L2673                   ; 27F9
+        lda     Fx1FreqLo_day_one       ; 27F9
         clc                             ; 27FC
-        adc     L265D,y                 ; 27FD
-        sta     L2673                   ; 2800
-        lda     L2674                   ; 2803
-        adc     L265E,y                 ; 2806
-        sta     L2674                   ; 2809
-        dec     L266E,x                 ; 280C
+        adc     Fx1SweepStepLo_day_one,y; 27FD
+        sta     Fx1FreqLo_day_one       ; 2800
+        lda     Fx1FreqHi_day_one       ; 2803
+        adc     Fx1SweepStepHi_day_one,y; 2806
+        sta     Fx1FreqHi_day_one       ; 2809
+        dec     Fx1SweepCount_day_one,x ; 280C
         bne     L283B                   ; 280F
 L2811:  dey                             ; 2811
         dey                             ; 2812
         dex                             ; 2813
         bpl     L27F4                   ; 2814
-        lda     L265C                   ; 2816
+        lda     Fx1SweepMode_day_one    ; 2816
         beq     L283B                   ; 2819
         bpl     L2829                   ; 281B
-        lda     L2663                   ; 281D
-        sta     L2673                   ; 2820
-        lda     L2664                   ; 2823
-        sta     L2674                   ; 2826
-L2829:  lda     L2657                   ; 2829
-        sta     L266E                   ; 282C
-        lda     L2658                   ; 282F
-        sta     L266F                   ; 2832
-        lda     L2659                   ; 2835
-        sta     L2670                   ; 2838
-L283B:  ldx     L2673                   ; 283B
-        lda     L2674                   ; 283E
+        lda     Fx1StartFreqLo_day_one  ; 281D
+        sta     Fx1FreqLo_day_one       ; 2820
+        lda     Fx1StartFreqHi_day_one  ; 2823
+        sta     Fx1FreqHi_day_one       ; 2826
+L2829:  lda     Fx1SweepLen_day_one     ; 2829
+        sta     Fx1SweepCount_day_one   ; 282C
+        lda     Fx1SweepLenB_day_one    ; 282F
+        sta     Fx1SweepCountB_day_one  ; 2832
+        lda     Fx1SweepLenC_day_one    ; 2835
+        sta     Fx1SweepCountC_day_one  ; 2838
+L283B:  ldx     Fx1FreqLo_day_one       ; 283B
+        lda     Fx1FreqHi_day_one       ; 283E
         and     #$03                    ; 2841
         sta     $1A                     ; 2843
         lda     TED_BITMAP_V1HI         ; 2845
@@ -2939,58 +3085,58 @@ L283B:  ldx     L2673                   ; 283B
         stx     TED_V1_FREQ_LO          ; 284C
         sta     TED_BITMAP_V1HI         ; 284F
 L2852:  ldx     #$00                    ; 2852
-        jsr     L26FB                   ; 2854
-L2857:  lda     L2695                   ; 2857
+        jsr     StepEnvelope_day_one    ; 2854
+L2857:  lda     Fx2EnvPhase_day_one     ; 2857
         bne     L285F                   ; 285A
         jmp     L28EA                   ; 285C
 
-L285F:  lda     L2693                   ; 285F
-        ora     L2694                   ; 2862
+L285F:  lda     Fx2FreqLo_day_one       ; 285F
+        ora     Fx2FreqHi_day_one       ; 2862
         beq     L28CE                   ; 2865
-        lda     L267A                   ; 2867
+        lda     Fx2StartDelay_day_one   ; 2867
         beq     L2872                   ; 286A
-        dec     L267A                   ; 286C
+        dec     Fx2StartDelay_day_one   ; 286C
         jmp     L28CE                   ; 286F
 
-L2872:  lda     L2692                   ; 2872
+L2872:  lda     Fx2SweepTimer_day_one   ; 2872
         beq     L287D                   ; 2875
-        dec     L2692                   ; 2877
+        dec     Fx2SweepTimer_day_one   ; 2877
         jmp     L28E5                   ; 287A
 
 L287D:  ldy     #$04                    ; 287D
         ldx     #$02                    ; 287F
-        lda     L267B                   ; 2881
-        sta     L2692                   ; 2884
-L2887:  lda     L268E,x                 ; 2887
+        lda     Fx2SweepRate_day_one    ; 2881
+        sta     Fx2SweepTimer_day_one   ; 2884
+L2887:  lda     Fx2SweepCount_day_one,x ; 2887
         beq     L28A4                   ; 288A
-        lda     L2693                   ; 288C
+        lda     Fx2FreqLo_day_one       ; 288C
         clc                             ; 288F
-        adc     L267D,y                 ; 2890
-        sta     L2693                   ; 2893
-        lda     L2694                   ; 2896
-        adc     L267E,y                 ; 2899
-        sta     L2694                   ; 289C
-        dec     L268E,x                 ; 289F
+        adc     Fx2SweepStepLo_day_one,y; 2890
+        sta     Fx2FreqLo_day_one       ; 2893
+        lda     Fx2FreqHi_day_one       ; 2896
+        adc     Fx2SweepStepHi_day_one,y; 2899
+        sta     Fx2FreqHi_day_one       ; 289C
+        dec     Fx2SweepCount_day_one,x ; 289F
         bne     L28CE                   ; 28A2
 L28A4:  dey                             ; 28A4
         dey                             ; 28A5
         dex                             ; 28A6
         bpl     L2887                   ; 28A7
-        lda     L267C                   ; 28A9
+        lda     Fx2SweepMode_day_one    ; 28A9
         beq     L28CE                   ; 28AC
         bpl     L28BC                   ; 28AE
-        lda     L2683                   ; 28B0
-        sta     L2693                   ; 28B3
-        lda     L2684                   ; 28B6
-        sta     L2694                   ; 28B9
-L28BC:  lda     L2677                   ; 28BC
-        sta     L268E                   ; 28BF
-        lda     L2678                   ; 28C2
-        sta     L268F                   ; 28C5
-        lda     L2679                   ; 28C8
-        sta     L2690                   ; 28CB
-L28CE:  ldx     L2693                   ; 28CE
-        lda     L2694                   ; 28D1
+        lda     Fx2StartFreqLo_day_one  ; 28B0
+        sta     Fx2FreqLo_day_one       ; 28B3
+        lda     Fx2StartFreqHi_day_one  ; 28B6
+        sta     Fx2FreqHi_day_one       ; 28B9
+L28BC:  lda     Fx2SweepLen_day_one     ; 28BC
+        sta     Fx2SweepCount_day_one   ; 28BF
+        lda     Fx2SweepLenB_day_one    ; 28C2
+        sta     Fx2SweepCountB_day_one  ; 28C5
+        lda     Fx2SweepLenC_day_one    ; 28C8
+        sta     Fx2SweepCountC_day_one  ; 28CB
+L28CE:  ldx     Fx2FreqLo_day_one       ; 28CE
+        lda     Fx2FreqHi_day_one       ; 28D1
         and     #$03                    ; 28D4
         sta     $1A                     ; 28D6
         lda     TED_BITMAP_V1HI         ; 28D8
@@ -2999,18 +3145,18 @@ L28CE:  ldx     L2693                   ; 28CE
         stx     TED_V2_FREQ_LO          ; 28DF
         sta     TED_V2_FREQ_HI          ; 28E2
 L28E5:  ldx     #$20                    ; 28E5
-        jsr     L26FB                   ; 28E7
-L28EA:  lda     L2696                   ; 28EA
-        cmp     L2676                   ; 28ED
+        jsr     StepEnvelope_day_one    ; 28E7
+L28EA:  lda     Fx2Level_day_one        ; 28EA
+        cmp     Fx1Level_day_one        ; 28ED
         bcs     L28F5                   ; 28F0
-        lda     L2676                   ; 28F2
+        lda     Fx1Level_day_one        ; 28F2
 L28F5:  and     #$0F                    ; 28F5
-        ora     L266D                   ; 28F7
-        ora     L268D                   ; 28FA
+        ora     Fx1VoiceBits_day_one    ; 28F7
+        ora     Fx2VoiceBits_day_one    ; 28FA
         sta     TED_SOUND_CTRL          ; 28FD
-        lda     L2AF4                   ; 2900
+        lda     TunePlaying1_day_one    ; 2900
         beq     L2943                   ; 2903
-        dec     L2AF5                   ; 2905
+        dec     TuneWait1_day_one       ; 2905
         bne     L2943                   ; 2908
         ldy     #$00                    ; 290A
 L290C:  lda     ($12),y                 ; 290C
@@ -3019,18 +3165,18 @@ L290C:  lda     ($12),y                 ; 290C
         bcs     L2946                   ; 2911
         cmp     #$30                    ; 2913
         beq     L292A                   ; 2915
-        ldy     L2B94,x                 ; 2917
-        lda     L2B71,x                 ; 291A
-        sty     L2AEA                   ; 291D
-        sta     L2AE9                   ; 2920
+        ldy     NoteFreqHi_day_one,x    ; 2917
+        lda     NoteFreqLo_day_one,x    ; 291A
+        sty     TuneNoteHi1_day_one     ; 291D
+        sta     TuneNoteLo1_day_one     ; 2920
         ldx     #$DD                    ; 2923
         ldy     #$2A                    ; 2925
         jsr     StartSoundEffect        ; 2927
 L292A:  ldy     #$01                    ; 292A
         lda     ($12),y                 ; 292C
         tax                             ; 292E
-        lda     L2AF6,x                 ; 292F
-        sta     L2AF5                   ; 2932
+        lda     TuneDepth1_day_one,x    ; 292F
+        sta     TuneWait1_day_one       ; 2932
         lda     #$02                    ; 2935
 L2937:  clc                             ; 2937
         adc     $12                     ; 2938
@@ -3043,24 +3189,24 @@ L2943:  jmp     L29E5                   ; 2943
 
 L2946:  inx                             ; 2946
         bne     L2959                   ; 2947
-        ldy     L2AF6                   ; 2949
+        ldy     TuneDepth1_day_one      ; 2949
         cpy     #$0F                    ; 294C
         bne     L2955                   ; 294E
-        stx     L2AF4                   ; 2950
+        stx     TunePlaying1_day_one    ; 2950
         beq     L2937                   ; 2953
 L2955:  ldx     #$03                    ; 2955
         bne     L297A                   ; 2957
 L2959:  inx                             ; 2959
         bne     L2982                   ; 295A
-        ldx     L2AF6                   ; 295C
+        ldx     TuneDepth1_day_one      ; 295C
         bmi     L2965                   ; 295F
         cpx     #$0F                    ; 2961
         bcs     L2978                   ; 2963
 L2965:  inx                             ; 2965
-        stx     L2AF6                   ; 2966
-        lda     L2B07,x                 ; 2969
+        stx     TuneDepth1_day_one      ; 2966
+        lda     TuneReturnLo1_day_one,x ; 2969
         sta     $12                     ; 296C
-        lda     L2B17,x                 ; 296E
+        lda     TuneReturnHi1_day_one,x ; 296E
         sta     $13                     ; 2971
         lda     #$00                    ; 2973
         tay                             ; 2975
@@ -3068,7 +3214,7 @@ L2965:  inx                             ; 2965
 L2978:  ldx     #$02                    ; 2978
 L297A:  lda     #$01                    ; 297A
         ldy     #$00                    ; 297C
-        sty     L2AF4                   ; 297E
+        sty     TunePlaying1_day_one    ; 297E
         brk                             ; 2981
 L2982:  ldy     #$01                    ; 2982
         lda     ($12),y                 ; 2984
@@ -3081,7 +3227,7 @@ L2982:  ldy     #$01                    ; 2982
         ldy     #$16                    ; 2990
         ldx     #$16                    ; 2992
 L2994:  lda     ($16),y                 ; 2994
-        sta     L2ADD,x                 ; 2996
+        sta     TuneInstrument1_day_one,x; 2996
         dex                             ; 2999
         dey                             ; 299A
         bpl     L2994                   ; 299B
@@ -3103,16 +3249,16 @@ L29B5:  inx                             ; 29B5
         ldy     #$0F                    ; 29B8
         ldx     #$29                    ; 29BA
         bne     L2994                   ; 29BC
-L29BE:  ldx     L2AF6                   ; 29BE
+L29BE:  ldx     TuneDepth1_day_one      ; 29BE
         bmi     L29E1                   ; 29C1
         clc                             ; 29C3
         lda     #$03                    ; 29C4
         adc     $12                     ; 29C6
-        sta     L2B07,x                 ; 29C8
+        sta     TuneReturnLo1_day_one,x ; 29C8
         lda     $13                     ; 29CB
         adc     #$00                    ; 29CD
-        sta     L2B17,x                 ; 29CF
-        dec     L2AF6                   ; 29D2
+        sta     TuneReturnHi1_day_one,x ; 29CF
+        dec     TuneDepth1_day_one      ; 29D2
         lda     $16                     ; 29D5
         sta     $12                     ; 29D7
         lda     $17                     ; 29D9
@@ -3121,9 +3267,9 @@ L29BE:  ldx     L2AF6                   ; 29BE
         beq     L299F                   ; 29DF
 L29E1:  ldx     #$01                    ; 29E1
         bne     L297A                   ; 29E3
-L29E5:  lda     L2B3E                   ; 29E5
+L29E5:  lda     TunePlaying2_day_one    ; 29E5
         beq     L2A28                   ; 29E8
-        dec     L2B3F                   ; 29EA
+        dec     TuneWait2_day_one       ; 29EA
         bne     L2A28                   ; 29ED
         ldy     #$00                    ; 29EF
 L29F1:  lda     ($14),y                 ; 29F1
@@ -3132,18 +3278,18 @@ L29F1:  lda     ($14),y                 ; 29F1
         bcs     L2A29                   ; 29F6
         cmp     #$30                    ; 29F8
         bcs     L2A0F                   ; 29FA
-        ldy     L2B94,x                 ; 29FC
-        lda     L2B71,x                 ; 29FF
-        sta     L2B33                   ; 2A02
-        sty     L2B34                   ; 2A05
+        ldy     NoteFreqHi_day_one,x    ; 29FC
+        lda     NoteFreqLo_day_one,x    ; 29FF
+        sta     TuneNoteLo2_day_one     ; 2A02
+        sty     TuneNoteHi2_day_one     ; 2A05
         ldx     #$27                    ; 2A08
         ldy     #$2B                    ; 2A0A
         jsr     StartSoundEffect        ; 2A0C
 L2A0F:  ldy     #$01                    ; 2A0F
         lda     ($14),y                 ; 2A11
         tax                             ; 2A13
-        lda     L2B40,x                 ; 2A14
-        sta     L2B3F                   ; 2A17
+        lda     TuneDepth2_day_one,x    ; 2A14
+        sta     TuneWait2_day_one       ; 2A17
         lda     #$02                    ; 2A1A
 L2A1C:  clc                             ; 2A1C
         adc     $14                     ; 2A1D
@@ -3156,24 +3302,24 @@ L2A28:  rts                             ; 2A28
 
 L2A29:  inx                             ; 2A29
         bne     L2A3C                   ; 2A2A
-        ldy     L2B40                   ; 2A2C
+        ldy     TuneDepth2_day_one      ; 2A2C
         cpy     #$0F                    ; 2A2F
         bne     L2A38                   ; 2A31
-        stx     L2B3E                   ; 2A33
+        stx     TunePlaying2_day_one    ; 2A33
         beq     L2A1C                   ; 2A36
 L2A38:  ldx     #$03                    ; 2A38
         bne     L2A5D                   ; 2A3A
 L2A3C:  inx                             ; 2A3C
         bne     L2A65                   ; 2A3D
-        ldx     L2B40                   ; 2A3F
+        ldx     TuneDepth2_day_one      ; 2A3F
         bmi     L2A48                   ; 2A42
         cpx     #$0F                    ; 2A44
         bcs     L2A5B                   ; 2A46
 L2A48:  inx                             ; 2A48
-        stx     L2B40                   ; 2A49
-        lda     L2B51,x                 ; 2A4C
+        stx     TuneDepth2_day_one      ; 2A49
+        lda     TuneReturnLo2_day_one,x ; 2A4C
         sta     $14                     ; 2A4F
-        lda     L2B61,x                 ; 2A51
+        lda     TuneReturnHi2_day_one,x ; 2A51
         sta     $15                     ; 2A54
         lda     #$00                    ; 2A56
         tay                             ; 2A58
@@ -3181,7 +3327,7 @@ L2A48:  inx                             ; 2A48
 L2A5B:  ldx     #$02                    ; 2A5B
 L2A5D:  lda     #$02                    ; 2A5D
         ldy     #$00                    ; 2A5F
-        sty     L2B3E                   ; 2A61
+        sty     TunePlaying2_day_one    ; 2A61
         brk                             ; 2A64
 L2A65:  ldy     #$01                    ; 2A65
         lda     ($14),y                 ; 2A67
@@ -3194,7 +3340,7 @@ L2A65:  ldy     #$01                    ; 2A65
         ldy     #$16                    ; 2A73
         ldx     #$16                    ; 2A75
 L2A77:  lda     ($18),y                 ; 2A77
-        sta     L2B27,x                 ; 2A79
+        sta     TuneInstrument2_day_one,x; 2A79
         dex                             ; 2A7C
         dey                             ; 2A7D
         bpl     L2A77                   ; 2A7E
@@ -3218,16 +3364,16 @@ L2A98:  inx                             ; 2A98
         bne     L2A77                   ; 2A9F
 L2AA1:  inx                             ; 2AA1
         bne     L2AD2                   ; 2AA2
-        ldx     L2B40                   ; 2AA4
+        ldx     TuneDepth2_day_one      ; 2AA4
         bmi     L2AC7                   ; 2AA7
         clc                             ; 2AA9
         lda     #$03                    ; 2AAA
         adc     $14                     ; 2AAC
-        sta     L2B51,x                 ; 2AAE
+        sta     TuneReturnLo2_day_one,x ; 2AAE
         lda     $15                     ; 2AB1
         adc     #$00                    ; 2AB3
-        sta     L2B61,x                 ; 2AB5
-        dec     L2B40                   ; 2AB8
+        sta     TuneReturnHi2_day_one,x ; 2AB5
+        dec     TuneDepth2_day_one      ; 2AB8
         lda     $18                     ; 2ABB
         sta     $14                     ; 2ABD
         lda     $19                     ; 2ABF
@@ -3246,40 +3392,122 @@ L2AD2:  lda     $18                     ; 2AD2
         sta     $15                     ; 2AD8
         jmp     L2AC3                   ; 2ADA
 
-L2ADD:  .byte   $00,$00,$00,$00,$00,$00,$00,$00; 2ADD
+
+; --------------------------------------------------------------------------
+; Voice 1's 23-byte effect record, loaded by the tune commands $FB-$FD; StartSoundEffect plays it.
+; --------------------------------------------------------------------------
+TuneInstrument1_day_one:
+        .byte   $00,$00,$00,$00,$00,$00,$00,$00; 2ADD
         .byte   $00,$00,$00,$00         ; 2AE5
-L2AE9:  .byte   $00                     ; 2AE9
-L2AEA:  .byte   $00,$00,$00,$00,$00,$00,$00,$00; 2AEA
+
+; --------------------------------------------------------------------------
+; Voice 1's note frequency in the record, from NoteFreqLo/Hi.
+; --------------------------------------------------------------------------
+TuneNoteLo1_day_one:
+        .byte   $00                     ; 2AE9
+TuneNoteHi1_day_one:
+        .byte   $00,$00,$00,$00,$00,$00,$00,$00; 2AEA
         .byte   $00,$00                 ; 2AF2
-L2AF4:  .byte   $00                     ; 2AF4
-L2AF5:  .byte   $00                     ; 2AF5
-L2AF6:  .byte   $00,$00,$00,$00,$00,$00,$00,$00; 2AF6
+
+; --------------------------------------------------------------------------
+; Non-zero while voice 1's tune runs; cleared by $FF at call depth 0.
+; --------------------------------------------------------------------------
+TunePlaying1_day_one:
+        .byte   $00                     ; 2AF4
+
+; --------------------------------------------------------------------------
+; Frames left of voice 1's current note.
+; --------------------------------------------------------------------------
+TuneWait1_day_one:
+        .byte   $00                     ; 2AF5
+
+; --------------------------------------------------------------------------
+; Voice 1's call stack index ($0F empty); the 16 bytes after it are the note lengths, indexed 1-16.
+; --------------------------------------------------------------------------
+TuneDepth1_day_one:
+        .byte   $00,$00,$00,$00,$00,$00,$00,$00; 2AF6
         .byte   $00,$00,$00,$00,$00,$00,$00,$00; 2AFE
         .byte   $00                     ; 2B06
-L2B07:  .byte   $00,$00,$00,$00,$00,$00,$00,$00; 2B07
+
+; --------------------------------------------------------------------------
+; Voice 1's call return addresses, low bytes.
+; --------------------------------------------------------------------------
+TuneReturnLo1_day_one:
+        .byte   $00,$00,$00,$00,$00,$00,$00,$00; 2B07
         .byte   $00,$00,$00,$00,$00,$00,$00,$00; 2B0F
-L2B17:  .byte   $00,$00,$00,$00,$00,$00,$00,$00; 2B17
+
+; --------------------------------------------------------------------------
+; Voice 1's call return addresses, high bytes.
+; --------------------------------------------------------------------------
+TuneReturnHi1_day_one:
+        .byte   $00,$00,$00,$00,$00,$00,$00,$00; 2B17
         .byte   $00,$00,$00,$00,$00,$00,$00,$00; 2B1F
-L2B27:  .byte   $00,$00,$00,$00,$00,$00,$00,$00; 2B27
+
+; --------------------------------------------------------------------------
+; Voice 2's 23-byte effect record.
+; --------------------------------------------------------------------------
+TuneInstrument2_day_one:
+        .byte   $00,$00,$00,$00,$00,$00,$00,$00; 2B27
         .byte   $00,$00,$00,$00         ; 2B2F
-L2B33:  .byte   $00                     ; 2B33
-L2B34:  .byte   $00,$00,$00,$00,$00,$00,$00,$00; 2B34
+
+; --------------------------------------------------------------------------
+; Voice 2's note frequency in the record.
+; --------------------------------------------------------------------------
+TuneNoteLo2_day_one:
+        .byte   $00                     ; 2B33
+TuneNoteHi2_day_one:
+        .byte   $00,$00,$00,$00,$00,$00,$00,$00; 2B34
         .byte   $00,$00                 ; 2B3C
-L2B3E:  .byte   $00                     ; 2B3E
-L2B3F:  .byte   $00                     ; 2B3F
-L2B40:  .byte   $00,$00,$00,$00,$00,$00,$00,$00; 2B40
+
+; --------------------------------------------------------------------------
+; Non-zero while voice 2's tune runs.
+; --------------------------------------------------------------------------
+TunePlaying2_day_one:
+        .byte   $00                     ; 2B3E
+
+; --------------------------------------------------------------------------
+; Frames left of voice 2's current note.
+; --------------------------------------------------------------------------
+TuneWait2_day_one:
+        .byte   $00                     ; 2B3F
+
+; --------------------------------------------------------------------------
+; Voice 2's call stack index ($0F empty); the 16 bytes after it are its note lengths.
+; --------------------------------------------------------------------------
+TuneDepth2_day_one:
+        .byte   $00,$00,$00,$00,$00,$00,$00,$00; 2B40
         .byte   $00,$00,$00,$00,$00,$00,$00,$00; 2B48
         .byte   $00                     ; 2B50
-L2B51:  .byte   $00,$00,$00,$00,$00,$00,$00,$00; 2B51
+
+; --------------------------------------------------------------------------
+; Voice 2's call return addresses, low bytes.
+; --------------------------------------------------------------------------
+TuneReturnLo2_day_one:
+        .byte   $00,$00,$00,$00,$00,$00,$00,$00; 2B51
         .byte   $00,$00,$00,$00,$00,$00,$00,$00; 2B59
-L2B61:  .byte   $00,$00,$00,$00,$00,$00,$00,$00; 2B61
+
+; --------------------------------------------------------------------------
+; Voice 2's call return addresses, high bytes.
+; --------------------------------------------------------------------------
+TuneReturnHi2_day_one:
+        .byte   $00,$00,$00,$00,$00,$00,$00,$00; 2B61
         .byte   $00,$00,$00,$00,$00,$00,$00,$00; 2B69
-L2B71:  .byte   $07,$40,$76,$A8,$D8,$06,$30,$59; 2B71
+
+; --------------------------------------------------------------------------
+; TED frequency of 35 notes, A2 to G5 a semitone apart, low bytes (note 0 = $007, 110 Hz).
+; --------------------------------------------------------------------------
+NoteFreqLo_day_one:
+        .byte   $07,$40,$76,$A8,$D8,$06,$30,$59; 2B71
         .byte   $7F,$A3,$C5,$E5,$03,$20,$3B,$54; 2B79
         .byte   $6C,$83,$98,$AC,$BF,$D1,$E2,$F2; 2B81
         .byte   $01,$10,$1D,$2A,$36,$41,$4C,$56; 2B89
         .byte   $5F,$68,$71             ; 2B91
-L2B94:  .byte   $00,$00,$00,$00,$00,$01,$01,$01; 2B94
+
+; --------------------------------------------------------------------------
+; The same notes' high bits (0-3).
+; --------------------------------------------------------------------------
+NoteFreqHi_day_one:
+        .byte   $00,$00,$00,$00,$00,$01,$01,$01; 2B94
         .byte   $01,$01,$01,$01,$02,$02,$02,$02; 2B9C
         .byte   $02,$02,$02,$02,$02,$02,$02,$02; 2BA4
         .byte   $03,$03,$03,$03,$03,$03,$03,$03; 2BAC
@@ -3301,8 +3529,8 @@ L2BC0:  lda     ($10),y                 ; 2BC0
         dey                             ; 2BC5
         bne     L2BC0                   ; 2BC6
         ldy     #$0F                    ; 2BC8
-        sty     L2AF6                   ; 2BCA
-        sty     L2B40                   ; 2BCD
+        sty     TuneDepth1_day_one      ; 2BCA
+        sty     TuneDepth2_day_one      ; 2BCD
         lda     $10                     ; 2BD0
         clc                             ; 2BD2
         adc     #$04                    ; 2BD3
@@ -3313,10 +3541,10 @@ L2BC0:  lda     ($10),y                 ; 2BC0
         tya                             ; 2BDB
         pha                             ; 2BDC
         lda     #$01                    ; 2BDD
-        sta     L2AF5                   ; 2BDF
-        sta     L2AF4                   ; 2BE2
-        sta     L2B3F                   ; 2BE5
-        sta     L2B3E                   ; 2BE8
+        sta     TuneWait1_day_one       ; 2BDF
+        sta     TunePlaying1_day_one    ; 2BE2
+        sta     TuneWait2_day_one       ; 2BE5
+        sta     TunePlaying2_day_one    ; 2BE8
         cli                             ; 2BEB
         rts                             ; 2BEC
 

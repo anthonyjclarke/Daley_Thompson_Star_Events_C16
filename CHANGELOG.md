@@ -2,6 +2,24 @@
 
 ---
 
+## [0.9.0] 22-11-2026
+
+### Added
+
+- `tools/decode_tunes.py`: every tune of both parts as notes and lengths. The three tunes are the same in both
+  parts; the title and GAME OVER tune is *Chariots of Fire*; Day One's unused tune call is the qualified tune.
+  Twelve notes of the title tune checked in VICE.
+- `tools/flight_probe.py --ntsc`: Day Two on an NTSC C16 throws and jumps about 1.5 times as far, because flight
+  steps are timed by a CPU delay loop and distance by frames (new quirk).
+- Names: the six unnamed subroutines, all 22 self-modified operands, the tune player's state, the effect voice
+  blocks (`FX_FIELDS`), Day Two's board scroll and run-up variables. Unnamed labels down from 932 to 770.
+
+### Changed
+
+- Worklist: sound, NTSC and routine naming are done; what remains neutral is listed with why.
+
+---
+
 ## [0.8.2] 22-11-2026
 
 ### Changed

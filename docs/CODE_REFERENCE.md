@@ -78,8 +78,18 @@ Block `day_one`, from `original/day_one_unpacked_vice.prg`. Source `src/day_one.
 
 - `$1010` **Entry_day_one** – Entry point of part 1 (the decruncher's final JMP). Provisional name.
 - `$1024` **FetchPackedByte** – Load the byte at the packed-screen pointer (the LDA operand at $1025/$1026 is the pointer).
+- `$1025` **PackedPtr** – Packed-screen read pointer: the LDA operand in FetchPackedByte.
+- `$1026` **PackedPtrHi**
+- `$104E` **RunScreenPtr** – Screen and colour pointers of DrawPackedScreen's run loop: STA operands, copied from ScreenPtr and ColourPtr and stepped with them.
+- `$104F` **RunScreenPtrHi**
+- `$1054` **RunColourPtr**
+- `$1055` **RunColourPtrHi**
 - `$106E` **AdvancePackedPtr** – Step the packed-screen pointer by one.
 - `$1077` **DrawPackedScreen** – Decode the packed screen at $3000 into screen $0C00 and colour $0800. Codes: $FB run, $FC set address, $FD next row (+40), $FE set colour, $FF end; others are characters.
+- `$109F` **ScreenPtr** – Screen and colour write pointers of DrawPackedScreen: STA operands.
+- `$10A0` **ScreenPtrHi**
+- `$10A5` **ColourPtr**
+- `$10A6` **ColourPtrHi**
 - `$1121` **EventNumber** – 1-4: the event being run; picks its name, distance and set-up.
 - `$1123` **EventDistanceText** – Four 10-byte fields: ' 100', ' 400', ' 110', ' 200' (indexed 0, 10, 20, 30).
 - `$114B` **EventNameText** – Four 10-byte fields: SPRINT, RUN, HURDLES, HURDLES.
@@ -102,6 +112,7 @@ Block `day_one`, from `original/day_one_unpacked_vice.prg`. Source `src/day_one.
 - `$156E` **InstallIrq_day_one** – Point the KERNAL IRQ vector ($0314) at IrqHandler_day_one; raster IRQ only.
 - `$1584` **IrqHandler_day_one** – Raster IRQ: acknowledge, call the next split handler from SplitTable_day_one, step the split counter ($0F) through 0-12. Exits through the KERNAL's register pull.
 - `$158A` **IrqSplitCall_day_one**
+- `$158B` **IrqSplitCallHi_day_one**
 - `$15C6` **Split01_day_one** – Top of frame: colours, DelayTicks - 1, TickRaceClock while racing.
 - `$15EB` **Split02_day_one** – Set the background colour(s) for the next band and the next raster line.
 - `$15F6` **Split03_day_one** – Set the background colour(s) for the next band and the next raster line.
@@ -185,9 +196,85 @@ Block `day_one`, from `original/day_one_unpacked_vice.prg`. Source `src/day_one.
 - `$22FE` **PlayQualifiedSound** – StartSoundEffect with the record at $2322.
 - `$2306` **PlayFailedSound** – StartSoundEffect with the record at $2339.
 - `$230E` **PlayFootstep** – StartSoundEffect with the record at $2350, its pitch byte taken from the next byte of the BASIC ROM (self-modified pointer from $A000).
+- `$230F` **FootstepRomPtr** – Low byte of PlayFootstep's LDA $A000 operand, stepped each call.
+- `$2657` **Fx1SweepLen_day_one** – Steps in each of the three pitch-sweep segments
+- `$2658` **Fx1SweepLenB_day_one**
+- `$2659` **Fx1SweepLenC_day_one**
+- `$265A` **Fx1StartDelay_day_one** – Frames before the sweep starts
+- `$265B` **Fx1SweepRate_day_one** – Frames between sweep steps
+- `$265C` **Fx1SweepMode_day_one** – After the three segments: 0 stop, positive repeat, negative restart from StartFreq
+- `$265D` **Fx1SweepStepLo_day_one** – Three signed words added to Freq, one per segment
+- `$265E` **Fx1SweepStepHi_day_one**
+- `$2663` **Fx1StartFreqLo_day_one** – Starting TED frequency (a tune note's NoteFreqLo/Hi)
+- `$2664` **Fx1StartFreqHi_day_one**
+- `$2665` **Fx1AttackStep_day_one** – Level added per envelope tick until PeakLevel
+- `$2666` **Fx1PeakLevel_day_one**
+- `$2667` **Fx1DecayStep_day_one** – Level taken per tick down to SustainLevel
+- `$2668` **Fx1SustainLevel_day_one**
+- `$2669` **Fx1ReleaseStep_day_one** – Level taken per tick in the release
+- `$266A` **Fx1NoteTicks_day_one** – Envelope ticks before the release
+- `$266B` **Fx1ReleaseTicks_day_one** – Ticks the release lasts
+- `$266C` **Fx1EnvRate_day_one** – Frames per envelope tick
+- `$266D` **Fx1VoiceBits_day_one** – Record byte $16 AND $F0: the voice/waveform bits ORed into $FF11
+- `$266E` **Fx1SweepCount_day_one** – Steps left in each segment
+- `$266F` **Fx1SweepCountB_day_one**
+- `$2670` **Fx1SweepCountC_day_one**
+- `$2671` **Fx1EnvTimer_day_one** – Frames to the next envelope tick
+- `$2672` **Fx1SweepTimer_day_one** – Frames to the next sweep step
+- `$2673` **Fx1FreqLo_day_one** – Current TED frequency
+- `$2674` **Fx1FreqHi_day_one**
+- `$2675` **Fx1EnvPhase_day_one** – $FC attack, $FD decay, $FE hold, $FF release, 0 off
+- `$2676` **Fx1Level_day_one** – Current volume (0-15), the louder voice's goes to $FF11
+- `$2677` **Fx2SweepLen_day_one**
+- `$2678` **Fx2SweepLenB_day_one**
+- `$2679` **Fx2SweepLenC_day_one**
+- `$267A` **Fx2StartDelay_day_one**
+- `$267B` **Fx2SweepRate_day_one**
+- `$267C` **Fx2SweepMode_day_one**
+- `$267D` **Fx2SweepStepLo_day_one**
+- `$267E` **Fx2SweepStepHi_day_one**
+- `$2683` **Fx2StartFreqLo_day_one**
+- `$2684` **Fx2StartFreqHi_day_one**
+- `$2685` **Fx2AttackStep_day_one**
+- `$2686` **Fx2PeakLevel_day_one**
+- `$2687` **Fx2DecayStep_day_one**
+- `$2688` **Fx2SustainLevel_day_one**
+- `$2689` **Fx2ReleaseStep_day_one**
+- `$268A` **Fx2NoteTicks_day_one**
+- `$268B` **Fx2ReleaseTicks_day_one**
+- `$268C` **Fx2EnvRate_day_one**
+- `$268D` **Fx2VoiceBits_day_one**
+- `$268E` **Fx2SweepCount_day_one**
+- `$268F` **Fx2SweepCountB_day_one**
+- `$2690` **Fx2SweepCountC_day_one**
+- `$2691` **Fx2EnvTimer_day_one**
+- `$2692` **Fx2SweepTimer_day_one**
+- `$2693` **Fx2FreqLo_day_one**
+- `$2694` **Fx2FreqHi_day_one**
+- `$2695` **Fx2EnvPhase_day_one**
+- `$2696` **Fx2Level_day_one**
 - `$2697` **StartSoundEffect** – Copy the 23-byte effect record at Y:X into the driver; byte $16 picks the voice.
+- `$26FB` **StepEnvelope_day_one** – Step one voice's volume envelope (X = 0 voice 1, $20 voice 2): rise by the attack step to the peak, fall by the decay step to the sustain level, hold, then release to 0.
 - `$2783` **SoundSilence_day_one** – Clear the sound driver's tables and zero $FF0E-$FF11 and the voice 1 high bits in $FF12. Reached only through SoundVectors_day_one+3, which part 1 never calls.
 - `$27C6` **SoundStep_day_one** – Sound driver step, called from the raster split at $1631. TODO(name)
+- `$2ADD` **TuneInstrument1_day_one** – Voice 1's 23-byte effect record, loaded by the tune commands $FB-$FD; StartSoundEffect plays it.
+- `$2AE9` **TuneNoteLo1_day_one** – Voice 1's note frequency in the record, from NoteFreqLo/Hi.
+- `$2AEA` **TuneNoteHi1_day_one**
+- `$2AF4` **TunePlaying1_day_one** – Non-zero while voice 1's tune runs; cleared by $FF at call depth 0.
+- `$2AF5` **TuneWait1_day_one** – Frames left of voice 1's current note.
+- `$2AF6` **TuneDepth1_day_one** – Voice 1's call stack index ($0F empty); the 16 bytes after it are the note lengths, indexed 1-16.
+- `$2B07` **TuneReturnLo1_day_one** – Voice 1's call return addresses, low bytes.
+- `$2B17` **TuneReturnHi1_day_one** – Voice 1's call return addresses, high bytes.
+- `$2B27` **TuneInstrument2_day_one** – Voice 2's 23-byte effect record.
+- `$2B33` **TuneNoteLo2_day_one** – Voice 2's note frequency in the record.
+- `$2B34` **TuneNoteHi2_day_one**
+- `$2B3E` **TunePlaying2_day_one** – Non-zero while voice 2's tune runs.
+- `$2B3F` **TuneWait2_day_one** – Frames left of voice 2's current note.
+- `$2B40` **TuneDepth2_day_one** – Voice 2's call stack index ($0F empty); the 16 bytes after it are its note lengths.
+- `$2B51` **TuneReturnLo2_day_one** – Voice 2's call return addresses, low bytes.
+- `$2B61` **TuneReturnHi2_day_one** – Voice 2's call return addresses, high bytes.
+- `$2B71` **NoteFreqLo_day_one** – TED frequency of 35 notes, A2 to G5 a semitone apart, low bytes (note 0 = $007, 110 Hz).
+- `$2B94` **NoteFreqHi_day_one** – The same notes' high bits (0-3).
 - `$2BB7` **PlayTunePair_day_one** – Take two inline words after the JSR (copied to $12-$15), start both voices, return past them. TODO(name): the words look like voice 1 and voice 2 data pointers.
 
 ---
@@ -201,12 +288,18 @@ Block `day_two`, from `original/day_two_unpacked_vice.prg`. Source `src/day_two.
 - `$21C7`–`$21F8` **ScreenRowTable** (WordTable) – Screen address of each of the 25 rows ($0C00 + 40 * row)
 - `$23EE`–`$23FA` **SplitRasters_day_two** (ByteTable) – Raster line of each split (13 entries)
 - `$23FB`–`$2414` **SplitTable_day_two** (AddrTable) – Raster-split handlers, called in turn by the IRQ (13 entries)
+- `$2D3B`–`$2DBA` **MarkerShapes** (ByteTable) – Runway marker patterns: two sets of 4 positions x 16 bytes (two characters interleaved)
 - `$2E87`–`$2EA4` **TopFrameTable** (AddrTable) – Addresses of the athlete's 15 top-half frames, 144 bytes each
 - `$2EA5`–`$2EB6` **BottomFrameTable** (AddrTable) – Addresses of the athlete's 9 bottom-half frames, 144 bytes each
 - `$2F14`–`$2F19` **EventJumpTable_day_two** (AddrTable) – Per-event handler, indexed by $42; patched into the JMP at $2F11 (3 entries)
+- `$326D`–`$3275` **DistanceRates** (ByteTable) – Per event, 3 bytes: tenths per cell, random mask, hundredths base. Long jump 1/1/0, shot-put 2/3/0, javelin 7/3/0.
 
 ### Names
 
+- `$002D` **BoardFineScroll** – Fine horizontal scroll (0-7) of the advert boards, written to $FF07 by split 1.
+- `$002E` **BoardScrollSpeed** – Pixels the boards move a frame (1 means every other frame); 3 on the title screen.
+- `$002F` **BoardScrollTemp** – StepBoardScroll's working copy of the step.
+- `$0030` **BoardFrameToggle** – Counted each frame at speed 1; the boards move on even counts.
 - `$0031` **NextBoardChar** – Next advertising-board character ScrollAdvertBoards writes at the right edge: $80-$B9, with $3A added for the bottom row.
 - `$0032` **RunwayFineScroll** – TED fine scroll (0-7) of the runway band.
 - `$0033` **RunwayScrollStep** – Runway scroll per frame plus 1 (0 stops it); set from TakeOffSpeed in flight.
@@ -217,7 +310,10 @@ Block `day_two`, from `original/day_two_unpacked_vice.prg`. Source `src/day_two.
 - `$0040` **WaggleSeen_day_two** – Bit 0: left seen, bit 1: right seen, since the last speed step.
 - `$0041` **InputBits** – Bit 7 fire, bit 3 right, bit 2 left (1 = pressed), from the joystick or the keys.
 - `$0042` **EventIndex** – 0-2: the event being run; indexes EventTableOffset and EventJumpTable_day_two.
+- `$004A` **LineDue** – Set when the run-up has scrolled 120 cells; ApproachLine then brings the line in.
+- `$004B` **LineInView** – Set by ApproachLine; from then on fire counts and the athlete runs on to the line.
 - `$004C` **AthleteX** – Athlete's position along the runway; DrawRunway and AdvanceAthlete use it; below $50 at the line is a foul ($2CA1).
+- `$004D` **MarkerSubCell** – AthleteX AND 3: the pixel offset ShiftRunwayMarker draws.
 - `$004E` **RunwayCellCount** – Counts runway characters scrolled in flight; every 14th ($0E) puts a marker at the right edge and adds no distance.
 - `$004F` **AttemptNumber** – 0-2: the attempt at this event.
 - `$0050` **RunUpActive** – 1 while JoyWaggle_day_two may raise RunSpeed_day_two.
@@ -268,9 +364,85 @@ Block `day_two`, from `original/day_two_unpacked_vice.prg`. Source `src/day_two.
 - `$181E` **SoundEffectA_day_two** – StartSoundEffect_day_two with the record at $1842; called when AttemptResult is not $FF.
 - `$1826` **SoundEffectB_day_two** – StartSoundEffect_day_two; called when AttemptResult is $FF, with ShowFailMessage.
 - `$182E` **PlayFootstep_day_two** – StartSoundEffect_day_two with a pitch byte from the BASIC ROM (self-modified pointer from $A063).
+- `$182F` **FootstepRomPtr_day_two** – Low byte of PlayFootstep_day_two's LDA $A063 operand, stepped each call.
+- `$1B77` **Fx1SweepLen_day_two** – Steps in each of the three pitch-sweep segments
+- `$1B78` **Fx1SweepLenB_day_two**
+- `$1B79` **Fx1SweepLenC_day_two**
+- `$1B7A` **Fx1StartDelay_day_two** – Frames before the sweep starts
+- `$1B7B` **Fx1SweepRate_day_two** – Frames between sweep steps
+- `$1B7C` **Fx1SweepMode_day_two** – After the three segments: 0 stop, positive repeat, negative restart from StartFreq
+- `$1B7D` **Fx1SweepStepLo_day_two** – Three signed words added to Freq, one per segment
+- `$1B7E` **Fx1SweepStepHi_day_two**
+- `$1B83` **Fx1StartFreqLo_day_two** – Starting TED frequency (a tune note's NoteFreqLo/Hi)
+- `$1B84` **Fx1StartFreqHi_day_two**
+- `$1B85` **Fx1AttackStep_day_two** – Level added per envelope tick until PeakLevel
+- `$1B86` **Fx1PeakLevel_day_two**
+- `$1B87` **Fx1DecayStep_day_two** – Level taken per tick down to SustainLevel
+- `$1B88` **Fx1SustainLevel_day_two**
+- `$1B89` **Fx1ReleaseStep_day_two** – Level taken per tick in the release
+- `$1B8A` **Fx1NoteTicks_day_two** – Envelope ticks before the release
+- `$1B8B` **Fx1ReleaseTicks_day_two** – Ticks the release lasts
+- `$1B8C` **Fx1EnvRate_day_two** – Frames per envelope tick
+- `$1B8D` **Fx1VoiceBits_day_two** – Record byte $16 AND $F0: the voice/waveform bits ORed into $FF11
+- `$1B8E` **Fx1SweepCount_day_two** – Steps left in each segment
+- `$1B8F` **Fx1SweepCountB_day_two**
+- `$1B90` **Fx1SweepCountC_day_two**
+- `$1B91` **Fx1EnvTimer_day_two** – Frames to the next envelope tick
+- `$1B92` **Fx1SweepTimer_day_two** – Frames to the next sweep step
+- `$1B93` **Fx1FreqLo_day_two** – Current TED frequency
+- `$1B94` **Fx1FreqHi_day_two**
+- `$1B95` **Fx1EnvPhase_day_two** – $FC attack, $FD decay, $FE hold, $FF release, 0 off
+- `$1B96` **Fx1Level_day_two** – Current volume (0-15), the louder voice's goes to $FF11
+- `$1B97` **Fx2SweepLen_day_two**
+- `$1B98` **Fx2SweepLenB_day_two**
+- `$1B99` **Fx2SweepLenC_day_two**
+- `$1B9A` **Fx2StartDelay_day_two**
+- `$1B9B` **Fx2SweepRate_day_two**
+- `$1B9C` **Fx2SweepMode_day_two**
+- `$1B9D` **Fx2SweepStepLo_day_two**
+- `$1B9E` **Fx2SweepStepHi_day_two**
+- `$1BA3` **Fx2StartFreqLo_day_two**
+- `$1BA4` **Fx2StartFreqHi_day_two**
+- `$1BA5` **Fx2AttackStep_day_two**
+- `$1BA6` **Fx2PeakLevel_day_two**
+- `$1BA7` **Fx2DecayStep_day_two**
+- `$1BA8` **Fx2SustainLevel_day_two**
+- `$1BA9` **Fx2ReleaseStep_day_two**
+- `$1BAA` **Fx2NoteTicks_day_two**
+- `$1BAB` **Fx2ReleaseTicks_day_two**
+- `$1BAC` **Fx2EnvRate_day_two**
+- `$1BAD` **Fx2VoiceBits_day_two**
+- `$1BAE` **Fx2SweepCount_day_two**
+- `$1BAF` **Fx2SweepCountB_day_two**
+- `$1BB0` **Fx2SweepCountC_day_two**
+- `$1BB1` **Fx2EnvTimer_day_two**
+- `$1BB2` **Fx2SweepTimer_day_two**
+- `$1BB3` **Fx2FreqLo_day_two**
+- `$1BB4` **Fx2FreqHi_day_two**
+- `$1BB5` **Fx2EnvPhase_day_two**
+- `$1BB6` **Fx2Level_day_two**
 - `$1BB7` **StartSoundEffect_day_two** – Copy the 23-byte effect record at Y:X into the driver; byte $16 picks the voice.
+- `$1C1A` **StepEnvelope_day_two** – Step one voice's volume envelope (X = 0 voice 1, $20 voice 2): rise by the attack step to the peak, fall by the decay step to the sustain level, hold, then release to 0.
 - `$1CA2` **SoundSilence_day_two** – Clear the sound driver's tables and zero $FF0E-$FF11 and the voice 1 high bits in $FF12.
 - `$1CE4` **SoundStep_day_two** – Sound driver step, called from the last raster split. TODO(name)
+- `$1FFB` **TuneInstrument1_day_two** – Voice 1's 23-byte effect record, loaded by the tune commands $FB-$FD; StartSoundEffect plays it.
+- `$2007` **TuneNoteLo1_day_two** – Voice 1's note frequency in the record, from NoteFreqLo/Hi.
+- `$2008` **TuneNoteHi1_day_two**
+- `$2012` **TunePlaying1_day_two** – Non-zero while voice 1's tune runs; cleared by $FF at call depth 0.
+- `$2013` **TuneWait1_day_two** – Frames left of voice 1's current note.
+- `$2014` **TuneDepth1_day_two** – Voice 1's call stack index ($0F empty); the 16 bytes after it are the note lengths, indexed 1-16.
+- `$2025` **TuneReturnLo1_day_two** – Voice 1's call return addresses, low bytes.
+- `$2035` **TuneReturnHi1_day_two** – Voice 1's call return addresses, high bytes.
+- `$2045` **TuneInstrument2_day_two** – Voice 2's 23-byte effect record.
+- `$2051` **TuneNoteLo2_day_two** – Voice 2's note frequency in the record.
+- `$2052` **TuneNoteHi2_day_two**
+- `$205C` **TunePlaying2_day_two** – Non-zero while voice 2's tune runs.
+- `$205D` **TuneWait2_day_two** – Frames left of voice 2's current note.
+- `$205E` **TuneDepth2_day_two** – Voice 2's call stack index ($0F empty); the 16 bytes after it are its note lengths.
+- `$206F` **TuneReturnLo2_day_two** – Voice 2's call return addresses, low bytes.
+- `$207F` **TuneReturnHi2_day_two** – Voice 2's call return addresses, high bytes.
+- `$208F` **NoteFreqLo_day_two** – TED frequency of 35 notes, A2 to G5 a semitone apart, low bytes (note 0 = $007, 110 Hz).
+- `$20B2` **NoteFreqHi_day_two** – The same notes' high bits (0-3).
 - `$20D5` **PlayTunePair_day_two** – Take two inline words after the JSR (copied to $12-$15), start both voices, return past them. TODO(name): the words look like voice 1 and voice 2 data pointers.
 - `$2111` **Entry_day_two** – Entry point of part 2 (the decruncher's final JMP): copy $0800-$0BDF to $0400-$07DF, ten NOPs, reset the stack, go to InitGame_day_two.
 - `$213F` **InputMode** – 1: joystick, 0: keys. Set by SelectInputMode.
@@ -279,7 +451,7 @@ Block `day_two`, from `original/day_two_unpacked_vice.prg`. Source `src/day_two.
 - `$217A` **ClearScreen** – Fill screen $0C00-$0FFF with spaces and colour $0800-$0BFF with $71, then zero $0DB8-$0E07.
 - `$21A6` **ScreenAddress** – Row Y, column X -> screen pointer $21/$22 (copy in $23) and colour pointer $23/$24.
 - `$21F9` **BcdToAscii** – A (BCD) to two ASCII digits: X tens, Y units.
-- `$220A` **WaitTuneEnd** – Wait until both voices' tune pointers ($2012, $205C) are 0.
+- `$220A` **WaitTuneEnd** – Wait until TunePlaying1_day_two and TunePlaying2_day_two are both 0.
 - `$2213` **Split01_day_two** – Fine scroll from $2D, colours, PollInput_day_two.
 - `$223A` **Split02_day_two** – Raster split: colours or scroll for the next band.
 - `$2243` **Split03_day_two** – Raster split: colours or scroll for the next band.
@@ -296,6 +468,7 @@ Block `day_two`, from `original/day_two_unpacked_vice.prg`. Source `src/day_two.
 - `$2333` **InstallIrq_day_two** – Point the KERNAL IRQ vector ($0314) at IrqHandler_day_two; raster IRQ at line $2E.
 - `$234E` **IrqHandler_day_two** – Raster IRQ: acknowledge, save $21-$24, call the next split handler from SplitTable_day_two, set the next raster line from SplitRasters_day_two.
 - `$2374` **IrqSplitCall_day_two**
+- `$2375` **IrqSplitCallHi_day_two**
 - `$2392` **ReadInput** – Set InputBits from the joystick ($FD to $FF08) or, with InputMode 0, from three keys.
 - `$23BA` **ReadKeys** – Test the three keys in KeyColumns/KeyRows and set the matching KeyBits in InputBits.
 - `$23D6` **TestKey** – Select keyboard row Y, test column mask A; carry set if the key is down.
@@ -307,6 +480,7 @@ Block `day_two`, from `original/day_two_unpacked_vice.prg`. Source `src/day_two.
 - `$244B` **StartEvent_day_two** – Mark all three attempts not taken, draw the event, then run the attempts.
 - `$2478` **StartAttempt_day_two** – Reset the distance and the athlete, draw the screen, wait for the run-up to end.
 - `$2584` **StartGame_day_two** – Reset scores and state, draw the screen, play a tune until fire. TODO(name)
+- `$25E8` **StepBoardScroll** – Move the boards' fine scroll by BoardScrollSpeed; when it wraps, shift the boards a character.
 - `$260E` **ScrollAdvertBoards** – Shift the two advert-board rows ($0DB8, $0DE0) and their colours left one character.
 - `$266F` **BoardStarts** – First character of each of the six advertising boards.
 - `$2675` **BoardColours** – Colour of each board, written when its first character scrolls in.
@@ -344,13 +518,23 @@ Block `day_two`, from `original/day_two_unpacked_vice.prg`. Source `src/day_two.
 - `$2BB4` **ColourTitleRows** – On the FIRE TO START screen, set the title rows' colours from $2BCB.
 - `$2BFB` **DrawPieceList** – Draw a list of (screen address, character, ...) entries from Y:X until $FF.
 - `$2C2D` **InitAthlete_day_two** – Set the athlete's frames and position for EventIndex from the tables at $2C77.
+- `$2C86` **ApproachLine** – When LineDue is set, set LineInView and AthleteX $9B; then, while the run-up scrolls, draw the runway at AthleteX, or set AttemptResult $FF once AthleteX is below $50.
 - `$2CAC` **DrawRunway** – Draw the athlete's position marker / runway cells on rows 22-23 for X (= $4C).
+- `$2D14` **ShiftRunwayMarker** – Copy characters $1B/$1C ($10D8, $10E0) from MarkerShapes for MarkerSubCell; the long jump uses the second set (+$40).
+- `$2D3C` **MarkerShapesOdd** – MarkerShapes + 1: the odd bytes, for character $1C.
 - `$2DBB` **SetRunwayScroll** – From RunSpeed_day_two, set the runway scroll step $33 while $51 is set.
 - `$2DD9` **ShowAttemptMarks** – Colour the three attempt marks: colour $71 qualified, $42 failed; untaken left.
 - `$2DF8` **RunFrameTimer** – While moving, count $58 down and step the run cycle at 0.
 - `$2E02` **StepRunFrame_day_two** – Set the frame delay from RunSpeed_day_two and step the run cycle (9 frames for the long jump); footstep sound on the first frame.
+- `$2E47` **TopFramePtr** – Source of the top-half frame copy: LDA operand set from TopFrameTable.
+- `$2E48` **TopFramePtrHi**
+- `$2E64` **CopyBottomFrame** – Copy bottom-half frame X (FlightBottomFrame in flight) to the athlete's characters at $15A8.
+- `$2E7C` **BottomFramePtr** – Source of the bottom-half frame copy: LDA operand set from BottomFrameTable.
+- `$2E7D` **BottomFramePtrHi**
 - `$2EB7` **SetTakeOffAngle** – At the line: count the angle up from 20 while fire is held (max 83), showing it, then jump to this event's handler through EventJump_day_two.
 - `$2F11` **EventJump_day_two** – Self-modified JMP: operand set from EventJumpTable_day_two.
+- `$2F12` **EventJumpTarget** – Operand of EventJump_day_two, set from EventJumpTable_day_two.
+- `$2F13` **EventJumpTargetHi**
 - `$2F1A` **ClassifyAngle** – Set AngleClass from Angle.
 - `$2F2B` **LongJump** – Long jump flight: height and length from Angle and TakeOffSpeed.
 - `$2F88` **LongJumpLoop** – One step of the long jump: rise, hang or fall, then DelayXY $14.
@@ -369,7 +553,11 @@ Block `day_two`, from `original/day_two_unpacked_vice.prg`. Source `src/day_two.
 - `$31F1` **ShotBitmap** – The shot's 8-byte ball, copied into character $6A at the shot's pixel row.
 - `$31F9` **FollowThrough** – Shot and javelin release: walk the athlete left to column 0, lifting the shot by AngleClass and the javelin by 1 a step and moving AthleteX - 3, then clear his rows.
 - `$3236` **AddFlightDistance** – After TakeOffDelay cells, add the event's tenths (DistanceRates) and 0-1 or 0-3 random hundredths (TED timer 1) to AttemptDistance.
+- `$325D` **RandomMask** – AND operand in AddFlightDistance: the event's random mask from DistanceRates.
+- `$3260` **RandomBase** – ADC operand in AddFlightDistance: the event's hundredths base from DistanceRates.
 - `$326D` **DistanceRates** – Per event, 3 bytes: tenths per cell, random mask, hundredths base. Long jump 1/1/0, shot-put 2/3/0, javelin 7/3/0.
+- `$326E` **DistanceMasks** – DistanceRates + 1: each event's random mask.
+- `$326F` **DistanceBases** – DistanceRates + 2: each event's hundredths base.
 - `$3277` **AddDigit** – Add A to digit Y of AngleDigits' block with decimal carry to the left.
 - `$3295` **JudgeAttempt** – AttemptResult 1 if the distance beats QualifyLengthTable, else $FF; copy it to BestTable if better; if qualified, compare it with WorldRecordTable.
 - `$32FF` **ShowFailMessage** – Print the 8-character message at $3310 at $0E42 (custom characters).

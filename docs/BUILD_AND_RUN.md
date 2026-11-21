@@ -38,7 +38,8 @@ To change a name or comment, edit `tools/symbols.py`, run `make disasm`, then `m
 | `tools/run_tape.py SIDE`     | Load a tape side in VICE (`LOAD"",1,1`, PLAY, `SYS1536`) and screenshot the game |
 | `tools/shots.py`             | Start-up screenshots of the original, rebuilt crunched and rebuilt unpacked PRGs |
 | `tools/doc_shots.py`         | The event screenshots in `docs/images/`                  |
-| `tools/flight_probe.py`      | Day Two distances for forced take-offs (`--position`)    |
+| `tools/flight_probe.py`      | Day Two distances for forced take-offs (`--position`, `--ntsc`) |
+| `tools/decode_tunes.py`      | Every tune of both parts as notes and lengths            |
 | `tools/c16_tap.py FILE`      | Decode a C16 TAP file and list its blocks                |
 | `tools/tape_check.py`        | Compare the tape files with the unpacked images          |
 | `tools/unpack_sfx.py`        | Run a decruncher in a 6502 emulator; `--check` against the dumps |

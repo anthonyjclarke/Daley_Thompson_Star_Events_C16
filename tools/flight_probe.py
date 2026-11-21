@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Measure Day Two's distances in VICE for chosen take-off speeds, angles and positions.
 
-Run from the project root:   python3 tools/flight_probe.py [--position] [event ...]   (0 long jump, 1 shot-put, 2 javelin)
+Run from the project root:   python3 tools/flight_probe.py [--position] [--ntsc] [event ...]   (0 long jump, 1 shot-put, 2 javelin)
 
 The monitor can't press fire, so each attempt is forced in RAM: at the run-up wait ($24D9) the probe
 sets RunSpeed_day_two, AthleteX and the athlete's column as a full run-up leaves them and jumps to the
@@ -9,7 +9,7 @@ take-off ($24EE); at the angle check ($2506) it sets Angle and jumps past the an
 event's own flight code then runs unchanged, and the distance is read when judging ends ($32FC). The
 FIRE TO START wait is skipped with $25D0 = 0 and the event is held at StartEvent_day_two ($244B).
 VICE RAM only; the build is untouched. Prints one line per attempt. With --position, varies AthleteX at
-speed $1F and 45 degrees instead of the speed and angle grid.
+speed $1F and 45 degrees instead of the speed and angle grid. With --ntsc, VICE runs an NTSC C16 instead of PAL.
 """
 import re
 import shutil
@@ -50,7 +50,7 @@ def wait_stop(mon, text="", limit=90):
 
 
 def probe(event, cases):
-    vice = subprocess.Popen([shutil.which("xplus4"), "-default", "+saveres", "-model", "c16pal", "-ramsize", "16",
+    vice = subprocess.Popen([shutil.which("xplus4"), "-default", "+saveres", "-model", "c16ntsc" if "--ntsc" in sys.argv else "c16pal", "-ramsize", "16",
                              "-warp", "+sound", "-remotemonitor", "-remotemonitoraddress", "ip4://127.0.0.1:6510",
                              "-autostart", str(ROOT / "original/daley_thompsons_star_events_day_two.prg")],
                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -103,7 +103,7 @@ def probe(event, cases):
 
 
 def main():
-    args = [a for a in sys.argv[1:] if a != "--position"]
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
     events = [int(a) for a in args] or [0, 1, 2]
     for event in events:
         if "--position" in sys.argv:

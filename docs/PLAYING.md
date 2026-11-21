@@ -35,7 +35,7 @@ Day One is four races in a fixed order: 100 m, 110 m hurdles, 400 m, 200 m hurdl
 | 400 m           | 60:00   | 42:51, 44:01, 46:60          |
 | 200 m hurdles   | 38:00   | 20:08, 35:50, 37:00          |
 
-The clock counts in its own units: one displayed second is 60 frames, which is 1.2 real seconds on a PAL C16 (exactly one second on an NTSC machine, measured in VICE), and the last digit only goes up to 5.
+The clock counts in its own units: one displayed second is 60 frames, which is 1.2 real seconds on a PAL C16 (exactly one second on an NTSC machine, measured in VICE; Day Two's distances, though, come out about 1.5 times longer on NTSC, so the game is meant for PAL), and the last digit only goes up to 5.
 
 **Points.** A qualified race scores 6 × (255 − the sum of three of the time's digits as characters). Faster times give smaller digits and so more points. After the 200 m hurdles the four races start again, with your score kept, until the attempts run out.
 

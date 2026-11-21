@@ -27,6 +27,35 @@ def inline_words(calls):
 
 D2_SPLITS = [0x2213, 0x223A, 0x2243, 0x224D, 0x2257, 0x2261, 0x226F, 0x228D, 0x229B, 0x22B6, 0x22D1, 0x22EC, 0x2302]
 
+
+# Sound-effect voice blocks: 32 bytes per voice (voice 2 at +$20). StartSoundEffect copies bytes 0-$15 of a
+# 23-byte record into them; SoundStep and StepEnvelope run the rest. Offsets and names:
+FX_FIELDS = {0x00: ("SweepLen", "Steps in each of the three pitch-sweep segments"), 0x01: ("SweepLenB", ""),
+             0x02: ("SweepLenC", ""), 0x03: ("StartDelay", "Frames before the sweep starts"),
+             0x04: ("SweepRate", "Frames between sweep steps"),
+             0x05: ("SweepMode", "After the three segments: 0 stop, positive repeat, negative restart from StartFreq"),
+             0x06: ("SweepStepLo", "Three signed words added to Freq, one per segment"), 0x07: ("SweepStepHi", ""),
+             0x0C: ("StartFreqLo", "Starting TED frequency (a tune note's NoteFreqLo/Hi)"), 0x0D: ("StartFreqHi", ""),
+             0x0E: ("AttackStep", "Level added per envelope tick until PeakLevel"), 0x0F: ("PeakLevel", ""),
+             0x10: ("DecayStep", "Level taken per tick down to SustainLevel"), 0x11: ("SustainLevel", ""),
+             0x12: ("ReleaseStep", "Level taken per tick in the release"),
+             0x13: ("NoteTicks", "Envelope ticks before the release"), 0x14: ("ReleaseTicks", "Ticks the release lasts"),
+             0x15: ("EnvRate", "Frames per envelope tick"),
+             0x16: ("VoiceBits", "Record byte $16 AND $F0: the voice/waveform bits ORed into $FF11"),
+             0x17: ("SweepCount", "Steps left in each segment"), 0x18: ("SweepCountB", ""), 0x19: ("SweepCountC", ""),
+             0x1A: ("EnvTimer", "Frames to the next envelope tick"), 0x1B: ("SweepTimer", "Frames to the next sweep step"),
+             0x1C: ("FreqLo", "Current TED frequency"), 0x1D: ("FreqHi", ""),
+             0x1E: ("EnvPhase", "$FC attack, $FD decay, $FE hold, $FF release, 0 off"),
+             0x1F: ("Level", "Current volume (0-15), the louder voice's goes to $FF11")}
+
+
+def fx_labels(base, suffix):
+    out = {}
+    for voice in (1, 2):
+        for off, (name, note) in FX_FIELDS.items():
+            out[base + (voice - 1) * 0x20 + off] = (f"Fx{voice}{name}{suffix}", note if voice == 1 else "")
+    return out
+
 STUB = (0x1001, 0x100C, "ByteTable", "BasicStub", "BASIC line 20 SYS4109 that starts the decruncher")
 
 BLOCKS = [
@@ -58,7 +87,42 @@ BLOCKS = [
          entries=[0x1010, 0x1584, 0x22E3] + D1_SPLITS + [c + 7 for c in D1_INLINE_CALLS],
          ranges=[(0x15AC, 0x15C5, "AddrTable", "SplitTable_day_one", "Raster-split handlers, called in turn by the IRQ (13 entries)")]
          + inline_words(D1_INLINE_CALLS),
-         labels={0x1010: ("Entry_day_one", "Entry point of part 1 (the decruncher's final JMP). Provisional name."),
+         labels={**fx_labels(0x2657, "_day_one"),
+                 0x1010: ("Entry_day_one", "Entry point of part 1 (the decruncher's final JMP). Provisional name."),
+                 # Tune player state (tools/decode_tunes.py follows the format; evidence: Sound data).
+                 0x26FB: ("StepEnvelope_day_one", "Step one voice's volume envelope (X = 0 voice 1, $20 voice 2): rise by the attack step to\n"
+                          "the peak, fall by the decay step to the sustain level, hold, then release to 0."),
+                 0x2ADD: ("TuneInstrument1_day_one", "Voice 1's 23-byte effect record, loaded by the tune commands $FB-$FD; StartSoundEffect plays it."),
+                 0x2AE9: ("TuneNoteLo1_day_one", "Voice 1's note frequency in the record, from NoteFreqLo/Hi."),
+                 0x2AEA: ("TuneNoteHi1_day_one", ""),
+                 0x2AF4: ("TunePlaying1_day_one", "Non-zero while voice 1's tune runs; cleared by $FF at call depth 0."),
+                 0x2AF5: ("TuneWait1_day_one", "Frames left of voice 1's current note."),
+                 0x2AF6: ("TuneDepth1_day_one", "Voice 1's call stack index ($0F empty); the 16 bytes after it are the note lengths, indexed 1-16."),
+                 0x2B07: ("TuneReturnLo1_day_one", "Voice 1's call return addresses, low bytes."),
+                 0x2B17: ("TuneReturnHi1_day_one", "Voice 1's call return addresses, high bytes."),
+                 0x2B27: ("TuneInstrument2_day_one", "Voice 2's 23-byte effect record."),
+                 0x2B33: ("TuneNoteLo2_day_one", "Voice 2's note frequency in the record."),
+                 0x2B34: ("TuneNoteHi2_day_one", ""),
+                 0x2B3E: ("TunePlaying2_day_one", "Non-zero while voice 2's tune runs."),
+                 0x2B3F: ("TuneWait2_day_one", "Frames left of voice 2's current note."),
+                 0x2B40: ("TuneDepth2_day_one", "Voice 2's call stack index ($0F empty); the 16 bytes after it are its note lengths."),
+                 0x2B51: ("TuneReturnLo2_day_one", "Voice 2's call return addresses, low bytes."),
+                 0x2B61: ("TuneReturnHi2_day_one", "Voice 2's call return addresses, high bytes."),
+                 0x2B71: ("NoteFreqLo_day_one", "TED frequency of 35 notes, A2 to G5 a semitone apart, low bytes (note 0 = $007, 110 Hz)."),
+                 0x2B94: ("NoteFreqHi_day_one", "The same notes' high bits (0-3)."),
+                 0x1025: ("PackedPtr", "Packed-screen read pointer: the LDA operand in FetchPackedByte."),
+                 0x1026: ("PackedPtrHi", ""),
+                 0x104E: ("RunScreenPtr", "Screen and colour pointers of DrawPackedScreen's run loop: STA operands, copied from\n"
+                          "ScreenPtr and ColourPtr and stepped with them."),
+                 0x104F: ("RunScreenPtrHi", ""),
+                 0x1054: ("RunColourPtr", ""),
+                 0x1055: ("RunColourPtrHi", ""),
+                 0x109F: ("ScreenPtr", "Screen and colour write pointers of DrawPackedScreen: STA operands."),
+                 0x10A0: ("ScreenPtrHi", ""),
+                 0x10A5: ("ColourPtr", ""),
+                 0x10A6: ("ColourPtrHi", ""),
+                 0x158B: ("IrqSplitCallHi_day_one", ""),
+                 0x230F: ("FootstepRomPtr", "Low byte of PlayFootstep's LDA $A000 operand, stepped each call."),
                  0x156E: ("InstallIrq_day_one", "Point the KERNAL IRQ vector ($0314) at IrqHandler_day_one; raster IRQ only."),
                  0x1584: ("IrqHandler_day_one", "Raster IRQ: acknowledge, call the next split handler from SplitTable_day_one,\n"
                           "step the split counter ($0F) through 0-12. Exits through the KERNAL's register pull."),
@@ -183,13 +247,63 @@ BLOCKS = [
          entries=[0x2111, 0x234E, 0x300C, 0x308C] + D2_SPLITS + [c + 7 for c in D2_INLINE_CALLS],
          ranges=[(0x23EE, 0x23FA, "ByteTable", "SplitRasters_day_two", "Raster line of each split (13 entries)"),
                  (0x21C7, 0x21F8, "WordTable", "ScreenRowTable", "Screen address of each of the 25 rows ($0C00 + 40 * row)"),
+                 (0x2D3B, 0x2DBA, "ByteTable", "MarkerShapes", "Runway marker patterns: two sets of 4 positions x 16 bytes (two characters interleaved)"),
+                 (0x326D, 0x3275, "ByteTable", "DistanceRates", "Per event, 3 bytes: tenths per cell, random mask, hundredths base. Long jump 1/1/0,\nshot-put 2/3/0, javelin 7/3/0."),
                  (0x2F14, 0x2F19, "AddrTable", "EventJumpTable_day_two", "Per-event handler, indexed by $42; patched into the JMP at $2F11 (3 entries)"),
                  (0x2E87, 0x2EA4, "AddrTable", "TopFrameTable", "Addresses of the athlete's 15 top-half frames, 144 bytes each"),
                  (0x2EA5, 0x2EB6, "AddrTable", "BottomFrameTable", "Addresses of the athlete's 9 bottom-half frames, 144 bytes each"),
                  (0x23FB, 0x2414, "AddrTable", "SplitTable_day_two", "Raster-split handlers, called in turn by the IRQ (13 entries)")]
          + inline_words(D2_INLINE_CALLS),
-         labels={0x2111: ("Entry_day_two", "Entry point of part 2 (the decruncher's final JMP): copy $0800-$0BDF to $0400-$07DF,\n"
+         labels={**fx_labels(0x1B77, "_day_two"),
+                 0x2111: ("Entry_day_two", "Entry point of part 2 (the decruncher's final JMP): copy $0800-$0BDF to $0400-$07DF,\n"
                           "ten NOPs, reset the stack, go to InitGame_day_two."),
+                 # Tune player state (tools/decode_tunes.py follows the format; evidence: Sound data).
+                 0x1C1A: ("StepEnvelope_day_two", "Step one voice's volume envelope (X = 0 voice 1, $20 voice 2): rise by the attack step to\n"
+                          "the peak, fall by the decay step to the sustain level, hold, then release to 0."),
+                 0x1FFB: ("TuneInstrument1_day_two", "Voice 1's 23-byte effect record, loaded by the tune commands $FB-$FD; StartSoundEffect plays it."),
+                 0x2007: ("TuneNoteLo1_day_two", "Voice 1's note frequency in the record, from NoteFreqLo/Hi."),
+                 0x2008: ("TuneNoteHi1_day_two", ""),
+                 0x2012: ("TunePlaying1_day_two", "Non-zero while voice 1's tune runs; cleared by $FF at call depth 0."),
+                 0x2013: ("TuneWait1_day_two", "Frames left of voice 1's current note."),
+                 0x2014: ("TuneDepth1_day_two", "Voice 1's call stack index ($0F empty); the 16 bytes after it are the note lengths, indexed 1-16."),
+                 0x2025: ("TuneReturnLo1_day_two", "Voice 1's call return addresses, low bytes."),
+                 0x2035: ("TuneReturnHi1_day_two", "Voice 1's call return addresses, high bytes."),
+                 0x2045: ("TuneInstrument2_day_two", "Voice 2's 23-byte effect record."),
+                 0x2051: ("TuneNoteLo2_day_two", "Voice 2's note frequency in the record."),
+                 0x2052: ("TuneNoteHi2_day_two", ""),
+                 0x205C: ("TunePlaying2_day_two", "Non-zero while voice 2's tune runs."),
+                 0x205D: ("TuneWait2_day_two", "Frames left of voice 2's current note."),
+                 0x205E: ("TuneDepth2_day_two", "Voice 2's call stack index ($0F empty); the 16 bytes after it are its note lengths."),
+                 0x206F: ("TuneReturnLo2_day_two", "Voice 2's call return addresses, low bytes."),
+                 0x207F: ("TuneReturnHi2_day_two", "Voice 2's call return addresses, high bytes."),
+                 0x208F: ("NoteFreqLo_day_two", "TED frequency of 35 notes, A2 to G5 a semitone apart, low bytes (note 0 = $007, 110 Hz)."),
+                 0x20B2: ("NoteFreqHi_day_two", "The same notes' high bits (0-3)."),
+                 0x002D: ("BoardFineScroll", "Fine horizontal scroll (0-7) of the advert boards, written to $FF07 by split 1."),
+                 0x002E: ("BoardScrollSpeed", "Pixels the boards move a frame (1 means every other frame); 3 on the title screen."),
+                 0x002F: ("BoardScrollTemp", "StepBoardScroll's working copy of the step."),
+                 0x0030: ("BoardFrameToggle", "Counted each frame at speed 1; the boards move on even counts."),
+                 0x004A: ("LineDue", "Set when the run-up has scrolled 120 cells; ApproachLine then brings the line in."),
+                 0x004B: ("LineInView", "Set by ApproachLine; from then on fire counts and the athlete runs on to the line."),
+                 0x004D: ("MarkerSubCell", "AthleteX AND 3: the pixel offset ShiftRunwayMarker draws."),
+                 0x182F: ("FootstepRomPtr_day_two", "Low byte of PlayFootstep_day_two's LDA $A063 operand, stepped each call."),
+                 0x2375: ("IrqSplitCallHi_day_two", ""),
+                 0x25E8: ("StepBoardScroll", "Move the boards' fine scroll by BoardScrollSpeed; when it wraps, shift the boards a character."),
+                 0x2C86: ("ApproachLine", "When LineDue is set, set LineInView and AthleteX $9B; then, while the run-up scrolls, draw the\n"
+                          "runway at AthleteX, or set AttemptResult $FF once AthleteX is below $50."),
+                 0x2D14: ("ShiftRunwayMarker", "Copy characters $1B/$1C ($10D8, $10E0) from MarkerShapes for MarkerSubCell; the long jump\n"
+                          "uses the second set (+$40)."),
+                 0x2E47: ("TopFramePtr", "Source of the top-half frame copy: LDA operand set from TopFrameTable."),
+                 0x2E48: ("TopFramePtrHi", ""),
+                 0x2E64: ("CopyBottomFrame", "Copy bottom-half frame X (FlightBottomFrame in flight) to the athlete's characters at $15A8."),
+                 0x2E7C: ("BottomFramePtr", "Source of the bottom-half frame copy: LDA operand set from BottomFrameTable."),
+                 0x2E7D: ("BottomFramePtrHi", ""),
+                 0x2F12: ("EventJumpTarget", "Operand of EventJump_day_two, set from EventJumpTable_day_two."),
+                 0x2F13: ("EventJumpTargetHi", ""),
+                 0x2D3C: ("MarkerShapesOdd", "MarkerShapes + 1: the odd bytes, for character $1C."),
+                 0x326E: ("DistanceMasks", "DistanceRates + 1: each event's random mask."),
+                 0x326F: ("DistanceBases", "DistanceRates + 2: each event's hundredths base."),
+                 0x325D: ("RandomMask", "AND operand in AddFlightDistance: the event's random mask from DistanceRates."),
+                 0x3260: ("RandomBase", "ADC operand in AddFlightDistance: the event's hundredths base from DistanceRates."),
                  0x2333: ("InstallIrq_day_two", "Point the KERNAL IRQ vector ($0314) at IrqHandler_day_two; raster IRQ at line $2E."),
                  0x234E: ("IrqHandler_day_two", "Raster IRQ: acknowledge, save $21-$24, call the next split handler from\n"
                           "SplitTable_day_two, set the next raster line from SplitRasters_day_two."),
@@ -208,7 +322,7 @@ BLOCKS = [
                  0x182E: ("PlayFootstep_day_two", "StartSoundEffect_day_two with a pitch byte from the BASIC ROM (self-modified pointer from $A063)."),
                  0x1BB7: ("StartSoundEffect_day_two", "Copy the 23-byte effect record at Y:X into the driver; byte $16 picks the voice."),
                  0x21F9: ("BcdToAscii", "A (BCD) to two ASCII digits: X tens, Y units."),
-                 0x220A: ("WaitTuneEnd", "Wait until both voices' tune pointers ($2012, $205C) are 0."),
+                 0x220A: ("WaitTuneEnd", "Wait until TunePlaying1_day_two and TunePlaying2_day_two are both 0."),
                  0x2213: ("Split01_day_two", "Fine scroll from $2D, colours, PollInput_day_two."),
                  0x223A: ("Split02_day_two", "Raster split: colours or scroll for the next band."),
                  0x2243: ("Split03_day_two", "Raster split: colours or scroll for the next band."),

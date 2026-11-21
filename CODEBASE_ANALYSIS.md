@@ -111,6 +111,8 @@ The athlete's speed is `RunSpeed`, 0 to `$70`. It rises only through `JoyWaggle`
 
 The main loop selects the input by writing `$FD` to both `$FD30` and `$FF08`, so the `$FF08` reading combines a joystick with keyboard row 1 (3, W, A, 4, Z, S, E, SHIFT). A therefore reads as left (bit 2), 4 as right (bit 3), and E and SHIFT as fire (bits 6 and 7, the `$C0` mask used for jumping and for restarting after GAME OVER). Pressing these keys in VICE gave exactly those readings. Anthony's other recollection, alternating two keys, fits this.
 
+The joystick is control port 2. Bit 1 low in the `$FF08` write selects port 2 and bit 2 low would select port 1 (VICE's `ted08_store`), so `$FD` reads port 2 only, with its fire button on bit 7. With a keyboard-driven joystick on each port in VICE, port 2's left and right reached `JoyLast` and port 1's never did. Bit 6 in the `$C0` fire mask is port 1's fire bit, which `$FD` never selects, so in Day One it comes only from the E key. Day Two writes the same `$FD` and masks fire with `$80`, so it also uses port 2.
+
 `SpeedDecay` runs twice each main-loop pass and lowers `RunSpeed` by 1 every 6 calls (every 3 from `$60`), so the top of the range is harder to hold. `DrawSpeedMeter` shows `RunSpeed / 4` as a bar of eight cells at the bottom of the screen.
 
 A controlled run confirmed the role: with `SpeedDecay` patched to `RTS` in VICE's RAM and `RunSpeed` set to `$70` at each start, every event qualified, `Lives` stayed at 3 and the score rose; with no input, every event failed.
@@ -293,8 +295,9 @@ Outputs and clobbers:  WaggleSeen, RunSpeed (via SpeedUp); A, X, Y
 Side effects:          DrawSpeedMeter via SpeedUp
 Algorithm:             both bits low (or both high) ignored; left sets bit 1, right bit 0;
                        at 3: five SpeedUp calls below $40, two from $40; WaggleSeen = 0
-Evidence:              rung 3 for RunSpeed (controlled VICE run); rung 1 for the bit meanings
-Unresolved:            which joystick port the $FD select reads
+Evidence:              rung 3 for RunSpeed (controlled VICE run) and for the bits and port
+                       (keys and a keyset joystick traced in VICE)
+Unresolved:            none
 ```
 
 ### `MoveRace` (Day One, `$2111`)

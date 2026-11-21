@@ -2,6 +2,15 @@
 
 ---
 
+## [0.7.3] 22-11-2026
+
+### Added
+
+- The joystick port: both days read control port 2 only (`$FD` to `$FF08`, fire on bit 7), confirmed with a
+  keyboard-driven joystick on each port in VICE. In the player guide, analysis and evidence.
+
+---
+
 ## [0.7.2] 22-11-2026
 
 ### Added

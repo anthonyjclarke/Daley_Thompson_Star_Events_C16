@@ -16,7 +16,7 @@ Each part is on its own side of the tape. Type `LOAD"",1,1`, press PLAY, and whe
 
 Day One is four races in a fixed order: 100 m, 110 m hurdles, 400 m, 200 m hurdles. You start with three attempts (the R symbols under the distance), and each race you fail costs one.
 
-**Controls.** Day One has no key option, but the keyboard works anyway: A is left, 4 is right, and E or SHIFT is fire. The game reads the joystick in a way that also reads the keyboard row holding these keys (checked in VICE). Q, Y and SPACE, Day Two's keys, do nothing here, and nor do the cursor keys.
+**Controls.** Plug the joystick into control port 2 (in VICE, give port 2 a joystick); both days read only that port. Day One has no key option, but the keyboard works anyway: A is left, 4 is right, and E or SHIFT is fire. The game reads the joystick in a way that also reads the keyboard row holding these keys (checked in VICE). Q, Y and SPACE, Day Two's keys, do nothing here, and nor do the cursor keys.
 
 **Start.** Each race starts by itself: the game shows ON YOUR MARKS, GET SET and GO, then the clock runs. After GAME OVER, press fire to play again.
 

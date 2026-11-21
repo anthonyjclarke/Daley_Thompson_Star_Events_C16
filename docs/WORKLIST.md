@@ -18,6 +18,11 @@ What still needs testing or checking, and how. Items done in VICE are listed onc
 | Joystick port                  | Keyset joystick on each port; VICE source    | evidence, part 1        |
 | Advertising boards             | Rendered from `ADDS`, matched to the screen  | `GRAPHICS`              |
 | All other graphics             | Rendered from the originals; VICE shots      | `GRAPHICS`              |
+| Day Two JOY mode key row       | Code read: row 4 stays selected              | evidence, part 2        |
+| Unused code, indirect callers  | Both images searched; none found             | evidence, Coverage      |
+| Day One `RecordTimes`          | Every store checked; nothing writes it       | evidence, part 1        |
+| NTSC race clock                | `c16ntsc` in VICE: 1.00 s a displayed second | evidence, part 1        |
+| Day One GAME OVER R marker     | Code read; screen redraw run in `cpu6502.py` | quirks                  |
 
 ---
 
@@ -25,23 +30,23 @@ What still needs testing or checking, and how. Items done in VICE are listed onc
 
 These need hands, ears or real hardware; the monitor can't do them.
 
-| Item                   | What to do                                                       | What to note                        |
-|:-----------------------|:-----------------------------------------------------------------|:------------------------------------|
-| Day One feel           | Play all four races with a joystick on port 2                    | Can you qualify? Is 13 s fair?      |
-| Hurdles                | Jump and hit hurdles in both hurdle races                        | Does a hit really cost nothing?     |
-| Day One restart        | Lose all attempts, press fire at GAME OVER                       | Score and event reset as expected?  |
-| Long jump              | Jump at 55–59° and at 60°+ at full speed                         | Near 11 m, then about 4.6 m?        |
-| Shot-put               | Throw at 45°, then at 60° slow and fast                          | Slow beats fast outside 35–54°?     |
-| Javelin                | Throw under 35° at full speed                                    | Beats the 101.30 m world record?    |
-| Speed quirk            | Compare runs ending just below and at full speed                 | Noticeable in play?                 |
-| Day Two attempts       | Fail three times; qualify once                                   | Back to title / next event?         |
-| High score             | Score, return to the title                                       | High score kept and shown?          |
-| Sound: Day One         | Listen to start, qualified, failed, game over and footsteps      | Describe each; any glitches?        |
-| Sound: Day Two         | Listen to the title tune, event tune, qualified tune and effects | Describe each; any glitches?        |
-| Real C16               | Load both tape sides on a PAL C16 (16 KB)                        | Loads, runs, any difference to VICE |
-| Plus/4                 | Load and play on a Plus/4                                        | Does it run unchanged?              |
-| Real keyboard aliasing | Try A, 4, E, SHIFT in Day One on hardware                        | Same as in VICE?                    |
-| Day Two joystick mode  | Press J, then try letter keys during an event                    | Do any keys act as the joystick?    |
+| Item                   | What to do                                                       | What to note                            |
+|:-----------------------|:-----------------------------------------------------------------|:----------------------------------------|
+| Day One feel           | Play all four races with a joystick on port 2                    | Can you qualify? Is 13 s fair?          |
+| Hurdles                | Jump and hit hurdles in both hurdle races                        | Does a hit really cost nothing?         |
+| Day One restart        | Lose all attempts, press fire at GAME OVER                       | Score and event reset as expected?      |
+| Long jump              | Jump at 55–59° and at 60°+ at full speed                         | Near 11 m, then about 4.6 m?            |
+| Shot-put               | Throw at 45°, then at 60° slow and fast                          | Slow beats fast outside 35–54°?         |
+| Javelin                | Throw under 35° at full speed                                    | Beats the 101.30 m world record?        |
+| Speed quirk            | Compare runs ending just below and at full speed                 | Noticeable in play?                     |
+| Day Two attempts       | Fail three times; qualify once                                   | Back to title / next event?             |
+| High score             | Score, return to the title                                       | High score kept and shown?              |
+| Sound: Day One         | Listen to start, qualified, failed, game over and footsteps      | Describe each; any glitches?            |
+| Sound: Day Two         | Listen to the title tune, event tune, qualified tune and effects | Describe each; any glitches?            |
+| Real C16               | Load both tape sides on a PAL C16 (16 KB)                        | Loads, runs, any difference to VICE     |
+| Plus/4                 | Load and play on a Plus/4                                        | Does it run unchanged?                  |
+| Real keyboard aliasing | Try A, 4, E, SHIFT in Day One on hardware                        | Same as in VICE?                        |
+| Day Two joystick mode  | Press J, then try J, 0 and N during an event                     | Left, right and fire, as the code says? |
 
 ---
 
@@ -49,16 +54,12 @@ These need hands, ears or real hardware; the monitor can't do them.
 
 These can be done from the disassembly and VICE without a player.
 
-| Item                     | Question                                     |
-|:-------------------------|:---------------------------------------------|
-| Day Two joystick mode    | Which key row does `$FD30` hold in JOY mode? |
-| Unused code (six blocks) | Any indirect caller? See the quirks          |
-| Neutral names            | Name the remaining `Lxxxx` labels            |
-| Sound data               | Decode the tunes into notes and lengths      |
-| Decruncher               | Compare with a real Exomizer build           |
-| Day One `RecordTimes`    | Confirm nothing writes the records box       |
-| NTSC                     | Race clock speed on a 60 Hz machine?         |
-| Day One GAME OVER        | Why is one R lives marker left on screen?    |
+| Item            | Question                                   |
+|:----------------|:-------------------------------------------|
+| Neutral names   | Name the remaining `Lxxxx` labels          |
+| Sound data      | Decode the tunes into notes and lengths    |
+| Decruncher      | Compare with a real Exomizer build         |
+| Day Two on NTSC | Flight and tunes at 60 Hz: anything break? |
 
 ---
 

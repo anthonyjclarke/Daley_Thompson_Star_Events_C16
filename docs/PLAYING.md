@@ -35,7 +35,7 @@ Day One is four races in a fixed order: 100 m, 110 m hurdles, 400 m, 200 m hurdl
 | 400 m           | 60:00   | 42:51, 44:01, 46:60          |
 | 200 m hurdles   | 38:00   | 20:08, 35:50, 37:00          |
 
-The clock counts in its own units: one displayed second is 60 frames, which is 1.2 real seconds on a PAL C16, and the last digit only goes up to 5.
+The clock counts in its own units: one displayed second is 60 frames, which is 1.2 real seconds on a PAL C16 (exactly one second on an NTSC machine, measured in VICE), and the last digit only goes up to 5.
 
 **Points.** A qualified race scores 6 × (255 − the sum of three of the time's digits as characters). Faster times give smaller digits and so more points. After the 200 m hurdles the four races start again, with your score kept, until the attempts run out.
 
@@ -51,7 +51,7 @@ The clock counts in its own units: one displayed second is 60 frames, which is 1
 
 Day Two is long jump, shot-put and javelin, with three attempts at each. Qualify with any of the three to go on to the next event; fail all three and you're back at the start screen.
 
-**Controls.** On the start screen, press J for joystick or K for keys; the choice shows as JOY or KEY at the bottom left. With keys, Q and Y are left and right and SPACE is fire. These keys were checked in VICE. The keyboard's speed drains a little more slowly than the joystick's.
+**Controls.** On the start screen, press J for joystick or K for keys; the choice shows as JOY or KEY at the bottom left. With keys, Q and Y are left and right and SPACE is fire. These keys were checked in VICE. With the joystick, J, 0 and N should also work as left, right and fire, because the joystick reading takes the keyboard row that holds J and K (found in the code, not yet tried). The keyboard's speed drains a little more slowly than the joystick's.
 
 **Run-up.** Alternate left and right as in Day One to build speed.
 

@@ -138,7 +138,7 @@ If a hurdle reaches the athlete's window (`ObjectX` `$26`–`$43`) while he is n
 
 `CheckEventEnd` ends the event when the distance on screen reaches the event's length (the hundreds digit, plus the tens digit for 110 m) with the athlete still moving, or when the clock's tens digit reaches 7 (70 seconds). Ten metres before the end, `DrawFinishLine` plots the line into the object characters and it scrolls in with the track.
 
-`RaceClock` is five ASCII digits stepped by `TickRaceClock` once a frame while `RaceRunning` is set. Its last digit counts 0–5 and the one before 0–9, so one displayed second is 60 frames: on a PAL C16, 1.2 real seconds. The qualifying times are in those units.
+`RaceClock` is five ASCII digits stepped by `TickRaceClock` once a frame while `RaceRunning` is set. Its last digit counts 0–5 and the one before 0–9, so one displayed second is 60 frames: on a PAL C16, 1.2 real seconds. The qualifying times are in those units. On an NTSC C16 in VICE the game runs unchanged (all 13 splits, same screen), and a frame is 29,868 cycles against PAL's 35,568, so there a displayed second is one real second.
 
 ### Qualifying and Scoring
 
@@ -180,7 +180,7 @@ flowchart TD
 
 ### Input
 
-Day Two takes the joystick or the keyboard. On the start screen, `SelectInputMode` sets `InputMode` from two keys and prints KEY or JOY at the bottom left; the keys are J (joystick) and K (keys). `ReadInput`, called from raster split 1, sets `InputBits` (bit 7 fire, bit 3 right, bit 2 left) from the joystick or, with keys, from three keys that decode to Q (left), Y (right) and SPACE (fire). All five keys were confirmed by pressing them in VICE: J and K switch the mode and its text, and Q, Y and SPACE reach `ReadKeys` as left, right and fire.
+Day Two takes the joystick or the keyboard. On the start screen, `SelectInputMode` sets `InputMode` from two keys and prints KEY or JOY at the bottom left; the keys are J (joystick) and K (keys). `ReadInput`, called from raster split 1, sets `InputBits` (bit 7 fire, bit 3 right, bit 2 left) from the joystick or, with keys, from three keys that decode to Q (left), Y (right) and SPACE (fire). All five keys were confirmed by pressing them in VICE: J and K switch the mode and its text, and Q, Y and SPACE reach `ReadKeys` as left, right and fire. In joystick mode `ReadInput` writes only `$FF08`, and `$FD30` keeps the row `SelectInputMode` last selected (`$EF`, row 4) every frame, so J, 0 and N read as left, right and fire as well, like Day One's A, 4 and E.
 
 ### Run-Up and Take-Off
 

@@ -2,6 +2,17 @@
 
 ---
 
+## [0.8.2] 22-11-2026
+
+### Changed
+
+- Code checks from the worklist, done: Day Two's JOY mode also reads keyboard row 4 (J, 0, N as left, right,
+  fire); no indirect route reaches any unused block, so they move from open items to quirks; nothing writes Day
+  One's `RecordTimes`; on NTSC the race clock runs at one displayed second per real second (VICE `c16ntsc`); the
+  R left at GAME OVER is because the markers are drawn only when an event starts (new quirk).
+
+---
+
 ## [0.8.1] 22-11-2026
 
 ### Added

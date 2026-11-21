@@ -26,6 +26,7 @@ What still needs testing or checking, and how. Items done in VICE are listed onc
 | Tunes decoded                  | `tools/decode_tunes.py`; title timed in VICE | analysis, The Tunes     |
 | Day Two on NTSC                | 189 forced attempts with `--ntsc`            | analysis, How Far       |
 | Names                          | Every data label named; branch targets left  | evidence; worklist      |
+| Decruncher                     | Exomizer 2.0 re-crunch is byte-identical     | artifacts; exo_check.py |
 
 ---
 
@@ -55,12 +56,7 @@ These need hands, ears or real hardware; the monitor can't do them.
 
 ## To Check in the Code
 
-These can be done from the disassembly and VICE without a player.
-
-| Item       | Question                           |
-|:-----------|:-----------------------------------|
-| Decruncher | Compare with a real Exomizer build |
-
+Nothing is open: every code check is done.
 
 ### Names Still Neutral
 

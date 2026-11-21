@@ -16,7 +16,7 @@ BasicStub:
         .byte   $39,$00,$00,$00         ; 1009
 
 ; --------------------------------------------------------------------------
-; Packed part 1: copies the decruncher to the stack page. Provisional name.
+; Exomizer 2.0 sfx stub (part 1): copies the decruncher to the stack page.
 ; --------------------------------------------------------------------------
 SfxStart_day_one:
         ldy     #$1E                    ; 100D

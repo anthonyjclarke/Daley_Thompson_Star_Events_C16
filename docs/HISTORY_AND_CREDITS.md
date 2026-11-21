@@ -47,7 +47,7 @@ Several of these recollections can now be checked against the code:
 
 ## The Surviving Copies
 
-Two kinds of copy survive. The tape images are 2004 files of the 1985 cassette. Their perfectly regular timing shows they were generated from the file data by software rather than recorded from a cassette, but they keep the release's files, names and loader. The two PRGs are a later crunched conversion of the same memory, of unknown origin. [The artifacts](ARTIFACTS.md) describe both.
+Two kinds of copy survive. The tape images are 2004 files of the 1985 cassette. Their perfectly regular timing shows they were generated from the file data by software rather than recorded from a cassette, but they keep the release's files, names and loader. The two PRGs are a later conversion of the same memory, crunched with Exomizer 2.0 (a version released between 2008 and 2017); who made them is unknown. [The artifacts](ARTIFACTS.md) describe both.
 
 ---
 

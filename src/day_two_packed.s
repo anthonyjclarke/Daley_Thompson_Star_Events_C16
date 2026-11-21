@@ -17,7 +17,7 @@ BasicStub:
         .byte   $39,$00,$00,$00         ; 1009
 
 ; --------------------------------------------------------------------------
-; Packed part 2: blanks the screen, copies the decruncher. Provisional name.
+; Exomizer 2.0 sfx stub (part 2): blanks the screen (enter fragment), copies the decruncher.
 ; --------------------------------------------------------------------------
 SfxStart_day_two:
         ldy     #$26                    ; 100D

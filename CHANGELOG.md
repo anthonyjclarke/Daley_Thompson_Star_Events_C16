@@ -2,6 +2,21 @@
 
 ---
 
+## [0.9.2] 22-11-2026
+
+### Added
+
+- `tools/exo_check.py`: re-crunches the images rebuilt from `src/` with Exomizer 2.0 and compares with the
+  surviving PRGs. Exomizer 2.0beta7–2.0.9 (`sfx -t4 -n`, Day Two with `$FF06` enter/exit fragments) gives both
+  byte for byte; other versions do not. The PRGs were therefore made between 2008 and 2017.
+
+### Changed
+
+- The crunched PRGs are now documented as Exomizer 2.0 builds, not "Exomizer-style"; the packed entry names lose
+  "Provisional". Worklist: no code checks left.
+
+---
+
 ## [0.9.1] 22-11-2026
 
 ### Added

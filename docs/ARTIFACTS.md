@@ -54,4 +54,11 @@ Every block on both sides decodes cleanly: both copies pass their checksums and 
 
 ## The Crunched PRGs
 
-Each PRG is a BASIC line `SYS 4109` followed by a self-extracting decruncher and the packed game: entropy 7.88 and 7.90 bits per byte. The decruncher's layout (52-entry tables at `$0334`, `$0368` and `$039C`, a bit reader copied to `$0100`) matches Exomizer's self-extracting decruncher; that is a structural match, not checked against an Exomizer build. It unpacks the game into `$0FFE`–`$3FFF` (Day One) or `$07FE`–`$3FFF` (Day Two) and ends with a `JMP` from the stack page: `$019D` to `$1010`, or `$01A2` to `$2111`.
+Each PRG is a BASIC line `SYS 4109` followed by a self-extracting decruncher and the packed game: entropy 7.88 and 7.90 bits per byte. The decruncher's layout (52-entry tables at `$0334`, `$0368` and `$039C`, a bit reader copied to `$0100`) is Exomizer's self-extracting decruncher, and the files are an exact Exomizer 2.0 build. Exomizer 2.0beta7 to 2.0.9 (tagged September 2008 to September 2015; 2.0.10 followed in December 2017), given the unpacked game, produces both PRGs byte for byte:
+
+```
+exomizer sfx 0x1010 -t4 -n  # Day One, $1000-$3FFF
+exomizer sfx 0x2111 -t4 -n -s"lda #$0b sta $ff06" -f"lda #$1b sta $ff06"  # Day Two, $0800-$3FFF
+```
+
+`-t4` is the Plus/4 target, `-n` turns off the decrunch effect, and Day Two's two fragments blank the screen while it unpacks and turn it back on before the jump (2.0beta7–2.0.3 need `sei` at the start of the first fragment; later versions add it themselves). Exomizer 1.1, 2.0beta2–beta6, 2.0.10, 2.0.11 and 3.x all give different files. `exomizer desfx` (3.1.2) also unpacks both PRGs to exactly the VICE dumps. `tools/exo_check.py` re-crunches the images rebuilt from `src/` with a given Exomizer and compares, so the chain runs from the source to the crunched files as they survive. So the PRGs were made at least four years after the 2004 tape images. The decruncher unpacks the game into `$0FFE`–`$3FFF` (Day One) or `$07FE`–`$3FFF` (Day Two) and ends with a `JMP` from the stack page: `$019D` to `$1010`, or `$01A2` to `$2111`.

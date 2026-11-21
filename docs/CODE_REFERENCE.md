@@ -16,7 +16,7 @@ Block `day_one_packed`, from `original/daley_thompsons_star_events_day_one.prg`.
 
 ### Names
 
-- `$100D` **SfxStart_day_one** – Packed part 1: copies the decruncher to the stack page. Provisional name.
+- `$100D` **SfxStart_day_one** – Exomizer 2.0 sfx stub (part 1): copies the decruncher to the stack page.
 
 ---
 
@@ -30,7 +30,7 @@ Block `day_two_packed`, from `original/daley_thompsons_star_events_day_two.prg`.
 
 ### Names
 
-- `$100D` **SfxStart_day_two** – Packed part 2: blanks the screen, copies the decruncher. Provisional name.
+- `$100D` **SfxStart_day_two** – Exomizer 2.0 sfx stub (part 2): blanks the screen (enter fragment), copies the decruncher.
 
 ---
 

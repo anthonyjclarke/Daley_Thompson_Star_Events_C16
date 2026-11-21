@@ -17,7 +17,7 @@ Decomposition of *Daley Thompson's Star Events* for the Commodore 16, which I wr
 
 The tapes are 2004 tape images (origin unknown) of the 1985 release. Their timing is perfectly regular (every wave exactly 53, 105 or 210 units, with no jitter), so they were generated from the file data by software, not sampled from a cassette: they record the release's files, names and loader, not its audio. Each side is in the C16 KERNAL's own format, with no turbo: a 67-byte loader at `$0600`, which `SYS 1536` starts, LOADs the game's two files and jumps to the game. Every block decodes cleanly (`tools/c16_tap.py`), and `tools/tape_check.py` shows that each file, placed where the loader puts it, is byte for byte the unpacked image. So the tape and the PRGs hold the same game, and the tape keeps the earlier form: the loader, the file names and where each file loads.
 
-The two PRGs are crunched with what looks like Exomizer's self-extracting decruncher: a later conversion of the tape's memory, of unknown origin. They stay as originals too.
+The two PRGs were crunched with Exomizer 2.0, a version from between 2008 and 2017, so they are a later conversion of the tape's memory; who made them is unknown. Re-crunching the rebuilt game with Exomizer 2.0 gives both files byte for byte (`tools/exo_check.py`). They stay as originals too.
 
 The unpacked images were made by starting each PRG in VICE (`xplus4`, C16 PAL, 16 KB), stopping at the decruncher's final `JMP` (`$019D` for part 1, `$01A2` for part 2) and saving the range the decruncher wrote with the monitor's `save` command. `tools/unpack_sfx.py` runs the same decruncher in a 6502 emulator, and `make verify` checks that both ways give the same bytes.
 

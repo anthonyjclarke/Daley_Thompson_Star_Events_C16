@@ -64,10 +64,10 @@ BLOCKS = [
     # everything else is packed data until tools/unpack_sfx.py or VICE unpacks it.
     dict(name="day_one_packed", kind="prg", file="original/daley_thompsons_star_events_day_one.prg",
          entries=[0x100D], ranges=[STUB],
-         labels={0x100D: ("SfxStart_day_one", "Packed part 1: copies the decruncher to the stack page. Provisional name.")}),
+         labels={0x100D: ("SfxStart_day_one", "Exomizer 2.0 sfx stub (part 1): copies the decruncher to the stack page.")}),
     dict(name="day_two_packed", kind="prg", file="original/daley_thompsons_star_events_day_two.prg",
          entries=[0x100D], ranges=[STUB],
-         labels={0x100D: ("SfxStart_day_two", "Packed part 2: blanks the screen, copies the decruncher. Provisional name.")}),
+         labels={0x100D: ("SfxStart_day_two", "Exomizer 2.0 sfx stub (part 2): blanks the screen (enter fragment), copies the decruncher.")}),
 
     # The 1985 tape loaders (SYS 1536): load MAIN and ADDS with secondary address 0 at fixed addresses, then
     # jump to the game. tools/tape_check.py proves the tape's MAIN and ADDS are the unpacked images' bytes.

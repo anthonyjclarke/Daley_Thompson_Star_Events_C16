@@ -27,7 +27,7 @@ Given 21-11-2026, about 41 years after the event. Memory is evidence, not proof.
 | Item                   | Evidence                                                    | Date       |
 |:-----------------------|:------------------------------------------------------------|:-----------|
 | Packed (both parts)    | Entropy 7.88 and 7.90 bits/byte; `SYS` lands on a 12-byte copy loop | 21-11-2026 |
-| Decruncher type        | 52-entry tables at `$0334`/`$0368`/`$039C`, bit reader at `$0100`: Exomizer SFX layout (structure only, not checked against an Exomizer build) | 21-11-2026 |
+| Decruncher type        | Exomizer 2.0 `sfx -t4 -n` (Day Two with enter/exit fragments for `$FF06`): versions 2.0beta7–2.0.9, built from their tags, re-crunch both unpacked images to the original PRGs byte for byte; 1.1.x, 2.0beta2–6, 2.0.10–11 and 3.x differ. `exomizer desfx` 3.1.2 unpacks both to the VICE dumps exactly. `tools/exo_check.py` repeats the crunch from the rebuilt images | 22-11-2026 |
 | Unpacked images        | `tools/unpack_sfx.py` and a VICE dump at the decruncher's final `JMP` agree byte for byte | 21-11-2026 |
 | Entries `$1010`/`$2111` | The final `JMP` of each decruncher (stack-page copy at `$019D` / `$01A2`) | 21-11-2026 |
 

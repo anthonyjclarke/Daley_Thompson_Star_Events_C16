@@ -30,6 +30,8 @@ Every change has to pass `make verify`, which checks four things in turn:
 3. Every game file on both tapes, placed where the loader puts it, equals the unpacked image (`tools/tape_check.py`).
 4. Every block, reassembled from `src/` with `ca65` and `ld65`, is byte-identical to its original (`tools/disasm.py --check`).
 
+One more check runs by hand, because it needs an old Exomizer: `tools/exo_check.py` re-crunches the images rebuilt from `src/` with Exomizer 2.0 (2.0beta7–2.0.9) and gets both crunched PRGs byte for byte (see [the artifacts](ARTIFACTS.md)).
+
 Original bugs and oddities stay in the build; they are recorded in [the quirks](quirks.md) instead of being fixed.
 
 ---

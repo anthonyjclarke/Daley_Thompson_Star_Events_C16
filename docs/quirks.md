@@ -27,6 +27,8 @@ What the original does that looks accidental or unfinished, kept as it is in the
 | Part 2 `Javelin` | Below 35° the javelin falls one pixel a step, and a full-speed throw measures about 122 m, past the 101.30 m WORLD RECORD | Likely defect: angle balance not tested at the shallow end |
 | Part 2 `RunwayCellStep` | Every 14th runway cell in flight places a marker and adds no distance | Undocumented coherent |
 | Part 2 `LongJump` | The hang lasts until the runway band turns to sand (`RunwayBandColour`), so the jumper always reaches the pit; a slow jump still measures about 3.5 m | Undocumented coherent |
+| Part 1 `MainLoop_day_one` | Writing `$FD` to `$FD30` as well as `$FF08` selects keyboard row 1, so A, 4, E and SHIFT act as left, right and fire although Day One has no key option | Uncertain: deliberate key support or a side effect of the latch write |
+
 ---
 
 ## Open Items

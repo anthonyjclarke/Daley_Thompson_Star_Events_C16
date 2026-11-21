@@ -16,9 +16,11 @@ Each part is on its own side of the tape. Type `LOAD"",1,1`, press PLAY, and whe
 
 Day One is four races in a fixed order: 100 m, 110 m hurdles, 400 m, 200 m hurdles. You start with three attempts (the R symbols under the distance), and each race you fail costs one.
 
+**Controls.** Day One has no key option, but the keyboard works anyway: A is left, 4 is right, and E or SHIFT is fire. The game reads the joystick in a way that also reads the keyboard row holding these keys (checked in VICE). Q, Y and SPACE, Day Two's keys, do nothing here, and nor do the cursor keys.
+
 **Start.** Each race starts by itself: the game shows ON YOUR MARKS, GET SET and GO, then the clock runs. After GAME OVER, press fire to play again.
 
-**Running.** Move the joystick left and right in turn. Speed rises only when both directions have been seen since the last step, so holding one direction, or wiggling only one way, does nothing. Each full left-right pair adds 5 to the speed, or 2 once you are past about half the meter, and the speed bleeds away all the time, faster near the top. The SPEED meter at the bottom shows where you are.
+**Running.** Move the joystick left and right in turn, or tap A and 4 in turn. Speed rises only when both directions have been seen since the last step, so holding one direction, or wiggling only one way, does nothing. Each full left-right pair adds 5 to the speed, or 2 once you are past about half the meter, and the speed bleeds away all the time, faster near the top. The SPEED meter at the bottom shows where you are.
 
 **Hurdles.** In the hurdle events, press fire to jump. A jump can't start until the last one has finished, and each jump costs a little speed. Knocking a hurdle over only changes its picture: in this version it costs no time.
 

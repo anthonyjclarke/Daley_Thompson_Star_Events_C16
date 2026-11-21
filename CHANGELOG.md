@@ -2,6 +2,16 @@
 
 ---
 
+## [0.7.2] 22-11-2026
+
+### Added
+
+- Day One's keys, found from a snapshot where keys didn't respond: Day One has no key option, but its joystick read
+  also selects keyboard row 1, so A and 4 are left and right and E or SHIFT is fire. Confirmed in VICE; in the
+  player guide, analysis, evidence and quirks.
+
+---
+
 ## [0.7.1] 22-11-2026
 
 ### Changed

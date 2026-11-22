@@ -261,7 +261,7 @@ The footstep effect gets its pitch from successive bytes of the BASIC ROM (`Play
 
 The tune player is the same code in both parts, `$AE2` bytes apart. Each voice reads byte pairs. A byte below `$30` is a note, an index into `NoteFreqLo`/`NoteFreqHi`; a byte of `$30` is a rest; the byte after either picks one of 16 note lengths, counted in frames. Commands `$FA`–`$FD` load the length table or the voice's instrument (its 23-byte effect record), `$FE` returns from a call and `$FF` ends the voice. Any other command calls a sub-tune in voice 1; in voice 2 `$F9` calls and the rest jump. A command in the wrong place (`$FF` inside a call, `$FE` with nothing to return to, calls nested too deep) executes `BRK`.
 
-The 35 notes run a semitone apart from A2 to G5: note 0 is `$007`, which TED plays at 111860.78 / (1024 − 7) = 110.0 Hz. `tools/decode_tunes.py` follows these rules and prints every tune as notes and lengths.
+The 35 notes run a semitone apart from A2 to G5: note 0 is `$007`. A PAL TED plays register value *w* at 1773447 / (16 × (1024 − ((*w* + 1) AND 1023))) Hz, measured in VICE by `tools/ted_pitch.py`, so note 0 sounds at 109.1 Hz, 13 cents below A2. The table is tuned for NTSC, where note 0 is 110.1 Hz and the whole table is within 9 cents of equal temperament; on PAL every tune plays about an eighth of a semitone flat ([quirks](docs/quirks.md)). `tools/decode_tunes.py` follows these rules and prints every tune as notes and lengths.
 
 | Tune                  | Day One                       | Day Two                       | Length on PAL               |
 |:----------------------|:------------------------------|:------------------------------|:----------------------------|
@@ -287,7 +287,7 @@ The three tunes are identical in both parts, note for note. The title and GAME O
 
 ### How the Clips Were Made
 
-`tools/render_sounds.py` runs each part's own sound code in `tools/cpu6502.py`: the routine that starts the tune or effect, then the sound step once a frame, as the raster split calls it. It records TED's sound registers (`$FF0E`–`$FF12`) after every frame and plays them through a simple TED model: two square-wave voices at 111860.78 / (1024 − value) Hz, voice 2 switchable to noise, volume 0–8. Over the first 80 seconds from power-on, the frequencies it records match VICE's own register dump of the title screen frame for frame. The model leaves out TED's exact waveform and output filtering, so the clips give the notes, rhythm and effects as the code plays them, not the precise tone of a real machine.
+`tools/render_sounds.py` runs each part's own sound code in `tools/cpu6502.py`: the routine that starts the tune or effect, then the sound step once a frame, as the raster split calls it. It records TED's sound registers (`$FF0E`–`$FF12`) after every frame and plays them through a simple TED model: two square-wave voices at the PAL pitch above, voice 2 switchable to noise, volume 0–8. Over the first 80 seconds from power-on, the frequencies it records match VICE's own register dump of the title screen frame for frame. The model leaves out TED's exact waveform and output filtering, so the clips give the notes, rhythm and effects as the code plays them, not the precise tone of a real machine.
 
 ---
 

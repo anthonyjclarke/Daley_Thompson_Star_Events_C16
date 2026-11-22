@@ -13,13 +13,22 @@ The player (part 1 $2900-$2ADC, part 2 the same code $AE2 lower) reads each voic
   $FB     word: copy 9 bytes to record offsets $0E-$16
   $FA     word: copy 16 bytes to the length table (record offsets $1A-$29)
   other   voice 1: call the word; voice 2: $F9 calls, the rest jump (goto)
-Lengths count calls of the player, one a frame. TED pitch: 111860.78 / (1024 - value) Hz on PAL; note 0
-($007) gives 110.0 Hz, A2, and the 35 entries rise a semitone each to G5.
+Lengths count calls of the player, one a frame. TED pitch on PAL: 1773447 / (16 * (1024 - ((value + 1) & 1023)))
+Hz, measured in VICE by tools/ted_pitch.py; note 0 ($007) gives 109.1 Hz, about 13 cents below A2, and the 35
+entries rise a semitone each to G5. The table is tuned for NTSC, where note 0 is 110.1 Hz.
 """
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+PAL_CLOCK = 1773447
+
+
+def ted_hz(value, clock=PAL_CLOCK):
+    """TED voice frequency in Hz for a 10-bit register value (VICE, measured by tools/ted_pitch.py)."""
+    return clock / (16 * (1024 - ((value + 1) & 1023)))
+
+
 NAMES = ["A", "A#", "B", "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#"]
 
 
@@ -57,7 +66,7 @@ def decode_voice(mem, shift, start, voice):
                 events.append(("rest", ln))
             else:
                 value = mem[freq_lo + b] | mem[freq_hi + b] << 8
-                events.append((note_name(b), ln, round(111860.78 / (1024 - value), 1)))
+                events.append((note_name(b), ln, round(ted_hz(value), 1)))
             ptr += 2
         elif b == 0xFF:
             events.append(("end",) if not stack else ("end inside a call: BRK",))

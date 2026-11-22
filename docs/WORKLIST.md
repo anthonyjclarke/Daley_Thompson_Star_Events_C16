@@ -25,6 +25,7 @@ What still needs testing or checking, and how. Items already checked, in the cod
 | Day One GAME OVER R marker     | Code read; screen redraw run in `cpu6502.py` | quirks                  |
 | Tunes decoded                  | `tools/decode_tunes.py`; title timed in VICE | analysis, The Tunes     |
 | Sound clips                    | `render_sounds.py`; matches VICE's dump      | analysis, Sound         |
+| TED pitch, PAL and NTSC        | `tools/ted_pitch.py`, tones recorded in VICE | evidence; quirks        |
 | Day Two on NTSC                | 189 forced attempts with `--ntsc`            | analysis, How Far       |
 | Names                          | Every data label named; branch targets left  | evidence; worklist      |
 | Decruncher                     | Exomizer 2.0 re-crunch is byte-identical     | artifacts; exo_check.py |

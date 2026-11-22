@@ -1,6 +1,6 @@
 # Daley Thompson's Star Events C16
 
-![Version 0.10.1](docs/images/badges/version.svg)
+![Version 0.10.2](docs/images/badges/version.svg)
 ![Platform Commodore 16](docs/images/badges/platform.svg)
 ![Byte match 40,724 of 40,724](docs/images/badges/byte-match.svg)
 ![Toolchain cc65](docs/images/badges/toolchain.svg)

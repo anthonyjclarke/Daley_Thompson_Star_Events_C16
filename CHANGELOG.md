@@ -2,6 +2,22 @@
 
 ---
 
+## [0.10.2] 22-11-2026
+
+### Added
+
+- `tools/ted_pitch.py`: records steady TED tones from VICE on a PAL and an NTSC C16 and measures their pitch;
+  the result is 1773447 / (16 × (1024 − ((w + 1) AND 1023))) Hz on PAL, and the note table is tuned for NTSC.
+- Quirk: on PAL every note plays about 13 cents flat.
+
+### Fixed
+
+- TED pitch: the analysis, evidence, `decode_tunes.py` and `render_sounds.py` used 111860.78 / (1024 − w), the NTSC
+  figure without the + 1, so note 0 was given as 110.0 Hz on PAL; it is 109.1 Hz. The sound clips are re-rendered
+  at PAL pitch.
+
+---
+
 ## [0.10.1] 22-11-2026
 
 ### Added

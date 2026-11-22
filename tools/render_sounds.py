@@ -6,8 +6,9 @@ Run from the project root:   python3 tools/render_sounds.py
 Each clip runs the game's own sound code in tools/cpu6502.py: the routine that starts a tune or effect,
 then the sound step once per frame (as raster split 7 / 13 calls it), recording TED's sound registers
 $FF0E-$FF12 after every frame. A small TED model turns the registers into sound: two square-wave voices
-at 111860.78 / (1024 - value) Hz, voice 2 optionally noise, volume 0-8 from $FF11. The footsteps read the
-BASIC ROM for their pitch, so VICE's Plus/4 BASIC ROM is loaded at $8000 when it can be found.
+at 1773447 / (16 * (1024 - ((value + 1) & 1023))) Hz (PAL, as tools/ted_pitch.py measures VICE), voice 2
+optionally noise, volume 0-8 from $FF11. The footsteps read the BASIC ROM for their pitch, so VICE's Plus/4
+BASIC ROM is loaded at $8000 when it can be found.
 
 The model is simple (no filtering, idealised waveforms), so the clips show the notes, rhythm and effects
 as the code plays them, not the exact tone of a real TED. Writes docs/sounds/*.m4a (AAC, via macOS
@@ -29,7 +30,7 @@ from cpu6502 import CPU  # noqa: E402
 OUT = ROOT / "docs/sounds"
 RATE = 22050
 FPS = 1773447 / 35568          # PAL frame rate measured in VICE (cycles per frame)
-TED_CLOCK = 111860.78
+TED_CLOCK = 1773447 / 16      # PAL; pitch = TED_CLOCK / (1024 - ((value + 1) & 1023))
 BASIC_ROMS = ["/opt/homebrew/share/vice/PLUS4/basic-318006-01.bin",
               "/Applications/Vice/VICE.app/Contents/Resources/share/vice/PLUS4/basic-318006-01.bin"]
 
@@ -90,7 +91,7 @@ def synth(frames):
     per_frame = RATE / FPS
     for i, (f1lo, f2lo, f2hi, ctrl, f1hi) in enumerate(frames):
         regs = [f1lo | (f1hi & 3) << 8, f2lo | (f2hi & 3) << 8]
-        freq = [TED_CLOCK / (1024 - r) if r < 1023 else 0 for r in regs]
+        freq = [TED_CLOCK / (1024 - ((r + 1) & 1023)) if r < 0x3FE else 0 for r in regs]
         vol = min(ctrl & 0x0F, 8) / 8 * 0.35
         on = [ctrl & 0x10, ctrl & 0x20, ctrl & 0x40]
         n = int(round((i + 1) * per_frame)) - int(round(i * per_frame))

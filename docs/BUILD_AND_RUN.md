@@ -55,6 +55,7 @@ Run from the project root.
 | `tools/render_graphics.py`   | The character sets, frames, objects and lettering in `docs/images/` |
 | `tools/decode_tunes.py`      | Every tune of both parts as notes and lengths            |
 | `tools/render_sounds.py`     | The sound clips in `docs/sounds/`                         |
+| `tools/ted_pitch.py`         | TED's tone pitch measured in VICE, PAL and NTSC           |
 | `tools/readme_images.py`     | The README's badges and screenshot montage                |
 | `tools/trace6502.py`         | Code tracer that writes a `da65` info file; its opcode table serves `disasm.py` and `cpu6502.py` |
 

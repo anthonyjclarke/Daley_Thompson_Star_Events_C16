@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parent.parent
 IMAGES = ROOT / "docs/images"
 
 BADGES = [  # (file, label, value, colour)
-    ("version", "version", "0.10.1", "#007ec6"),
+    ("version", "version", "0.10.2", "#007ec6"),
     ("platform", "platform", "Commodore 16", "#8a5a00"),
     ("byte-match", "byte match", "40,724 of 40,724", "#2e8b30"),
     ("toolchain", "toolchain", "cc65", "#6a3fa0"),
